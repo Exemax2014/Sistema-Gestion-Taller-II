@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="SistemaGestion.Datos/SistemaGestion.Datos.csproj" Id="1405a1f7-d568-47dd-8af9-1e194fab7671" />
+  <Project Path="SistemaGestion.Logica/SistemaGestion.Logica.csproj" Id="e448919e-5a08-4750-b30b-cc32672f76f3" />
+  <Project Path="SistemaGestion.Vistas/SistemaGestion.Vistas.csproj" Id="6153df04-dc0d-4278-b9ff-4ab8892c6c04" />
+</Solution>
