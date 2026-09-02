@@ -1,7 +1,10 @@
-# AGENTS.md — Sistema de Gestión / Taller de Programación II
+Sí. Te lo dejo **todo junto en un solo bloque**, listo para copiar completo y pegar dentro de `AGENTS.md`.
+
+````markdown
+# AGENTS.md — Sistema Hierro y Forja / Taller de Programación II
 
 > Documento operativo para integrantes del equipo y agentes de IA.
-> Estado base: 2026-09-01.
+> Estado actualizado: 2026-09-02.
 > Rama de integración: `desarrollo`.
 
 ## 1. Objetivo del proyecto
@@ -18,43 +21,59 @@ La prioridad inmediata es llegar a la primera entrega con una versión navegable
 - Windows Forms
 - .NET 10
 - SQL Server
+- Microsoft.Data.SqlClient
 - Visual Studio 2026
 - Git + GitHub
 
-La solución está dividida en tres capas:
+La solución está dividida estrictamente en tres capas:
 
 ```text
-SistemaGestion.Vistas
-        ↓
-SistemaGestion.Logica
-        ↓
-SistemaGestion.Datos
+Capa_Vistas
+     ↓
+Capa_Logica
+     ↓
+Capa_Datos
 ```
 
 Reglas:
 
-- `Vistas` contiene formularios, controles, mensajes y navegación.
-- `Logica` contiene validaciones, reglas del negocio, autenticación, sesión, permisos y cálculos.
-- `Datos` contiene conexión a SQL Server y operaciones SQL.
-- `Vistas` no debe ejecutar SQL directamente.
-- `Datos` no debe mostrar `MessageBox`.
-- No agregar una referencia directa `Vistas -> Datos`.
-- La cadena correcta es `Vistas -> Logica -> Datos`.
+- `Capa_Vistas` contiene formularios, controles, mensajes y navegación.
+- `Capa_Logica` contiene validaciones, reglas del negocio, autenticación, sesión, permisos y cálculos.
+- `Capa_Datos` contiene conexión a SQL Server y operaciones SQL.
+- `Capa_Vistas` no debe ejecutar SQL directamente.
+- `Capa_Datos` no debe mostrar `MessageBox`.
+- No agregar una referencia directa `Capa_Vistas -> Capa_Datos`.
+- La cadena correcta es `Capa_Vistas -> Capa_Logica -> Capa_Datos`.
+- No crear una cuarta capa sin autorización del equipo.
 
 ## 3. Estructura actual del repositorio
 
 ```text
-Sistema-Gestion-Taller-II/
+Sistema_Hierro_y_Forja/
 │
 ├── BaseDatos/
 │   ├── 01_Estructura.sql
 │   └── 02_DatosIniciales.sql
 │
-├── SistemaGestion.Vistas/
-├── SistemaGestion.Logica/
-├── SistemaGestion.Datos/
+├── Capa_Datos/
+│   ├── Configuracion/
+│   │   ├── configuracion.example.json
+│   │   └── configuracion.json
+│   ├── Conexion.cs
+│   └── Capa_Datos.csproj
 │
-├── SistemaGestion.slnx
+├── Capa_Logica/
+│   └── Capa_Logica.csproj
+│
+├── Capa_Vistas/
+│   ├── FormLogin.cs
+│   ├── FormLogin.Designer.cs
+│   ├── FormLogin.resx
+│   ├── Program.cs
+│   └── Capa_Vistas.csproj
+│
+├── Sistema_Hierro_Y_Forja.slnx
+├── AGENTS.md
 ├── README.md
 ├── .gitignore
 └── .gitattributes
@@ -62,14 +81,81 @@ Sistema-Gestion-Taller-II/
 
 Actualmente:
 
-- `SistemaGestion.Vistas` conserva el `Form1` inicial y todavía no tiene las vistas definitivas.
-- `SistemaGestion.Logica` todavía conserva solamente la clase inicial `Class1.cs`.
-- `SistemaGestion.Datos` todavía conserva solamente la clase inicial `Class1.cs`.
-- La solución compila.
-- Las referencias entre capas están configuradas.
+- Las carpetas físicas con la nomenclatura anterior fueron eliminadas.
+- Los proyectos se llaman `Capa_Datos`, `Capa_Logica` y `Capa_Vistas`.
+- Las referencias entre proyectos están configuradas como:
+  `Capa_Vistas -> Capa_Logica -> Capa_Datos`.
+- Se eliminaron los archivos iniciales `Class1.cs`.
+- Se eliminó el formulario inicial `Form1`.
+- `FormLogin` ya fue creado.
+- `Program.cs` inicia la aplicación mostrando `FormLogin`.
+- `Capa_Datos` tiene instalada la dependencia `Microsoft.Data.SqlClient`.
+- `Conexion.cs` está preparado para obtener la configuración desde un archivo JSON.
+- La solución compila correctamente.
 - La base de datos y sus scripts iniciales ya fueron diseñados y probados.
 
-## 4. Base de datos actual
+## 4. Configuración de conexión
+
+La configuración de SQL Server se encuentra dentro de:
+
+```text
+Capa_Datos/Configuracion/
+```
+
+Archivos:
+
+```text
+configuracion.example.json
+configuracion.json
+```
+
+`configuracion.example.json`:
+
+- se versiona en Git;
+- sirve como plantilla para cada desarrollador o instalación.
+
+`configuracion.json`:
+
+- contiene la configuración concreta de cada PC;
+- está excluido mediante `.gitignore`;
+- no debe subirse al repositorio.
+
+Formato actual:
+
+```json
+{
+  "Servidor": "localhost",
+  "BaseDatos": "SistemaGestion",
+  "AutenticacionWindows": true,
+  "Usuario": "",
+  "Contrasena": "",
+  "TrustServerCertificate": true
+}
+```
+
+`Conexion.cs` lee:
+
+```text
+AppContext.BaseDirectory/Configuracion/configuracion.json
+```
+
+Si el archivo no existe o es inválido debe producir un error claro y no utilizar valores silenciosos por defecto.
+
+La configuración está pensada para permitir que posteriormente las PCs cliente se conecten a una instancia central de SQL Server sin modificar el código fuente.
+
+Para desarrollo se utiliza actualmente:
+
+```text
+Servidor: localhost
+Base de datos: SistemaGestion
+Autenticación: Windows
+```
+
+En una instalación final podrá configurarse otra IP, nombre de servidor o autenticación SQL mediante el archivo de configuración.
+
+No utilizar la cuenta `sa` como usuario de la aplicación final.
+
+## 5. Base de datos actual
 
 Base principal:
 
@@ -109,6 +195,7 @@ PERFIL -> USUARIO
 PERFIL <-> FUNCIONALIDAD por PERFIL_FUNCIONALIDAD
 
 CATEGORIA -> PRODUCTO
+
 PRODUCTO + SUCURSAL -> INVENTARIO
 
 CLIENTE -> VENTA
@@ -134,7 +221,7 @@ METODO_PAGO -> PAGO
 - Los teléfonos pertenecen a usuario, cliente o sucursal, no a la dirección.
 - `PERFIL_FUNCIONALIDAD` permite permisos configurables y evita hardcodear todos los accesos por nombre de perfil.
 
-## 5. Datos iniciales existentes en los scripts
+## 6. Datos iniciales existentes en los scripts
 
 `02_DatosIniciales.sql` carga:
 
@@ -151,7 +238,7 @@ El script no crea todavía un usuario administrador definitivo.
 
 En la base local de desarrollo se creó previamente un administrador temporal, pero su `contrasena_hash` no debe considerarse una implementación final.
 
-## 6. Perfiles y permisos iniciales
+## 7. Perfiles y permisos iniciales
 
 ### Administrador
 
@@ -185,7 +272,7 @@ Permisos iniciales:
 
 El acceso a productos necesario para vender puede resolverse dentro de la funcionalidad de ventas sin habilitar necesariamente el módulo completo de productos.
 
-## 7. Git y ramas
+## 8. Git y ramas
 
 Ramas principales:
 
@@ -193,20 +280,23 @@ Ramas principales:
 master       -> versión estable
 desarrollo   -> integración del equipo
 exe-dev      -> trabajo de Exequiel
-josi-dev     -> trabajo de Josias (crear desde desarrollo)
+josi-dev     -> trabajo de Josias
 ```
 
 Flujo recomendado:
 
 ```text
 Antes de trabajar:
+
 desarrollo -> Pull
 exe-dev/josi-dev -> merge de desarrollo
 
 Durante el trabajo:
+
 modificar -> commit -> push de rama personal
 
 Para integrar:
+
 desarrollo -> Pull
 merge rama personal -> desarrollo
 compilar/probar
@@ -219,7 +309,7 @@ Regla clave:
 
 No trabajar directamente sobre `master`.
 
-## 8. Primera entrega — miércoles 2026-09-02
+## 9. Primera entrega — 2026-09-02
 
 ### Objetivo mínimo de demostración
 
@@ -239,91 +329,91 @@ No intentar terminar todo el sistema para esta entrega.
 
 ```text
 Programa
-  ↓
-Login
-  ↓
+   ↓
+FormLogin
+   ↓
 Validación en Base de Datos
-  ↓
+   ↓
 Sesión iniciada
-  ↓
-Formulario Principal
-  ├── Clientes
-  ├── Productos
-  ├── Ventas
-  └── Usuarios / otra vista
+   ↓
+FormPrincipal
+   ├── FormClientes
+   ├── FormProductos
+   ├── FormVentas
+   └── FormUsuarios
 ```
 
 Las vistas secundarias pueden estar inicialmente incompletas si la consigna de la entrega solo exige mostrar avance, pero el login y la navegación principal deben funcionar.
 
-## 9. División inmediata de tareas
+## 10. División inmediata de tareas
 
 ### Exequiel — infraestructura + login
 
 Responsable de:
 
-- conexión de `SistemaGestion.Datos` con SQL Server;
-- configuración de cadena de conexión sin repetirla por todo el proyecto;
+- conexión de `Capa_Datos` con SQL Server;
+- configuración de conexión sin repetirla por todo el proyecto;
 - acceso a datos de usuario para login;
 - lógica de autenticación;
 - estrategia inicial de hash de contraseña;
 - clase de sesión del usuario autenticado;
-- `FrmLogin`;
-- cambio de `Program.cs` para iniciar por el login;
+- `FormLogin`;
+- `Program.cs` para iniciar por el login;
 - integración del login con el formulario principal realizado por Josias;
 - prueba final de integración.
 
-Archivos sugeridos:
+Archivos previstos:
 
 ```text
-SistemaGestion.Datos/
+Capa_Datos/
     Conexion.cs
     UsuarioDatos.cs
 
-SistemaGestion.Logica/
+Capa_Logica/
     UsuarioLogica.cs
     SesionActual.cs
     PasswordHelper.cs
 
-SistemaGestion.Vistas/
-    FrmLogin.cs
-    FrmLogin.Designer.cs
+Capa_Vistas/
+    FormLogin.cs
+    FormLogin.Designer.cs
 ```
 
 ### Josias — formulario principal + vistas
 
 Responsable de:
 
-- `FrmPrincipal`;
+- `FormPrincipal`;
 - menú principal;
 - zona de navegación/contenido;
 - diseño inicial de vistas:
-  - `FrmClientes`;
-  - `FrmProductos`;
-  - `FrmVentas`;
-  - `FrmUsuarios` o vista equivalente;
+  - `FormClientes`;
+  - `FormProductos`;
+  - `FormVentas`;
+  - `FormUsuarios` o vista equivalente;
 - botones de navegación;
 - diseño consistente de formularios;
 - recibir el usuario/perfil autenticado para mostrarlo en la cabecera.
 
-Debe evitar modificar los archivos que esté trabajando Exequiel, especialmente `FrmLogin`, clases de autenticación y acceso a datos.
+Debe evitar modificar los archivos que esté trabajando Exequiel, especialmente `FormLogin`, clases de autenticación y acceso a datos.
 
-Archivos sugeridos:
+Archivos previstos:
 
 ```text
-SistemaGestion.Vistas/
-    FrmPrincipal.cs
-    FrmPrincipal.Designer.cs
-    FrmClientes.cs
-    FrmClientes.Designer.cs
-    FrmProductos.cs
-    FrmProductos.Designer.cs
-    FrmVentas.cs
-    FrmVentas.Designer.cs
-    FrmUsuarios.cs
-    FrmUsuarios.Designer.cs
+Capa_Vistas/
+    FormPrincipal.cs
+    FormPrincipal.Designer.cs
+    FormClientes.cs
+    FormClientes.Designer.cs
+    FormProductos.cs
+    FormProductos.Designer.cs
+    FormVentas.cs
+    FormVentas.Designer.cs
+    FormUsuarios.cs
+    FormUsuarios.Designer.cs
 ```
 
-## 10. Orden de integración para la primera entrega
+## 11. Orden de integración para la primera entrega
 
 1. Ambos parten desde `desarrollo` actualizado.
 2. Exequiel trabaja en `exe-dev`.
@@ -332,14 +422,12 @@ SistemaGestion.Vistas/
 5. Integrar primero las vistas de Josias a `desarrollo`.
 6. Exequiel hace Pull de `desarrollo`.
 7. Exequiel integra `desarrollo` dentro de `exe-dev`.
-8. Conectar `FrmLogin` con `FrmPrincipal`.
+8. Conectar `FormLogin` con `FormPrincipal`.
 9. Merge final de `exe-dev` hacia `desarrollo`.
 10. Compilar y probar desde `desarrollo`.
 11. No pasar a `master` hasta tener una versión demostrable estable.
 
-## 11. Después de la primera entrega
-
-Orden de desarrollo propuesto:
+## 12. Después de la primera entrega
 
 ### Fase 1 — Base funcional
 
@@ -395,7 +483,7 @@ Orden de desarrollo propuesto:
 - Clientes WinForms desde otras PCs de la red.
 - Prueba multisucursal.
 
-## 12. Decisiones pendientes
+## 13. Decisiones pendientes
 
 No asumir estas decisiones sin consultar al equipo:
 
@@ -409,7 +497,7 @@ No asumir estas decisiones sin consultar al equipo:
 - necesidad de más permisos específicos;
 - comportamiento exacto de las bajas de ventas/pagos.
 
-## 13. Reglas para agentes de IA
+## 14. Reglas para agentes de IA
 
 Antes de modificar código:
 
@@ -423,7 +511,7 @@ Un agente NO debe:
 
 - cambiar la arquitectura de tres capas sin autorización;
 - ejecutar SQL directamente desde formularios;
-- meter `MessageBox` en `Datos`;
+- meter `MessageBox` en `Capa_Datos`;
 - hardcodear credenciales reales;
 - subir contraseñas, secretos o cadenas privadas a GitHub;
 - cambiar el esquema de la base sin actualizar los scripts;
@@ -442,7 +530,7 @@ Un agente debe:
 - informar qué archivos modificó;
 - indicar si una modificación requiere ejecutar SQL adicional.
 
-## 14. Regla para cambios de base de datos
+## 15. Regla para cambios de base de datos
 
 `01_Estructura.sql` representa la estructura completa para crear una base nueva.
 
@@ -460,7 +548,7 @@ o scripts de actualización numerados.
 
 La estructura final y los scripts de actualización deben permanecer sincronizados.
 
-## 15. Registro de avance
+## 16. Registro de avance
 
 Agregar una entrada cuando se cierre un hito relevante.
 
@@ -478,7 +566,8 @@ Pendiente:
 
 ### 2026-09-01
 
-Responsable: Exequiel + asistencia de diseño  
+Responsable: Exequiel + asistencia de diseño
+
 Rama integrada: `desarrollo`
 
 Completado:
@@ -494,13 +583,38 @@ Completado:
 - scripts `01_Estructura.sql` y `02_DatosIniciales.sql` probados reconstruyendo una base desde cero;
 - scripts integrados en `desarrollo`.
 
+### 2026-09-02
+
+Responsable: Exequiel
+
+Rama: `exe-dev`
+
+Completado:
+
+- proyectos renombrados a `Capa_Datos`, `Capa_Logica` y `Capa_Vistas`;
+- carpetas físicas antiguas eliminadas;
+- referencias entre capas actualizadas;
+- solución renombrada a `Sistema_Hierro_Y_Forja.slnx`;
+- archivos `Class1.cs` eliminados;
+- formulario inicial `Form1` eliminado;
+- `FormLogin` creado y configurado como formulario inicial;
+- namespace principal actualizado;
+- paquete `Microsoft.Data.SqlClient` instalado en `Capa_Datos`;
+- `Conexion.cs` creado;
+- configuración de conexión externalizada mediante JSON;
+- `configuracion.example.json` preparado para Git;
+- `configuracion.json` excluido mediante `.gitignore`;
+- solución recompilada correctamente después de la reorganización.
+
 Pendiente inmediato:
 
-- crear `josi-dev`;
-- conexión C# -> SQL Server;
-- usuario admin válido para login;
-- hash de contraseña;
-- `FrmLogin`;
-- `FrmPrincipal`;
-- vistas iniciales;
-- integración y prueba para la entrega del 2026-09-02.
+- probar conexión real C# -> SQL Server utilizando `Conexion.cs`;
+- crear `UsuarioDatos.cs`;
+- implementar lógica de autenticación;
+- definir e implementar hash de contraseña;
+- crear `SesionActual.cs`;
+- contar con un usuario administrador válido para login;
+- integrar `FormLogin` con `FormPrincipal`;
+- integrar vistas de Josias;
+- realizar prueba completa para la primera entrega.
+````

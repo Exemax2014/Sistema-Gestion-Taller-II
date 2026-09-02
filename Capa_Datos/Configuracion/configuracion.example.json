@@ -1,0 +1,8 @@
+{
+  "Servidor": "localhost",
+  "BaseDatos": "SistemaGestion",
+  "AutenticacionWindows": true,
+  "Usuario": "",
+  "Contrasena": "",
+  "TrustServerCertificate": true
+}

@@ -361,3 +361,6 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+
+# Ignorar archivo de configuración con credenciales del proyecto de datos
+Capa_Datos/Configuracion/configuracion.json

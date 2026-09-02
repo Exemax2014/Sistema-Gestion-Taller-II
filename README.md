@@ -1,4 +1,4 @@
-# # Sistema de Gestión - Taller de Programación II
+# Sistema Hierro y Forja - Taller de Programación II
 
 Proyecto final de Taller de Programación II.
 
@@ -6,13 +6,13 @@ Proyecto final de Taller de Programación II.
 
 El sistema está organizado en tres capas:
 
-- SistemaGestion.Vistas
-- SistemaGestion.Logica
-- SistemaGestion.Datos
+- Capa_Vistas
+- Capa_Logica
+- Capa_Datos
 
 Flujo de dependencias:
 
-Vistas → Lógica → Datos
+Capa_Vistas → Capa_Logica → Capa_Datos
 
 ## Tecnologías
 
@@ -20,6 +20,14 @@ Vistas → Lógica → Datos
 - Windows Forms
 - .NET 10
 - SQL Server
+- Microsoft.Data.SqlClient
+- Git y GitHub
+
+## Base de datos
+
+La base de datos principal del sistema se llama:
+
+SistemaGestion
 
 ## Integrantes
 
