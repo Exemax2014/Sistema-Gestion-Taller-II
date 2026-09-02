@@ -1,5 +1,3 @@
-using System;
-using System.IO;
 using System.Text.Json;
 using Microsoft.Data.SqlClient;
 
@@ -7,85 +5,141 @@ namespace Capa_Datos
 {
     internal class ConexionConfig
     {
-        public string Servidor { get; set; } = "localhost";
-        public string BaseDatos { get; set; } = "SistemaGestion";
-        public bool AutenticacionWindows { get; set; } = true;
-        public string Usuario { get; set; } = string.Empty;
-        public string Contrasena { get; set; } = string.Empty;
-        public bool TrustServerCertificate { get; set; } = true;
+        public string? Servidor { get; set; }
+        public string? BaseDatos { get; set; }
+        public bool? AutenticacionWindows { get; set; }
+        public string? Usuario { get; set; }
+        public string? Contrasena { get; set; }
+        public bool? TrustServerCertificate { get; set; }
     }
 
     public static class Conexion
     {
         private static ConexionConfig CargarConfiguracion()
         {
-            // Ruta determinista en tiempo de ejecución: <AppContext.BaseDirectory>/Configuracion/configuracion.json
-            var ruta = Path.Combine(AppContext.BaseDirectory, "Configuracion", "configuracion.json");
+            string ruta = Path.Combine(
+                AppContext.BaseDirectory,
+                "Configuracion",
+                "configuracion.json"
+            );
 
             if (!File.Exists(ruta))
             {
-                throw new FileNotFoundException($"Archivo de configuración no encontrado: '{ruta}'. Copie 'configuracion.example.json' a esta ubicación y renómbreelo a 'configuracion.json'.");
+                throw new FileNotFoundException(
+                    $"No se encontró el archivo de configuración: '{ruta}'."
+                );
             }
 
             string json;
+
             try
             {
                 json = File.ReadAllText(ruta);
             }
             catch (Exception ex)
             {
-                throw new InvalidOperationException($"No se pudo leer el archivo de configuración '{ruta}': {ex.Message}", ex);
+                throw new InvalidOperationException(
+                    $"No se pudo leer el archivo de configuración '{ruta}'.",
+                    ex
+                );
             }
 
-            ConexionConfig? cfg;
+            ConexionConfig? configuracion;
+
             try
             {
-                cfg = JsonSerializer.Deserialize<ConexionConfig>(json, new JsonSerializerOptions
+                configuracion = JsonSerializer.Deserialize<ConexionConfig>(
+                    json,
+                    new JsonSerializerOptions
+                    {
+                        PropertyNameCaseInsensitive = true
+                    }
+                );
+            }
+            catch (JsonException ex)
+            {
+                throw new InvalidOperationException(
+                    $"El archivo de configuración '{ruta}' no contiene un JSON válido.",
+                    ex
+                );
+            }
+
+            if (configuracion == null)
+            {
+                throw new InvalidOperationException(
+                    $"El archivo de configuración '{ruta}' está vacío."
+                );
+            }
+
+            if (string.IsNullOrWhiteSpace(configuracion.Servidor))
+            {
+                throw new InvalidOperationException(
+                    "Debe especificarse el servidor de SQL Server."
+                );
+            }
+
+            if (string.IsNullOrWhiteSpace(configuracion.BaseDatos))
+            {
+                throw new InvalidOperationException(
+                    "Debe especificarse el nombre de la base de datos."
+                );
+            }
+
+            if (configuracion.AutenticacionWindows == null)
+            {
+                throw new InvalidOperationException(
+                    "Debe especificarse el tipo de autenticación."
+                );
+            }
+
+            if (configuracion.TrustServerCertificate == null)
+            {
+                throw new InvalidOperationException(
+                    "Debe especificarse TrustServerCertificate."
+                );
+            }
+
+            if (!configuracion.AutenticacionWindows.Value)
+            {
+                if (string.IsNullOrWhiteSpace(configuracion.Usuario))
                 {
-                    PropertyNameCaseInsensitive = true
-                });
-            }
-            catch (Exception ex)
-            {
-                throw new InvalidOperationException($"El archivo de configuración '{ruta}' no es un JSON válido: {ex.Message}", ex);
+                    throw new InvalidOperationException(
+                        "Debe especificarse el usuario de SQL Server."
+                    );
+                }
+
+                if (string.IsNullOrWhiteSpace(configuracion.Contrasena))
+                {
+                    throw new InvalidOperationException(
+                        "Debe especificarse la contraseña de SQL Server."
+                    );
+                }
             }
 
-            if (cfg == null)
-            {
-                throw new InvalidOperationException($"El archivo de configuración '{ruta}' está vacío o no contiene los valores esperados.");
-            }
-
-            // Validar valores esenciales para evitar usar defaults silenciosos
-            if (string.IsNullOrWhiteSpace(cfg.Servidor))
-                throw new InvalidOperationException($"El campo 'Servidor' no puede estar vacío en '{ruta}'.");
-            if (string.IsNullOrWhiteSpace(cfg.BaseDatos))
-                throw new InvalidOperationException($"El campo 'BaseDatos' no puede estar vacío en '{ruta}'.");
-            if (!cfg.AutenticacionWindows && string.IsNullOrWhiteSpace(cfg.Usuario))
-                throw new InvalidOperationException($"AutenticacionWindows está deshabilitada pero 'Usuario' no está definido en '{ruta}'.");
-
-            return cfg;
+            return configuracion;
         }
 
         public static SqlConnection CrearConexion()
         {
-            var cfg = CargarConfiguracion();
+            ConexionConfig configuracion = CargarConfiguracion();
 
             var builder = new SqlConnectionStringBuilder
             {
-                DataSource = cfg.Servidor,
-                InitialCatalog = cfg.BaseDatos,
-                TrustServerCertificate = cfg.TrustServerCertificate
+                DataSource = configuracion.Servidor,
+                InitialCatalog = configuracion.BaseDatos,
+                TrustServerCertificate =
+                    configuracion.TrustServerCertificate!.Value
             };
 
-            if (cfg.AutenticacionWindows)
+            if (configuracion.AutenticacionWindows!.Value)
             {
                 builder.IntegratedSecurity = true;
             }
             else
             {
                 builder.IntegratedSecurity = false;
-                builder.UserID = cfg.Usuario ?? string.Empty;
-                builder.Password = cfg.Contrasena ?? string.Empty;
+                builder.UserID = configuracion.Usuario;
+                builder.Password = configuracion.Contrasena;
             }
 
             return new SqlConnection(builder.ConnectionString);

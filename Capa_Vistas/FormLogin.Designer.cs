@@ -87,6 +87,7 @@ namespace Capa_Vistas
             btnIngresar.TabIndex = 5;
             btnIngresar.Text = "INICIAR SESIÓN";
             btnIngresar.UseVisualStyleBackColor = true;
+            btnIngresar.Click += btnIngresar_Click;
             // 
             // FormLogin
             // 
