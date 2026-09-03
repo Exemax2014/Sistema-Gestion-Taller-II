@@ -103,5 +103,67 @@ namespace Capa_Datos
                 Sucursal = lector["sucursal"].ToString() ?? string.Empty
             };
         }
+
+        // ========================================================
+        // Método: ObtenerFuncionalidadesPerfil
+        //
+        // Obtiene los códigos de funcionalidades asignados
+        // al perfil indicado.
+        //
+        // Utiliza el procedimiento almacenado:
+        // dbo.sp_Perfil_ObtenerFuncionalidades
+        //
+        // Devuelve una lista de códigos como:
+        // - VENTAS_VER
+        // - CLIENTES_VER
+        // - PRODUCTOS_VER
+        // - USUARIOS_VER
+        // ========================================================
+        public List<string> ObtenerFuncionalidadesPerfil(int idPerfil)
+        {
+            // Lista donde se almacenarán los permisos recuperados
+            // desde SQL Server.
+            List<string> funcionalidades = new List<string>();
+
+            // Crear la conexión utilizando la configuración
+            // centralizada de Capa_Datos.
+            using SqlConnection conexion = Conexion.CrearConexion();
+
+            // Preparar la ejecución del procedimiento almacenado.
+            using SqlCommand comando = new SqlCommand(
+                "dbo.sp_Perfil_ObtenerFuncionalidades",
+                conexion
+            );
+
+            comando.CommandType = CommandType.StoredProcedure;
+
+            // Enviar el identificador del perfil como parámetro.
+            comando.Parameters.Add(
+                "@idPerfil",
+                SqlDbType.Int
+            ).Value = idPerfil;
+
+            // Abrir la conexión con SQL Server.
+            conexion.Open();
+
+            // Ejecutar el procedimiento y recorrer todos los
+            // códigos de funcionalidades recibidos.
+            using SqlDataReader lector = comando.ExecuteReader();
+
+            while (lector.Read())
+            {
+                string codigo =
+                    lector["codigo"].ToString() ?? string.Empty;
+
+                // Evitar agregar valores vacíos a la sesión.
+                if (!string.IsNullOrWhiteSpace(codigo))
+                {
+                    funcionalidades.Add(codigo);
+                }
+            }
+
+            return funcionalidades;
+        }
+
     }
 }

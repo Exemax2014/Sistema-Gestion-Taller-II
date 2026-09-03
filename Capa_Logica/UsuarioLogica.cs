@@ -86,8 +86,24 @@ namespace Capa_Logica
                 return false;
             }
 
-            // Si las credenciales son válidas, almacenar
-            // los datos del usuario en la sesión actual.
+            // ========================================================
+            // CARGAR FUNCIONALIDADES DEL PERFIL
+            //
+            // Una vez validada la contraseña, consultar qué
+            // funcionalidades tiene asignadas el perfil del usuario.
+            // ========================================================
+            List<string> funcionalidades =
+                usuarioDatos.ObtenerFuncionalidadesPerfil(
+                    usuario.IdPerfil
+                );
+
+
+            // ========================================================
+            // INICIAR SESIÓN
+            //
+            // Guardar tanto los datos personales como los permisos
+            // recuperados desde SQL Server.
+            // ========================================================
             SesionActual.Iniciar(
                 usuario.IdUsuario,
                 usuario.IdPerfil,
@@ -96,7 +112,8 @@ namespace Capa_Logica
                 usuario.Apellido,
                 usuario.NombreUsuario,
                 usuario.Perfil,
-                usuario.Sucursal
+                usuario.Sucursal,
+                funcionalidades
             );
 
             mensaje = "Inicio de sesión correcto.";

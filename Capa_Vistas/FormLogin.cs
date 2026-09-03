@@ -60,19 +60,51 @@ namespace Capa_Vistas
                     return;
                 }
 
-                // Por ahora mostramos los datos recuperados
-                // para comprobar que todo el login funciona.
+                // ============================================================
+                // LOGIN CORRECTO
                 //
-                // Más adelante este bloque abrirá FormPrincipal.
-                MessageBox.Show(
-                    $"Inicio de sesión correcto.\n\n" +
-                    $"Usuario: {SesionActual.Nombre} {SesionActual.Apellido}\n" +
-                    $"Perfil: {SesionActual.Perfil}\n" +
-                    $"Sucursal: {SesionActual.Sucursal}",
-                    "Hierro y Forja",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information
-                );
+                // Ocultar el formulario de login y abrir FormPrincipal.
+                // FormPrincipal utilizará los datos guardados en SesionActual.
+                //
+                // Si el usuario utiliza "Cerrar sesión", FormPrincipal cerrará
+                // la sesión y se volverá a mostrar este formulario.
+                //
+                // Si FormPrincipal se cierra directamente con la X, se cierra
+                // también el login y finaliza la aplicación.
+                // ============================================================
+
+                // Ocultar el login mientras el sistema principal está abierto.
+                Hide();
+
+                // Crear y abrir el formulario principal de manera modal.
+                // Cuando FormPrincipal se cierre, la ejecución continúa aquí.
+                using (FormPrincipal formPrincipal = new FormPrincipal())
+                {
+                    formPrincipal.ShowDialog();
+                }
+
+
+                // ------------------------------------------------------------
+                // Si FormPrincipal cerró la sesión mediante el botón
+                // "Cerrar sesión", volvemos a mostrar el login.
+                // ------------------------------------------------------------
+                if (!SesionActual.SesionIniciada)
+                {
+                    // Limpiar las credenciales anteriores.
+                    txtUsuario.Clear();
+                    txtContrasena.Clear();
+
+                    // Mostrar nuevamente la ventana de login.
+                    Show();
+
+                    txtUsuario.Focus();
+                }
+                else
+                {
+                    // Si FormPrincipal se cerró sin cerrar sesión
+                    // (por ejemplo utilizando la X), finalizar la aplicación.
+                    Close();
+                }
             }
             catch (Exception ex)
             {

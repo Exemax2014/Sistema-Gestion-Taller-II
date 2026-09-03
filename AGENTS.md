@@ -1,56 +1,68 @@
-# AGENTS.md — Sistema Hierro y Forja / Taller de Programación II
+AGENTS.md — Sistema Hierro y Forja / Taller de Programación II
 
-> Documento operativo del proyecto para integrantes del equipo y agentes de IA.
-> Última actualización: 2026-09-02.
-> Rama de integración: `desarrollo`.
-> Ramas personales: `exe-dev` y `josi-dev`.
+Documento operativo del proyecto para integrantes del equipo y agentes de IA.
+Última actualización: 2026-09-02.
+Rama de integración: desarrollo.
+Ramas personales: exe-dev y josi-dev.
 
----
+<!-- ===================================================================== -->
 
-# 1. Contexto y objetivo del proyecto
+<!-- ========================= 1. CONTEXTO ================================ -->
 
-Sistema Hierro y Forja es el proyecto final de Taller de Programación II.
+<!-- ===================================================================== -->
 
-Se desarrolla una aplicación de escritorio en C# con Windows Forms y SQL Server para gestionar un negocio con múltiples sucursales.
+1. Contexto
 
-El sistema contempla:
+Proyecto final de Taller de Programación II.
 
-- autenticación de usuarios;
-- perfiles y permisos;
-- clientes;
-- productos y categorías;
-- inventario por sucursal;
-- ventas;
-- detalle de ventas;
-- métodos de pago y pagos;
-- reportes;
-- backup;
-- funcionamiento futuro con varias PCs conectadas a una base SQL Server central.
+Aplicación de escritorio en C# + Windows Forms + SQL Server para gestionar un negocio con múltiples sucursales.
 
-La aplicación debe mantener una arquitectura estricta de tres capas.
+Tecnologías:
 
----
+C#
 
-# 2. Tecnologías utilizadas
+Windows Forms
 
-- C#
-- Windows Forms
-- .NET 10
-- SQL Server
-- Microsoft.Data.SqlClient
-- System.Text.Json
-- Visual Studio
-- SQL Server Management Studio
-- Git
-- GitHub
+.NET 10
 
----
+SQL Server
 
-# 3. Arquitectura obligatoria
+Microsoft.Data.SqlClient
 
-La solución está dividida en tres capas:
+System.Text.Json
 
-```text
+Visual Studio / SSMS
+
+Git / GitHub
+
+Funciones previstas:
+
+autenticación;
+
+perfiles y permisos;
+
+clientes;
+
+productos y categorías;
+
+inventario;
+
+ventas y pagos;
+
+reportes;
+
+backup;
+
+futura conexión de varias PCs a SQL Server central.
+
+<!-- ===================================================================== -->
+
+<!-- =================== 2. ARQUITECTURA OBLIGATORIA ===================== -->
+
+<!-- ===================================================================== -->
+
+2. Arquitectura
+
 Capa_Vistas
      ↓
 Capa_Logica
@@ -58,1293 +70,753 @@ Capa_Logica
 Capa_Datos
      ↓
 SQL Server
-```
 
-## Capa_Vistas
+Capa_Vistas
 
-Responsabilidades:
+Puede:
 
-- formularios Windows Forms;
-- controles;
-- eventos;
-- navegación;
-- presentación de mensajes;
-- interacción directa con el usuario.
+formularios;
 
-No debe:
+controles;
 
-- ejecutar SQL;
-- abrir conexiones SQL;
-- llamar directamente a `Capa_Datos`.
+eventos;
 
-## Capa_Logica
+navegación;
 
-Responsabilidades:
+mensajes.
 
-- validaciones;
-- reglas del negocio;
-- autenticación;
-- verificación de contraseñas;
-- sesión;
-- permisos;
-- cálculos;
-- coordinación entre Vistas y Datos.
+No puede:
 
-No debe:
+ejecutar SQL;
 
-- contener formularios;
-- mostrar `MessageBox`;
-- ejecutar consultas SQL directamente.
+abrir conexiones;
 
-## Capa_Datos
+llamar directamente a Capa_Datos.
 
-Responsabilidades:
+Capa_Logica
 
-- conexión a SQL Server;
-- ejecución de procedimientos almacenados;
-- envío de parámetros;
-- lectura y transformación de resultados provenientes de SQL Server.
+Puede:
 
-No debe:
+validaciones;
 
-- mostrar `MessageBox`;
-- contener lógica visual;
-- depender de `Capa_Logica` o `Capa_Vistas`.
+reglas de negocio;
 
-## Referencias permitidas
+autenticación;
 
-```text
+sesión;
+
+permisos;
+
+cálculos.
+
+No puede:
+
+contener formularios;
+
+mostrar MessageBox;
+
+ejecutar SQL directamente.
+
+Capa_Datos
+
+Puede:
+
+conexiones;
+
+procedimientos almacenados;
+
+parámetros;
+
+lectura de resultados.
+
+No puede:
+
+mostrar MessageBox;
+
+contener lógica visual;
+
+depender de Vistas o Lógica.
+
+Referencias permitidas:
+
 Capa_Vistas -> Capa_Logica
 Capa_Logica -> Capa_Datos
-Capa_Datos -> SQL Server
-```
 
-No crear:
+Prohibido:
 
-```text
 Capa_Vistas -> Capa_Datos
-```
 
-No crear una cuarta capa sin una decisión explícita del equipo.
+<!-- ===================================================================== -->
 
----
+<!-- ====================== 3. ESTRUCTURA ACTUAL ========================= -->
 
-# 4. Estructura actual del repositorio
+<!-- ===================================================================== -->
 
-```text
+3. Estructura actual
+
 Sistema_Hierro_y_Forja/
-│
 ├── BaseDatos/
 │   ├── 01_Estructura.sql
 │   ├── 02_DatosIniciales.sql
-│   └── 03_Procedimientos.sql
-│
+│   ├── 03_Procedimientos.sql
+│   └── 04_DatosPrueba.sql
 ├── Capa_Datos/
 │   ├── Configuracion/
-│   │   ├── configuracion.example.json
-│   │   └── configuracion.json
 │   ├── Conexion.cs
-│   ├── UsuarioDatos.cs
-│   └── Capa_Datos.csproj
-│
+│   └── UsuarioDatos.cs
 ├── Capa_Logica/
 │   ├── PasswordHelper.cs
 │   ├── SesionActual.cs
-│   ├── UsuarioLogica.cs
-│   └── Capa_Logica.csproj
-│
+│   └── UsuarioLogica.cs
 ├── Capa_Vistas/
-│   ├── FormLogin.cs
-│   ├── FormLogin.Designer.cs
-│   ├── FormLogin.resx
-│   ├── Program.cs
-│   └── Capa_Vistas.csproj
-│
+│   ├── FormLogin.*
+│   ├── FormPrincipal.*
+│   └── Program.cs
 ├── Sistema_Hierro_Y_Forja.slnx
 ├── AGENTS.md
 ├── README.md
-├── .gitignore
-└── .gitattributes
-```
+└── .gitignore
 
-Las carpetas físicas y proyectos utilizan actualmente:
+No volver a utilizar nombres antiguos de proyectos o carpetas.
 
-```text
-Capa_Datos
-Capa_Logica
-Capa_Vistas
-```
+<!-- ===================================================================== -->
 
-No volver a utilizar la nomenclatura anterior de los proyectos.
+<!-- ======================= 4. BASE DE DATOS ============================ -->
 
-Los archivos iniciales `Class1.cs` y `Form1` fueron eliminados.
+<!-- ===================================================================== -->
 
----
-
-# 5. Estado funcional actual
-
-## 5.1 Conexión a SQL Server
-
-`Capa_Datos/Conexion.cs` administra la creación de conexiones SQL.
-
-Utiliza:
-
-```text
-Microsoft.Data.SqlClient
-```
-
-La configuración se obtiene desde:
-
-```text
-AppContext.BaseDirectory/Configuracion/configuracion.json
-```
-
-La cadena de conexión no está hardcodeada dentro del código.
-
-La configuración permite cambiar:
-
-- servidor;
-- base de datos;
-- autenticación Windows o SQL;
-- usuario;
-- contraseña;
-- TrustServerCertificate.
-
-Si el archivo falta o tiene datos inválidos, debe generarse un error explícito.
-
-No utilizar valores silenciosos por defecto.
-
----
-
-# 6. Configuración local y despliegue
-
-Dentro de:
-
-```text
-Capa_Datos/Configuracion/
-```
-
-existen:
-
-```text
-configuracion.example.json
-configuracion.json
-```
-
-## configuracion.example.json
-
-Se versiona en GitHub.
-
-Sirve como plantilla para nuevas PCs o desarrolladores.
-
-Formato:
-
-```json
-{
-  "Servidor": "localhost",
-  "BaseDatos": "SistemaGestion",
-  "AutenticacionWindows": true,
-  "Usuario": "",
-  "Contrasena": "",
-  "TrustServerCertificate": true
-}
-```
-
-## configuracion.json
-
-Es la configuración real de cada PC.
-
-Está excluido mediante `.gitignore`:
-
-```text
-Capa_Datos/Configuracion/configuracion.json
-```
-
-No subirlo a GitHub.
-
-Cada desarrollador o instalación debe tener su propia copia.
-
-Para desarrollo actual:
-
-```text
-Servidor: localhost
-Base de datos: SistemaGestion
-Autenticación: Windows
-```
-
-Para el despliegue final se pretende poder utilizar:
-
-```text
-PC Cliente 1 ─┐
-PC Cliente 2 ─┼──> SQL Server central ──> SistemaGestion
-PC Cliente 3 ─┘
-```
-
-El servidor podrá cambiarse mediante `configuracion.json` sin modificar ni recompilar el código.
-
-No utilizar `sa` como usuario SQL de la aplicación final.
-
----
-
-# 7. Base de datos actual
+4. Base de datos
 
 Nombre:
 
-```text
 SistemaGestion
-```
 
-El nombre `SistemaGestion` sigue siendo válido como nombre de la base de datos y no debe confundirse con antiguos nombres de proyectos.
+Tablas:
+PROVINCIA, LOCALIDAD, DIRECCION, PERFIL, FUNCIONALIDAD,
+PERFIL_FUNCIONALIDAD, SUCURSAL, USUARIO, CLIENTE, CATEGORIA,
+PRODUCTO, INVENTARIO, VENTA, DETALLE_VENTA, METODO_PAGO, PAGO.
 
-## Tablas
+Reglas:
 
-1. `PROVINCIA`
-2. `LOCALIDAD`
-3. `DIRECCION`
-4. `PERFIL`
-5. `FUNCIONALIDAD`
-6. `SUCURSAL`
-7. `CATEGORIA`
-8. `METODO_PAGO`
-9. `PERFIL_FUNCIONALIDAD`
-10. `USUARIO`
-11. `CLIENTE`
-12. `PRODUCTO`
-13. `INVENTARIO`
-14. `VENTA`
-15. `DETALLE_VENTA`
-16. `PAGO`
+bajas mediante eliminado_en;
 
-## Relaciones principales
+no usar borrado físico donde corresponda baja lógica;
 
-```text
-PROVINCIA -> LOCALIDAD -> DIRECCION
+PRODUCTO.precio_venta se calcula desde costo + porcentaje;
 
-DIRECCION -> SUCURSAL
-DIRECCION -> USUARIO
-DIRECCION -> CLIENTE
+DETALLE_VENTA.precio_unitario conserva el precio histórico;
 
-PERFIL -> USUARIO
+inventario por producto + sucursal;
 
-PERFIL
-   ↕
-PERFIL_FUNCIONALIDAD
-   ↕
-FUNCIONALIDAD
+permisos mediante PERFIL, FUNCIONALIDAD, PERFIL_FUNCIONALIDAD;
 
-CATEGORIA -> PRODUCTO
+no hardcodear accesos únicamente por nombre de perfil.
 
-PRODUCTO + SUCURSAL -> INVENTARIO
+Scripts de desarrollo:
 
-CLIENTE -> VENTA
-USUARIO -> VENTA
-SUCURSAL -> VENTA
+01_Estructura.sql
+02_DatosIniciales.sql
+03_Procedimientos.sql
+04_DatosPrueba.sql
 
-VENTA -> DETALLE_VENTA
-PRODUCTO -> DETALLE_VENTA
+04_DatosPrueba.sql es solo para desarrollo y pruebas.
 
-VENTA -> PAGO
-METODO_PAGO -> PAGO
-```
+Procedimientos actuales:
 
----
-
-# 8. Decisiones actuales de diseño de base de datos
-
-Las bajas se implementan mediante:
-
-```text
-eliminado_en
-```
-
-No agregar un segundo campo `activo` salvo decisión explícita.
-
-`PRODUCTO.precio_venta` es una columna calculada a partir de:
-
-```text
-precio_costo
-porcentaje_ganancia
-```
-
-`DETALLE_VENTA.precio_unitario` se almacena para conservar el precio histórico correspondiente a la venta.
-
-El inventario se administra por:
-
-```text
-producto + sucursal
-```
-
-Provincia y localidad están normalizadas.
-
-La dirección contiene localidad, calle y altura.
-
-Los teléfonos pertenecen a usuario, cliente o sucursal y no a la dirección.
-
-Los permisos se administran mediante:
-
-```text
-PERFIL
-FUNCIONALIDAD
-PERFIL_FUNCIONALIDAD
-```
-
-Evitar hardcodear todos los accesos únicamente según el nombre del perfil.
-
----
-
-# 9. Scripts de base de datos
-
-Los scripts se mantienen dentro de:
-
-```text
-BaseDatos/
-```
-
-## 01_Estructura.sql
-
-Contiene la estructura completa necesaria para crear una base nueva.
-
-## 02_DatosIniciales.sql
-
-Contiene los datos mínimos iniciales:
-
-- perfiles;
-- funcionalidades;
-- asignación inicial de permisos;
-- métodos de pago;
-- provincia;
-- localidad;
-- dirección inicial;
-- sucursal inicial.
-
-## 03_Procedimientos.sql
-
-Contiene todos los procedimientos almacenados utilizados por la aplicación.
-
-Todo procedimiento creado o modificado desde SQL Server Management Studio debe reflejarse también en este archivo.
-
-La base local y los scripts versionados deben permanecer sincronizados.
-
-Para futuras modificaciones adicionales del esquema utilizar nuevos scripts numerados a partir de:
-
-```text
-04_...
-05_...
-06_...
-```
-
-No reutilizar el número `03`, ya que corresponde a procedimientos almacenados.
-
----
-
-# 10. Procedimientos almacenados actuales
-
-Actualmente existe:
-
-```text
 dbo.sp_Usuario_BuscarPorNombreUsuario
-```
+dbo.sp_Perfil_ObtenerFuncionalidades
 
-Responsabilidad:
+Convención:
 
-- recibe un nombre de usuario;
-- busca un usuario que no esté dado de baja;
-- verifica que su perfil y sucursal tampoco estén dados de baja;
-- devuelve datos del usuario;
-- devuelve perfil;
-- devuelve sucursal;
-- devuelve `contrasena_hash`.
+sp_<Entidad>_<Accion>
 
-Es utilizado desde:
+Todo procedimiento creado o modificado en SSMS debe actualizar también 03_Procedimientos.sql.
 
-```text
-Capa_Datos
-└── UsuarioDatos.BuscarPorNombreUsuario()
-```
+<!-- ===================================================================== -->
 
-Flujo:
+<!-- =================== 5. CONFIGURACIÓN Y SEGURIDAD ==================== -->
 
-```text
-UsuarioDatos
-     ↓
-Conexion.CrearConexion()
-     ↓
-dbo.sp_Usuario_BuscarPorNombreUsuario
-     ↓
-SQL Server
-```
+<!-- ===================================================================== -->
 
-El procedimiento fue probado directamente desde SQL Server Management Studio.
+5. Configuración y seguridad
 
----
+La conexión se crea desde:
 
-# 11. Autenticación implementada
+Capa_Datos/Conexion.cs
 
-El login ya funciona contra SQL Server.
+Configuración local:
+
+Capa_Datos/Configuracion/configuracion.json
+
+Reglas:
+
+configuracion.json no se sube a Git;
+
+se versiona configuracion.example.json;
+
+no hardcodear credenciales reales;
+
+no guardar contraseñas en texto plano;
+
+no usar sa como cuenta normal de la aplicación;
+
+autenticación de usuarios con PBKDF2 + SHA-256.
+
+<!-- ===================================================================== -->
+
+<!-- ================== 6. AUTENTICACIÓN Y PERMISOS ====================== -->
+
+<!-- ===================================================================== -->
+
+6. Autenticación y permisos
 
 Flujo actual:
 
-```text
 FormLogin
-     ↓
+   ↓
 UsuarioLogica.IniciarSesion()
-     ↓
+   ↓
 UsuarioDatos.BuscarPorNombreUsuario()
-     ↓
-dbo.sp_Usuario_BuscarPorNombreUsuario
-     ↓
-SQL Server
-     ↓
-UsuarioLoginDatos
-     ↓
+   ↓
+sp_Usuario_BuscarPorNombreUsuario
+   ↓
 PasswordHelper.Verificar()
-     ↓
-SesionActual.Iniciar()
-```
-
-## UsuarioDatos
-
-`Capa_Datos/UsuarioDatos.cs`
-
-Responsabilidades actuales:
-
-- ejecutar `sp_Usuario_BuscarPorNombreUsuario`;
-- enviar `@nombreUsuario` como parámetro;
-- leer el resultado;
-- devolver un objeto `UsuarioLoginDatos`.
-
-No contiene la lógica de verificación de contraseña.
-
-## PasswordHelper
-
-`Capa_Logica/PasswordHelper.cs`
-
-Implementa:
-
-```text
-PBKDF2 + SHA-256
-```
-
-con:
-
-- salt aleatorio;
-- hash;
-- cantidad de iteraciones;
-- comparación mediante `FixedTimeEquals`.
-
-Formato almacenado:
-
-```text
-iteraciones.salt.hash
-```
-
-La contraseña original no se almacena en la base.
-
-## UsuarioLogica
-
-`Capa_Logica/UsuarioLogica.cs`
-
-Responsabilidades:
-
-- validar campos vacíos;
-- buscar usuario mediante `UsuarioDatos`;
-- verificar contraseña con `PasswordHelper`;
-- iniciar `SesionActual` si las credenciales son válidas;
-- devolver un resultado y mensaje a `Capa_Vistas`.
-
-No muestra `MessageBox`.
-
-## SesionActual
-
-`Capa_Logica/SesionActual.cs`
-
-Mantiene durante la ejecución:
-
-- id de usuario;
-- id de perfil;
-- id de sucursal;
-- nombre;
-- apellido;
-- nombre de usuario;
-- perfil;
-- sucursal;
-- estado de sesión.
-
-También permite cerrar y limpiar la sesión.
-
-## FormLogin
-
-`Capa_Vistas/FormLogin.cs`
-
-El formulario:
-
-- recibe usuario;
-- recibe contraseña;
-- llama a `UsuarioLogica`;
-- muestra mensajes;
-- limpia la contraseña cuando corresponde.
-
-No consulta SQL directamente.
-
-Actualmente, luego de un login correcto muestra temporalmente un `MessageBox` con:
-
-- usuario;
-- perfil;
-- sucursal.
-
-Ese comportamiento debe reemplazarse posteriormente por la apertura de `FormPrincipal`.
-
-## Prueba realizada
-
-Se verificó exitosamente un login real utilizando:
-
-```text
-FormLogin -> Capa_Logica -> Capa_Datos -> Procedimiento -> SQL Server
-```
-
-El administrador de desarrollo posee actualmente un hash válido.
-
-No guardar en este documento contraseñas en texto plano.
-
----
-
-# 12. Perfiles y permisos iniciales
-
-## Administrador
-
-Permisos iniciales:
-
-- usuarios: ver;
-- usuarios: alta;
-- usuarios: baja;
-- usuarios: modificar;
-- permisos: gestionar;
-- backup;
-- ventas: ver;
-- clientes: ver;
-- clientes: alta;
-- clientes: baja;
-- clientes: modificar;
-- productos: ver;
-- productos: alta;
-- productos: baja;
-- productos: modificar;
-- reporte administrador.
-
-Pendiente definir si también realiza ventas.
-
-## Gerente
-
-Permisos iniciales:
-
-- clientes: ver;
-- clientes: alta;
-- clientes: baja;
-- productos: ver;
-- productos: alta;
-- reporte gerente.
-
-## Vendedor
-
-Permisos iniciales:
-
-- ventas: ver;
-- ventas: realizar;
-- clientes: ver;
-- clientes: alta;
-- reporte vendedor.
-
-El acceso a productos necesario durante una venta puede resolverse dentro de la funcionalidad de ventas sin habilitar necesariamente el módulo completo de productos.
-
----
-
-# 13. Convenciones de nombres del proyecto
-
-Mantener los nombres actuales.
-
-## Proyectos
-
-```text
-Capa_Datos
-Capa_Logica
-Capa_Vistas
-```
-
-## Formularios
-
-Usar:
-
-```text
-FormLogin
+   ↓
+UsuarioDatos.ObtenerFuncionalidadesPerfil()
+   ↓
+sp_Perfil_ObtenerFuncionalidades
+   ↓
+SesionActual
+   ↓
 FormPrincipal
+
+SesionActual mantiene:
+
+usuario;
+
+perfil;
+
+sucursal;
+
+estado de sesión;
+
+funcionalidades permitidas.
+
+Consulta:
+
+SesionActual.TienePermiso("VENTAS_VER")
+
+Los permisos provienen de SQL Server.
+
+<!-- ===================================================================== -->
+
+<!-- ======================== 7. VISTAS WINFORMS ========================= -->
+
+<!-- ===================================================================== -->
+
+7. Convención de vistas
+
+Separación obligatoria:
+
+FormNombre.Designer.cs -> estructura visual
+FormNombre.cs          -> comportamiento
+
+Designer.cs
+
+Debe contener principalmente:
+
+controles;
+
+paneles;
+
+tamaños;
+
+posiciones;
+
+colores;
+
+fuentes;
+
+Dock / Anchor.
+
+La vista debe poder modificarse desde el Diseñador de Visual Studio.
+
+Preferir el Diseñador para cambios visuales.
+
+FormNombre.cs
+
+Debe contener:
+
+eventos;
+
+navegación;
+
+carga de datos;
+
+sesión;
+
+permisos;
+
+interacción con Capa_Logica.
+
+No crear nuevamente por código controles que ya existen en Designer.
+
+<!-- ===================================================================== -->
+
+<!-- ========================= 8. FORM PRINCIPAL ========================= -->
+
+<!-- ===================================================================== -->
+
+8. FormPrincipal
+
+FormPrincipal ya está implementado.
+
+Estructura:
+
+Cabecera
++
+Menú lateral
++
+Zona de usuario
++
+pnlContenido
+
+Los módulos particulares se cargan dentro de:
+
+pnlContenido
+
+Previstos:
+
+FormVentas
 FormClientes
 FormProductos
-FormVentas
 FormUsuarios
-```
+FormReportes
 
-Convención:
+Los formularios internos no deben repetir cabecera, menú ni cierre de sesión.
 
-```text
+Configuración al cargarlos:
+
+TopLevel = false
+FormBorderStyle = None
+Dock = Fill
+
+Permisos del menú
+
+Todos los botones permanecen visibles.
+
+Tiene permiso    -> habilitado
+No tiene permiso -> visible + deshabilitado + gris
+
+No ocultar botones por falta de permiso.
+
+Permisos principales:
+
+Ventas    -> VENTAS_VER
+Clientes  -> CLIENTES_VER
+Productos -> PRODUCTOS_VER
+Usuarios  -> USUARIOS_VER
+
+Reportes:
+
+REPORTES_ADMINISTRADOR
+
+REPORTES_GERENTE
+
+REPORTES_VENDEDOR
+
+INICIO siempre está habilitado.
+
+<!-- ===================================================================== -->
+
+<!-- ====================== 9. CONVENCIONES DE CÓDIGO ==================== -->
+
+<!-- ===================================================================== -->
+
+9. Convenciones
+
+Nombres:
+
 Form<Nombre>
-```
-
-No cambiar a `Frm...` salvo decisión explícita del equipo.
-
-## Clases de acceso a datos
-
-Convención:
-
-```text
 <Entidad>Datos
-```
-
-Ejemplos:
-
-```text
-UsuarioDatos
-ClienteDatos
-ProductoDatos
-VentaDatos
-```
-
-## Clases de lógica
-
-Convención:
-
-```text
 <Entidad>Logica
-```
-
-Ejemplos:
-
-```text
-UsuarioLogica
-ClienteLogica
-ProductoLogica
-VentaLogica
-```
-
----
-
-# 14. Convención de comentarios de código
-
-Las clases, métodos, funciones y procedimientos almacenados deben tener comentarios que permitan entender su propósito.
-
-Comentar principalmente:
-
-- responsabilidad de la clase;
-- propósito del método;
-- parámetros cuando no sean evidentes;
-- reglas de negocio;
-- decisiones importantes;
-- operaciones que puedan resultar difíciles de comprender;
-- procedimientos almacenados;
-- bloques relevantes de SQL.
-
-Los comentarios deben explicar el propósito o razón del código.
-
-Evitar comentarios innecesarios sobre instrucciones obvias.
-
-Ejemplo correcto:
-
-```csharp
-// Verificar la contraseña utilizando el hash almacenado
-// antes de crear la sesión del usuario.
-```
-
-Evitar comentarios sin valor como:
-
-```csharp
-// Crear variable.
-int numero = 1;
-```
-
----
-
-# 15. Convención para procedimientos almacenados
-
-Las operaciones SQL reutilizables de la aplicación deben realizarse preferentemente mediante procedimientos almacenados cuando corresponda.
-
-## Formato de nombre
-
-Usar:
-
-```text
 sp_<Entidad>_<Accion>
-```
 
-Ejemplos:
+Acceso a datos:
 
-```text
-sp_Usuario_BuscarPorNombreUsuario
-sp_Usuario_Listar
-sp_Usuario_Insertar
-sp_Usuario_Modificar
+usar Conexion.CrearConexion();
 
-sp_Cliente_Listar
-sp_Cliente_BuscarPorDocumento
-sp_Cliente_Insertar
-sp_Cliente_Modificar
+usar using;
 
-sp_Producto_Listar
-sp_Producto_BuscarPorCodigo
-sp_Producto_Insertar
-sp_Producto_Modificar
+usar parámetros SQL;
 
-sp_Venta_Registrar
-sp_Venta_BuscarPorId
-```
+usar CommandType.StoredProcedure;
 
-Usar PascalCase después del prefijo `sp_`.
+no concatenar entradas del usuario.
 
-Evitar:
+Comentarios:
 
-```text
-sp_Prueba
-sp_Consulta1
-sp_Datos
-sp_Algo
-```
+explicar responsabilidad, propósito y decisiones importantes;
 
-## Acciones recomendadas
+evitar comentar instrucciones obvias.
 
-Mantener palabras consistentes:
+<!-- ===================================================================== -->
 
-```text
-Listar
-BuscarPor...
-Insertar
-Modificar
-Eliminar
-Registrar
-Obtener...
-```
+<!-- =========================== 10. GIT ================================= -->
 
-`Eliminar` puede representar una baja lógica cuando la entidad utiliza `eliminado_en`.
+<!-- ===================================================================== -->
 
-No asumir borrado físico.
+10. Git
 
-## Parámetros
+master     -> versión estable
+desarrollo -> integración
+exe-dev    -> Exequiel
+josi-dev   -> Josias
 
-Usar nombres descriptivos:
+Flujo:
 
-```sql
-@nombreUsuario
-@idCliente
-@documento
-@idSucursal
-```
-
-No utilizar:
-
-```sql
-@dato
-@valor
-@param1
-@param2
-```
-
-Los tipos y tamaños enviados desde C# deben coincidir con los definidos en SQL Server.
-
-## Ejecución desde C#
-
-Utilizar:
-
-```csharp
-CommandType.StoredProcedure
-```
-
-Enviar valores mediante parámetros.
-
-No concatenar entradas del usuario dentro de sentencias SQL.
-
-Los procedimientos almacenados deben ser invocados exclusivamente desde `Capa_Datos`.
-
-## Documentación
-
-Cada procedimiento debe indicar mediante comentarios:
-
-- nombre;
-- descripción;
-- parámetros;
-- objetivo;
-- reglas relevantes.
-
-## Versionado
-
-Cuando se crea o modifica un procedimiento:
-
-```text
-1. Crear/modificar en SQL Server.
-2. Probarlo en SSMS.
-3. Actualizar BaseDatos/03_Procedimientos.sql.
-4. Adaptar Capa_Datos.
-5. Compilar.
-6. Probar desde la aplicación.
-7. Versionar el cambio en Git.
-```
-
-Durante desarrollo puede utilizarse:
-
-```sql
-CREATE OR ALTER PROCEDURE
-```
-
-en el script versionado.
-
----
-
-# 16. Convenciones de acceso a datos
-
-`Capa_Datos` debe:
-
-- utilizar `Conexion.CrearConexion()`;
-- utilizar `using` para conexiones, comandos y lectores;
-- utilizar parámetros SQL;
-- utilizar procedimientos almacenados cuando corresponda;
-- transformar resultados SQL en objetos utilizables por `Capa_Logica`.
-
-No concatenar datos ingresados por el usuario dentro de SQL.
-
-No abrir conexiones desde formularios.
-
-No mostrar mensajes visuales desde Datos.
-
----
-
-# 17. Convenciones de seguridad
-
-No almacenar contraseñas de usuarios en texto plano.
-
-Utilizar hashes para autenticación.
-
-Actualmente el proyecto utiliza PBKDF2 con SHA-256.
-
-No subir a GitHub:
-
-- credenciales reales;
-- contraseñas de conexión;
-- `configuracion.json`;
-- secretos de producción.
-
-No utilizar `sa` desde la aplicación final.
-
-Las contraseñas de demostración o desarrollo no deben reutilizarse posteriormente como credenciales reales.
-
----
-
-# 18. Convención para bajas
-
-Las tablas que utilizan:
-
-```text
-eliminado_en
-```
-
-implementan baja lógica.
-
-Al listar o buscar registros activos debe considerarse normalmente:
-
-```sql
-eliminado_en IS NULL
-```
-
-No reemplazar una baja lógica por:
-
-```sql
-DELETE
-```
-
-sin una decisión explícita del proyecto.
-
----
-
-# 19. Git y ramas
-
-Ramas:
-
-```text
-master       -> versión estable
-desarrollo   -> integración
-exe-dev      -> trabajo de Exequiel
-josi-dev     -> trabajo de Josias
-```
-
-## Flujo normal
-
-Antes de comenzar trabajo nuevo:
-
-```text
-desarrollo
-    ↓ Pull
-
-rama personal
-    ↓
-merge desarrollo
-```
-
-Durante el trabajo:
-
-```text
-modificar
-   ↓
+actualizar desarrollo
+      ↓
+actualizar rama personal
+      ↓
+trabajar
+      ↓
 compilar/probar
-   ↓
-commit
-   ↓
-push rama personal
-```
+      ↓
+commit + push personal
+      ↓
+merge a desarrollo
 
-Para integrar:
+La rama seleccionada es la que recibe el merge.
 
-```text
-desarrollo
-   ↓
-Pull
-   ↓
-merge rama personal
-   ↓
-compilar/probar
-   ↓
-Push
-```
+No trabajar directamente sobre master.
 
-Regla fundamental:
+<!-- ===================================================================== -->
 
-> La rama actualmente seleccionada es la que recibe el merge.
+<!-- ===================== 11. DIVISIÓN DE TRABAJO ======================= -->
 
-No trabajar directamente sobre `master`.
+<!-- ===================================================================== -->
 
-No hacer merge a `master` hasta contar con una versión estable que el equipo decida publicar.
+11. División actual
 
----
+Exequiel
 
-# 20. División actual de trabajo
+Principalmente:
 
-## Exequiel
+infraestructura;
 
-Área principal:
+base de datos;
 
-```text
-infraestructura + base de datos + autenticación
-```
+autenticación;
 
-Actualmente implementado:
+sesión;
 
-- conexión;
-- configuración;
-- procedimientos iniciales;
-- acceso a datos del login;
-- hash;
-- lógica de autenticación;
-- sesión;
-- FormLogin.
+permisos;
 
-Pendiente inmediato:
+lógica;
 
-- integración con FormPrincipal;
-- permisos de sesión;
-- integración general.
+acceso a datos;
 
-## Josias
+procedimientos;
 
-Área principal:
+integración general.
 
-```text
-FormPrincipal + vistas iniciales
-```
+Josias
+
+Principalmente:
+
+vistas particulares.
 
 Previsto:
 
-```text
-FormPrincipal
+FormVentas
 FormClientes
 FormProductos
-FormVentas
 FormUsuarios
-```
-
-Debe evitar modificar simultáneamente archivos de autenticación mientras Exequiel trabaje sobre ellos, salvo coordinación previa.
-
----
-
-# 21. Reglas obligatorias para agentes de IA
-
-Antes de modificar cualquier archivo, un agente debe:
-
-1. Leer `AGENTS.md`.
-2. Leer `README.md`.
-3. Revisar la estructura actual.
-4. Revisar los scripts de `BaseDatos` si el cambio involucra datos.
-5. Confirmar la rama actual.
-6. Identificar correctamente qué capa corresponde al cambio.
-7. Revisar código existente antes de crear una solución nueva.
-
-Un agente NO debe:
-
-- cambiar la arquitectura de tres capas;
-- crear una cuarta capa sin autorización;
-- agregar referencia directa `Capa_Vistas -> Capa_Datos`;
-- ejecutar SQL desde formularios;
-- mostrar `MessageBox` desde `Capa_Datos`;
-- hardcodear credenciales reales;
-- subir secretos;
-- subir `configuracion.json`;
-- utilizar `sa` como cuenta normal de aplicación;
-- concatenar entradas del usuario dentro de SQL;
-- cambiar el esquema sin actualizar scripts;
-- borrar físicamente datos que utilizan baja lógica;
-- cambiar convenciones de nombres sin autorización;
-- modificar decisiones pendientes como si estuvieran aprobadas;
-- trabajar directamente sobre `master`;
-- hacer commits o push si el usuario no lo autorizó.
-
-Un agente debe:
-
-- realizar cambios pequeños y revisables;
-- respetar las capas;
-- respetar las convenciones de nombres;
-- utilizar comentarios útiles;
-- utilizar procedimientos almacenados según la convención del proyecto;
-- actualizar scripts cuando corresponda;
-- compilar después de modificar código;
-- informar los archivos modificados;
-- explicar cambios importantes;
-- indicar si debe ejecutarse SQL adicional;
-- mantener este documento actualizado cuando se cierre un hito importante.
-
----
-
-# 22. Estado de avance
-
-## 2026-09-01
-
-Completado:
-
-- solución inicial;
-- arquitectura de tres capas;
-- referencias entre proyectos;
-- Git y ramas;
-- SQL Server instalado;
-- base `SistemaGestion`;
-- modelo de 16 tablas;
-- claves foráneas;
-- datos iniciales;
-- scripts de estructura y datos probados.
-
-## 2026-09-02 — reorganización
-
-Completado:
-
-- proyectos renombrados;
-- carpetas físicas normalizadas;
-- solución renombrada;
-- `Class1.cs` eliminado;
-- `Form1` eliminado;
-- `FormLogin` creado;
-- `Program.cs` inicia `FormLogin`;
-- `Microsoft.Data.SqlClient` agregado;
-- configuración JSON externalizada;
-- `configuracion.json` excluido de Git.
-
-## 2026-09-02 — autenticación
-
-Completado:
-
-- `Conexion.cs` validado;
-- `03_Procedimientos.sql` creado;
-- `sp_Usuario_BuscarPorNombreUsuario` creado y probado;
-- `UsuarioDatos.cs` implementado mediante procedimiento almacenado;
-- `PasswordHelper.cs` implementado;
-- PBKDF2 + SHA-256 implementado;
-- administrador de desarrollo actualizado con hash válido;
-- `SesionActual.cs` implementado;
-- `UsuarioLogica.cs` implementado;
-- `FormLogin` conectado a `Capa_Logica`;
-- login real contra SQL Server probado correctamente;
-- recuperación correcta de usuario, perfil y sucursal.
+FormReportes
 
----
+FormPrincipal ya existe y no debe recrearse.
 
-# 23. Decisiones todavía pendientes
+Las vistas particulares deben cargarse dentro de pnlContenido.
 
-No asumir sin consultar al equipo:
+<!-- ===================================================================== -->
 
-- si Administrador puede realizar ventas;
-- alcance final de permisos del Vendedor;
-- contenido exacto de cada reporte;
-- tipos de factura;
-- reglas finales de descuento;
-- datos definitivos de la sucursal;
-- permisos adicionales;
-- comportamiento final de bajas de ventas y pagos;
-- política completa para cambio/restablecimiento de contraseñas;
-- cuenta SQL definitiva para despliegue;
-- datos de producción.
+<!-- =================== 12. RESTRICCIONES PARA AGENTES ================== -->
 
----
+<!-- ===================================================================== -->
 
-# 24. Próximo objetivo inmediato
+12. Reglas para agentes de IA
 
-Completar el flujo:
+Antes de modificar:
 
-```text
-FormLogin
-     ↓
-autenticación correcta
-     ↓
-SesionActual
-     ↓
-FormPrincipal
-```
+leer AGENTS.md;
 
-El `MessageBox` temporal de login correcto debe ser reemplazado por la apertura de `FormPrincipal`.
+revisar código existente;
 
-Después integrar las vistas desarrolladas por Josias.
+confirmar rama actual;
 
----
+identificar la capa correcta;
 
-# 25. Proyección de desarrollo
+revisar BaseDatos/ si el cambio afecta datos.
 
-## Fase 1 — Base funcional
+NO:
 
-Estado:
+cambiar la arquitectura;
 
-```text
-Login                  -> implementado
-Conexión SQL           -> implementada
-Hash                   -> implementado
-Sesión                 -> implementada
-FormPrincipal          -> pendiente de integrar
-Permisos en navegación -> pendiente
-```
+crear una cuarta capa sin autorización;
 
-## Fase 2 — Usuarios y permisos
+crear referencia Vistas -> Datos;
 
-Desarrollar:
+ejecutar SQL desde formularios;
 
-- listar usuarios;
-- alta;
-- modificación;
-- baja lógica;
-- perfiles;
-- funcionalidades;
-- asignación de permisos;
-- proteger accesos según sesión.
+mostrar MessageBox desde Datos;
 
-Procedimientos correspondientes deberán incorporarse a `03_Procedimientos.sql`.
+hardcodear credenciales;
 
-## Fase 3 — Clientes
+subir configuracion.json;
 
-Desarrollar:
+concatenar entradas del usuario en SQL;
 
-- listar;
-- buscar;
-- alta;
-- modificación;
-- baja lógica;
-- dirección.
+cambiar esquema sin actualizar scripts;
 
-## Fase 4 — Productos y categorías
+hacer borrado físico donde exista baja lógica;
 
-Desarrollar:
+cambiar convenciones sin autorización;
 
-- categorías;
-- productos;
-- costos;
-- porcentaje de ganancia;
-- precio de venta calculado;
-- búsquedas;
-- altas;
-- modificaciones;
-- bajas.
+asumir decisiones pendientes;
 
-## Fase 5 — Inventario
+trabajar sobre master;
 
-Desarrollar:
+hacer commit, push o merge sin autorización del usuario.
 
-- stock por producto y sucursal;
-- stock mínimo;
-- actualización de stock;
-- consultas de disponibilidad.
+SÍ:
 
-## Fase 6 — Ventas
+realizar cambios pequeños;
 
-Desarrollar:
+reutilizar código existente;
 
-- selección de cliente;
-- búsqueda de productos;
-- detalle de venta;
-- cantidades;
-- precios históricos;
-- subtotal;
-- descuentos;
-- total;
-- método o métodos de pago;
-- actualización de stock;
-- transacción SQL para mantener consistencia.
+respetar las capas;
 
-## Fase 7 — Reportes
+comentar código importante;
 
-Desarrollar reportes diferenciados para:
+actualizar scripts cuando corresponda;
 
-- Administrador;
-- Gerente;
-- Vendedor.
+compilar después de cambios importantes;
 
-## Fase 8 — Backup
+informar archivos modificados;
 
-Implementar:
+actualizar este documento al cerrar hitos.
 
-- generación de backup;
-- reglas de acceso;
-- pruebas de restauración.
+<!-- ===================================================================== -->
 
-## Fase 9 — Despliegue en red
+<!-- ======================= 13. ESTADO COMPLETADO ======================= -->
 
-Objetivo final:
+<!-- ===================================================================== -->
 
-```text
-PC Servidor
-├── SQL Server
-└── SistemaGestion
+13. Estado completado
 
-PC Cliente 1 ─┐
-PC Cliente 2 ─┼── conexión por red
-PC Cliente 3 ─┘
-```
+Hasta 2026-09-02:
 
-Configurar:
+solución y arquitectura de tres capas;
 
-- SQL Server central;
-- TCP/IP;
-- firewall;
-- usuario SQL específico para la aplicación;
-- archivo `configuracion.json` por cliente;
-- pruebas desde varias PCs;
-- pruebas multisucursal.
+Git y ramas;
 
----
+base SistemaGestion con 16 tablas;
 
-# 26. Regla de continuidad
+scripts de estructura y datos iniciales;
 
-Cuando se cierre un hito importante:
+configuración JSON externa;
 
-- actualizar este `AGENTS.md`;
-- actualizar el estado actual;
-- mover tareas completadas fuera de pendientes;
-- registrar nuevas decisiones;
-- mantener la proyección futura actualizada.
+conexión SQL;
 
-El objetivo es que un integrante, un nuevo chat o un agente de IA pueda leer este archivo y comprender:
+FormLogin;
 
-```text
-1. Qué es el proyecto.
-2. Cómo está construido.
-3. Qué existe actualmente.
-4. Qué reglas debe respetar.
-5. Qué convenciones se utilizan.
-6. Qué está pendiente.
-7. Qué debe hacerse después.
-```
+autenticación real;
+
+PBKDF2 + SHA-256;
+
+SesionActual;
+
+sp_Usuario_BuscarPorNombreUsuario;
+
+sp_Perfil_ObtenerFuncionalidades;
+
+carga de permisos desde SQL;
+
+SesionActual.TienePermiso();
+
+FormPrincipal;
+
+diseño mediante Designer;
+
+navegación general;
+
+pnlContenido;
+
+cierre de sesión;
+
+menú condicionado por permisos;
+
+botones sin permiso visibles, grisados y deshabilitados;
+
+pruebas con Administrador y Vendedor;
+
+04_DatosPrueba.sql para desarrollo.
+
+<!-- ===================================================================== -->
+
+<!-- ================ 14. PROYECCIÓN / TRABAJO PENDIENTE ================= -->
+
+<!-- ===================================================================== -->
+
+14. Proyección pendiente
+
+Esta sección debe reducirse a medida que se completa el proyecto.
+
+Cuando algo se termina:
+
+quitarlo de aquí;
+
+agregar el hito importante a Estado completado;
+
+actualizar reglas si cambió alguna decisión.
+
+Próximo objetivo
+
+Integrar las vistas particulares dentro de FormPrincipal -> pnlContenido.
+
+Usuarios y permisos
+
+listar;
+
+alta;
+
+modificación;
+
+baja lógica;
+
+gestionar perfiles/permisos;
+
+cambio o restablecimiento de contraseña.
+
+Clientes
+
+listar y buscar;
+
+alta;
+
+modificación;
+
+baja lógica;
+
+dirección.
+
+Productos y categorías
+
+categorías;
+
+productos;
+
+búsquedas;
+
+altas/modificaciones/bajas;
+
+costos y porcentaje de ganancia.
+
+Inventario
+
+stock por sucursal;
+
+stock mínimo;
+
+movimientos;
+
+disponibilidad.
+
+Ventas
+
+nueva venta;
+
+selección de cliente;
+
+productos y cantidades;
+
+precios;
+
+descuentos;
+
+total;
+
+pagos;
+
+actualización de stock;
+
+transacción SQL.
+
+Reportes
+
+Administrador;
+
+Gerente;
+
+Vendedor.
+
+Backup
+
+generación;
+
+permisos;
+
+restauración de prueba.
+
+Despliegue
+
+SQL Server central;
+
+TCP/IP y firewall;
+
+cuenta SQL específica;
+
+configuración por PC;
+
+pruebas con varias PCs;
+
+pruebas multisucursal.
+
+Decisiones abiertas
+
+No asumir sin consultar:
+
+si Administrador puede realizar ventas;
+
+alcance final del Vendedor;
+
+contenido exacto de reportes;
+
+tipos de factura;
+
+reglas finales de descuento;
+
+política de cambio/restablecimiento de contraseñas;
+
+cuenta SQL definitiva;
+
+datos finales de producción.
+
+<!-- ===================================================================== -->
+
+<!-- ======================== REGLA DE CONTINUIDAD ======================= -->
+
+<!-- ===================================================================== -->
+
+Regla de continuidad
+
+Este archivo debe permitir entender rápidamente:
+
+qué existe
+cómo está estructurado
+qué reglas no se pueden romper
+qué está terminado
+qué falta hacer
+
+Mantenerlo corto. No convertir AGENTS.md en documentación extensa.

@@ -78,3 +78,60 @@ BEGIN
         AND s.eliminado_en IS NULL;
 END;
 GO
+
+
+
+-- ============================================================
+-- PERFILES Y FUNCIONALIDADES
+-- ============================================================
+
+
+-- ============================================================
+-- Procedimiento: sp_Perfil_ObtenerFuncionalidades
+--
+-- Descripción:
+-- Obtiene los códigos de funcionalidades asignados a un perfil.
+--
+-- Estos códigos serán utilizados por la aplicación para
+-- determinar qué módulos y acciones puede utilizar el usuario.
+--
+-- Parámetro:
+-- @idPerfil:
+--     Identificador del perfil cuyas funcionalidades
+--     se desean consultar.
+--
+-- Utilizado por:
+-- Capa_Datos -> UsuarioDatos
+-- ============================================================
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_ObtenerFuncionalidades
+    @idPerfil INT
+AS
+BEGIN
+    -- Evitar mensajes adicionales con cantidad de filas afectadas.
+    SET NOCOUNT ON;
+
+    -- Obtener únicamente funcionalidades activas pertenecientes
+    -- a un perfil que también se encuentre activo.
+    SELECT
+        f.codigo
+
+    FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+
+    INNER JOIN dbo.PERFIL AS p
+        ON p.id_perfil = pf.id_perfil
+
+    INNER JOIN dbo.FUNCIONALIDAD AS f
+        ON f.id_funcionalidad = pf.id_funcionalidad
+
+    WHERE
+        pf.id_perfil = @idPerfil
+        AND p.eliminado_en IS NULL
+        AND f.eliminado_en IS NULL
+
+    ORDER BY
+        f.codigo;
+END;
+GO
+
+

@@ -4,38 +4,52 @@
     // Clase: SesionActual
     //
     // Responsabilidad:
-    // Mantener en memoria los datos del usuario que inició sesión.
+    // Mantener en memoria los datos del usuario autenticado
+    // durante toda la ejecución de la aplicación.
     //
-    // Estos datos podrán ser utilizados por los formularios y
-    // por la lógica del sistema mientras la aplicación esté abierta.
-    //
-    // No realiza consultas SQL ni contiene lógica de acceso a datos.
+    // También almacena las funcionalidades permitidas para
+    // poder controlar accesos y elementos del menú.
     // ============================================================
     public static class SesionActual
     {
-        // Identificadores principales del usuario autenticado.
+        // Identificadores principales.
         public static int IdUsuario { get; private set; }
         public static int IdPerfil { get; private set; }
         public static int IdSucursal { get; private set; }
 
-        // Datos descriptivos del usuario.
+        // Datos descriptivos.
         public static string Nombre { get; private set; } = string.Empty;
         public static string Apellido { get; private set; } = string.Empty;
         public static string NombreUsuario { get; private set; } = string.Empty;
 
-        // Datos del perfil y sucursal asociados.
         public static string Perfil { get; private set; } = string.Empty;
         public static string Sucursal { get; private set; } = string.Empty;
 
-        // Indica si actualmente existe un usuario autenticado.
+        // Indica si existe actualmente una sesión iniciada.
         public static bool SesionIniciada { get; private set; }
+
+        // ========================================================
+        // FUNCIONALIDADES / PERMISOS
+        //
+        // HashSet permite consultar rápidamente si un código
+        // determinado pertenece al usuario.
+        //
+        // OrdinalIgnoreCase evita problemas por diferencias
+        // entre mayúsculas y minúsculas.
+        // ========================================================
+        private static HashSet<string> funcionalidades =
+            new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
 
         // ========================================================
         // Método: Iniciar
         //
-        // Guarda en memoria los datos del usuario que fue
-        // autenticado correctamente por UsuarioLogica.
+        // Guarda los datos del usuario autenticado y las
+        // funcionalidades correspondientes a su perfil.
+        //
+        // El parámetro funcionalidadesPermitidas es opcional
+        // temporalmente para no romper otras llamadas existentes
+        // mientras terminamos de integrar los permisos.
         // ========================================================
         public static void Iniciar(
             int idUsuario,
@@ -45,7 +59,8 @@
             string apellido,
             string nombreUsuario,
             string perfil,
-            string sucursal)
+            string sucursal,
+            IEnumerable<string>? funcionalidadesPermitidas = null)
         {
             IdUsuario = idUsuario;
             IdPerfil = idPerfil;
@@ -58,15 +73,60 @@
             Perfil = perfil;
             Sucursal = sucursal;
 
+            // Crear una nueva colección de permisos para la sesión.
+            funcionalidades = funcionalidadesPermitidas != null
+                ? new HashSet<string>(
+                    funcionalidadesPermitidas,
+                    StringComparer.OrdinalIgnoreCase
+                )
+                : new HashSet<string>(
+                    StringComparer.OrdinalIgnoreCase
+                );
+
             SesionIniciada = true;
+        }
+
+
+        // ========================================================
+        // Método: TienePermiso
+        //
+        // Permite consultar desde Capa_Logica o Capa_Vistas si
+        // el usuario autenticado posee una funcionalidad concreta.
+        //
+        // Ejemplo:
+        // SesionActual.TienePermiso("USUARIOS_VER")
+        // ========================================================
+        public static bool TienePermiso(string codigoFuncionalidad)
+        {
+            if (string.IsNullOrWhiteSpace(codigoFuncionalidad))
+            {
+                return false;
+            }
+
+            return funcionalidades.Contains(codigoFuncionalidad);
+        }
+
+
+        // ========================================================
+        // Método: ObtenerFuncionalidades
+        //
+        // Devuelve una copia de los códigos de funcionalidades
+        // cargados en la sesión.
+        //
+        // Se evita entregar directamente la colección interna
+        // para que no pueda modificarse desde otra clase.
+        // ========================================================
+        public static List<string> ObtenerFuncionalidades()
+        {
+            return funcionalidades.ToList();
         }
 
 
         // ========================================================
         // Método: Cerrar
         //
-        // Limpia todos los datos almacenados cuando el usuario
-        // cierra sesión o finaliza su acceso al sistema.
+        // Limpia los datos personales y permisos almacenados
+        // cuando se finaliza la sesión.
         // ========================================================
         public static void Cerrar()
         {
@@ -80,6 +140,8 @@
 
             Perfil = string.Empty;
             Sucursal = string.Empty;
+
+            funcionalidades.Clear();
 
             SesionIniciada = false;
         }
