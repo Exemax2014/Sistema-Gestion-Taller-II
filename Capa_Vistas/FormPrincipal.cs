@@ -470,6 +470,13 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
+            if (SesionActual.Perfil == "Vendedor")
+            {
+                AbrirFormularioEnPanel(new FormReportesVendedor(), btnReportes);
+                return;
+            }
+
+            // Los reportes de Gerente y Administrador todavía no existen.
             MostrarModuloTemporal(
                 "Reportes",
                 "Reportes y estadísticas del sistema.",
