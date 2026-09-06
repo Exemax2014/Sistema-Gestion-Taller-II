@@ -422,6 +422,13 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
+            if (SesionActual.TienePermiso("VENTAS_VER"))
+            {
+                AbrirFormularioEnPanel(new FormVentas(), btnVentas);
+                return;
+            }
+
+            // Sin el permiso VENTAS_VER, el módulo todavía no está disponible.
             MostrarModuloTemporal(
                 "Ventas",
                 "Gestión de ventas y operaciones comerciales.",

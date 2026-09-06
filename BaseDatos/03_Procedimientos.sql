@@ -134,4 +134,108 @@ BEGIN
 END;
 GO
 
+-- ============================================================
+-- CLIENTES
+-- ============================================================
 
+-- ============================================================
+-- Procedimiento: sp_Cliente_Buscar
+--
+-- Descripción:
+-- Busca clientes activos cuyo nombre, apellido o documento
+-- coincidan parcialmente con el texto recibido.
+--
+-- Utilizado por:
+-- Capa_Datos -> ClienteDatos
+--
+-- Parámetros:
+-- @texto:
+--     Texto a buscar dentro de nombre, apellido o documento.
+-- ============================================================
+CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Buscar
+    @texto NVARCHAR(100)
+AS
+BEGIN
+    -- Evita que SQL Server envíe mensajes adicionales
+    -- indicando la cantidad de filas afectadas.
+    SET NOCOUNT ON;
+
+    -- Buscar clientes activos que coincidan parcialmente
+    -- con el texto recibido en nombre, apellido o documento.
+    SELECT TOP 20
+        c.id_cliente,
+        c.nombre,
+        c.apellido,
+        c.documento,
+        c.correo,
+        c.telefono
+    FROM dbo.CLIENTE AS c
+    WHERE
+        c.eliminado_en IS NULL
+        AND (
+            c.nombre LIKE '%' + @texto + '%'
+            OR c.apellido LIKE '%' + @texto + '%'
+            OR c.documento LIKE '%' + @texto + '%'
+        )
+    ORDER BY
+        c.apellido,
+        c.nombre;
+END;
+GO
+
+
+-- ============================================================
+-- PRODUCTOS
+-- ============================================================
+
+-- ============================================================
+-- Procedimiento: sp_Producto_Buscar
+--
+-- Descripción:
+-- Busca productos activos cuyo código de barra o nombre
+-- coincidan parcialmente con el texto recibido, junto con
+-- el stock disponible en la sucursal indicada.
+--
+-- Utilizado por:
+-- Capa_Datos -> ProductoDatos
+--
+-- Parámetros:
+-- @texto:
+--     Texto a buscar dentro de código de barra o nombre.
+-- @idSucursal:
+--     Sucursal sobre la que se desea consultar el stock.
+-- ============================================================
+CREATE OR ALTER PROCEDURE dbo.sp_Producto_Buscar
+    @texto NVARCHAR(100),
+    @idSucursal INT
+AS
+BEGIN
+    -- Evita que SQL Server envíe mensajes adicionales
+    -- indicando la cantidad de filas afectadas.
+    SET NOCOUNT ON;
+
+    -- Buscar productos activos que coincidan parcialmente
+    -- con el texto recibido, junto con su stock en la
+    -- sucursal indicada.
+    SELECT TOP 20
+        p.id_producto,
+        p.codigo_barra,
+        p.nombre,
+        p.descripcion,
+        p.precio_venta,
+        ISNULL(i.stock, 0) AS stock
+    FROM dbo.PRODUCTO AS p
+    LEFT JOIN dbo.INVENTARIO AS i
+        ON i.id_producto = p.id_producto
+        AND i.id_sucursal = @idSucursal
+        AND i.eliminado_en IS NULL
+    WHERE
+        p.eliminado_en IS NULL
+        AND (
+            p.codigo_barra LIKE '%' + @texto + '%'
+            OR p.nombre LIKE '%' + @texto + '%'
+        )
+    ORDER BY
+        p.nombre;
+END;
+GO
