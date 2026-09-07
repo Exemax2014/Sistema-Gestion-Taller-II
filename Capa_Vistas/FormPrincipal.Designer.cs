@@ -2,17 +2,11 @@
 {
     partial class FormPrincipal
     {
-        /// <summary>
-        /// Variable requerida por el diseñador.
-        /// </summary>
         private System.ComponentModel.IContainer components = null;
 
-        /// <summary>
-        /// Liberar los recursos utilizados.
-        /// </summary>
         protected override void Dispose(bool disposing)
         {
-            if (disposing && (components != null))
+            if (disposing && components != null)
             {
                 components.Dispose();
             }
@@ -22,18 +16,23 @@
 
         #region Windows Form Designer generated code
 
-        /// <summary>
-        /// Inicializa todos los controles visuales de FormPrincipal.
-        /// La lógica de navegación se mantiene en FormPrincipal.cs.
-        /// </summary>
         private void InitializeComponent()
         {
             pnlCabecera = new Panel();
-            lblPerfil = new Label();
+            picLogo = new PictureBox();
             lblMarca = new Label();
 
-            pnlCuerpo = new Panel();
+            btnMinimizar = new Button();
+            btnMaximizar = new Button();
+            btnCerrarPrograma = new Button();
 
+            lblPerfil = new Label();
+            lblFecha = new Label();
+            btnUsuarioMenu = new Button();
+
+            pnlLineaDorada = new Panel();
+
+            pnlCuerpo = new Panel();
             pnlMenu = new Panel();
 
             btnInicio = new Button();
@@ -43,91 +42,432 @@
             btnUsuarios = new Button();
             btnReportes = new Button();
 
-            pnlUsuario = new Panel();
-            lblUsuario = new Label();
-            btnEditarPerfil = new Button();
-            btnCerrarSesion = new Button();
-
             pnlContenido = new Panel();
+            lblTituloInicio = new Label();
+            pnlLineaTitulo = new Panel();
             lblBienvenida = new Label();
             lblDescripcion = new Label();
 
+            pnlMenuUsuario = new Panel();
+            lblUsuario = new Label();
+            pnlSeparadorUsuario = new Panel();
+            btnEditarPerfil = new Button();
+            btnCerrarSesion = new Button();
+
             pnlCabecera.SuspendLayout();
+
+            ((System.ComponentModel.ISupportInitialize)picLogo)
+                .BeginInit();
+
             pnlCuerpo.SuspendLayout();
             pnlMenu.SuspendLayout();
-            pnlUsuario.SuspendLayout();
             pnlContenido.SuspendLayout();
+            pnlMenuUsuario.SuspendLayout();
 
             SuspendLayout();
 
-            // ====================================================
-            // pnlCabecera
-            // ====================================================
-            pnlCabecera.BackColor = Color.FromArgb(20, 21, 23);
-            pnlCabecera.Controls.Add(lblPerfil);
+            // =====================================================
+            // FORM PRINCIPAL
+            // =====================================================
+
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+
+            BackColor = Color.FromArgb(247, 248, 250);
+
+            ClientSize = new Size(1400, 820);
+
+            Controls.Add(pnlMenuUsuario);
+            Controls.Add(pnlCuerpo);
+            Controls.Add(pnlLineaDorada);
+            Controls.Add(pnlCabecera);
+
+            FormBorderStyle = FormBorderStyle.None;
+
+            MinimumSize = new Size(1050, 650);
+
+            Name = "FormPrincipal";
+
+            StartPosition = FormStartPosition.CenterScreen;
+
+            Text = "Hierro y Forja";
+
+            WindowState = FormWindowState.Maximized;
+
+            // =====================================================
+            // CABECERA
+            // =====================================================
+
+            pnlCabecera.BackColor =
+                Color.FromArgb(17, 21, 26);
+
+            pnlCabecera.Controls.Add(picLogo);
             pnlCabecera.Controls.Add(lblMarca);
+
+            pnlCabecera.Controls.Add(lblPerfil);
+            pnlCabecera.Controls.Add(lblFecha);
+            pnlCabecera.Controls.Add(btnUsuarioMenu);
+
+            pnlCabecera.Controls.Add(btnMinimizar);
+            pnlCabecera.Controls.Add(btnMaximizar);
+            pnlCabecera.Controls.Add(btnCerrarPrograma);
+
             pnlCabecera.Dock = DockStyle.Top;
-            pnlCabecera.Location = new Point(0, 0);
+
             pnlCabecera.Name = "pnlCabecera";
-            pnlCabecera.Size = new Size(1200, 70);
+
+            pnlCabecera.Size = new Size(1400, 100);
+
             pnlCabecera.TabIndex = 0;
 
-            // ====================================================
-            // lblMarca
-            // ====================================================
-            lblMarca.AutoSize = true;
-            lblMarca.Font = new Font(
-                "Segoe UI",
-                17F,
-                FontStyle.Bold,
-                GraphicsUnit.Point
-            );
-            lblMarca.ForeColor = Color.White;
-            lblMarca.Location = new Point(25, 18);
-            lblMarca.Name = "lblMarca";
-            lblMarca.Size = new Size(214, 40);
-            lblMarca.TabIndex = 0;
-            lblMarca.Text = "HIERRO Y FORJA";
+            // =====================================================
+            // LOGO
+            // =====================================================
 
-            // ====================================================
-            // lblPerfil
-            // ====================================================
-            lblPerfil.Dock = DockStyle.Right;
-            lblPerfil.Font = new Font(
-                "Segoe UI",
-                10F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
-            lblPerfil.ForeColor = Color.White;
-            lblPerfil.Location = new Point(900, 0);
-            lblPerfil.Name = "lblPerfil";
-            lblPerfil.Padding = new Padding(0, 0, 25, 0);
-            lblPerfil.Size = new Size(300, 70);
-            lblPerfil.TabIndex = 1;
-            lblPerfil.Text = "Administrador del sistema";
-            lblPerfil.TextAlign = ContentAlignment.MiddleRight;
+            picLogo.BackColor =
+                Color.Transparent;
 
+            picLogo.Image =
+                Properties.Resource.IconoHierroForja;
 
-            // ====================================================
-            // pnlCuerpo
-            //
-            // Contiene menú lateral y panel central.
-            // ====================================================
-            pnlCuerpo.BackColor = Color.FromArgb(245, 245, 245);
+            picLogo.Location =
+                new Point(18, 12);
+
+            picLogo.Name =
+                "picLogo";
+
+            picLogo.Size =
+                new Size(72, 72);
+
+            picLogo.SizeMode =
+                PictureBoxSizeMode.Zoom;
+
+            picLogo.TabIndex =
+                0;
+
+            picLogo.TabStop =
+                false;
+
+            // =====================================================
+            // NOMBRE
+            // =====================================================
+
+            lblMarca.AutoSize =
+                true;
+
+            lblMarca.Font =
+                new Font(
+                    "Segoe UI",
+                    20F,
+                    FontStyle.Bold);
+
+            lblMarca.ForeColor =
+                Color.White;
+
+            lblMarca.Location =
+                new Point(103, 30);
+
+            lblMarca.Name =
+                "lblMarca";
+
+            lblMarca.Text =
+                "HIERRO Y FORJA";
+
+            // =====================================================
+            // MINIMIZAR
+            // =====================================================
+
+            btnMinimizar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnMinimizar.BackColor =
+                Color.Transparent;
+
+            btnMinimizar.Cursor =
+                Cursors.Hand;
+
+            btnMinimizar.FlatAppearance.BorderSize =
+                0;
+
+            btnMinimizar.FlatAppearance.MouseOverBackColor =
+                Color.FromArgb(45, 48, 52);
+
+            btnMinimizar.FlatStyle =
+                FlatStyle.Flat;
+
+            btnMinimizar.Font =
+                new Font(
+                    "Segoe UI",
+                    10F);
+
+            btnMinimizar.ForeColor =
+                Color.White;
+
+            btnMinimizar.Location =
+                new Point(1275, 0);
+
+            btnMinimizar.Name =
+                "btnMinimizar";
+
+            btnMinimizar.Size =
+                new Size(40, 30);
+
+            btnMinimizar.Text =
+                "—";
+
+            btnMinimizar.UseVisualStyleBackColor =
+                false;
+
+            // =====================================================
+            // MAXIMIZAR / RESTAURAR
+            // =====================================================
+
+            btnMaximizar.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnMaximizar.BackColor =
+                Color.Transparent;
+
+            btnMaximizar.Cursor =
+                Cursors.Hand;
+
+            btnMaximizar.FlatAppearance.BorderSize =
+                0;
+
+            btnMaximizar.FlatAppearance.MouseOverBackColor =
+                Color.FromArgb(45, 48, 52);
+
+            btnMaximizar.FlatStyle =
+                FlatStyle.Flat;
+
+            btnMaximizar.Font =
+                new Font(
+                    "Segoe UI",
+                    10F);
+
+            btnMaximizar.ForeColor =
+                Color.White;
+
+            btnMaximizar.Location =
+                new Point(1317, 0);
+
+            btnMaximizar.Name =
+                "btnMaximizar";
+
+            btnMaximizar.Size =
+                new Size(40, 30);
+
+            btnMaximizar.Text =
+                "□";
+
+            btnMaximizar.UseVisualStyleBackColor =
+                false;
+
+            // =====================================================
+            // CERRAR
+            // =====================================================
+
+            btnCerrarPrograma.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnCerrarPrograma.BackColor =
+                Color.Transparent;
+
+            btnCerrarPrograma.Cursor =
+                Cursors.Hand;
+
+            btnCerrarPrograma.FlatAppearance.BorderSize =
+                0;
+
+            btnCerrarPrograma.FlatAppearance.MouseOverBackColor =
+                Color.FromArgb(175, 45, 45);
+
+            btnCerrarPrograma.FlatStyle =
+                FlatStyle.Flat;
+
+            btnCerrarPrograma.Font =
+                new Font(
+                    "Segoe UI",
+                    10F);
+
+            btnCerrarPrograma.ForeColor =
+                Color.White;
+
+            btnCerrarPrograma.Location =
+                new Point(1360, 0);
+
+            btnCerrarPrograma.Name =
+                "btnCerrarPrograma";
+
+            btnCerrarPrograma.Size =
+                new Size(40, 30);
+
+            btnCerrarPrograma.Text =
+                "×";
+
+            btnCerrarPrograma.UseVisualStyleBackColor =
+                false;
+
+            // =====================================================
+            // PERFIL
+            // =====================================================
+
+            lblPerfil.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            lblPerfil.Font =
+                new Font(
+                    "Segoe UI",
+                    10F,
+                    FontStyle.Bold);
+
+            lblPerfil.ForeColor =
+                Color.White;
+
+            lblPerfil.Location =
+                new Point(920, 34);
+
+            lblPerfil.Name =
+                "lblPerfil";
+
+            lblPerfil.Size =
+                new Size(215, 24);
+
+            lblPerfil.Text =
+                "Administrador";
+
+            lblPerfil.TextAlign =
+                ContentAlignment.MiddleRight;
+
+            // =====================================================
+            // FECHA
+            // =====================================================
+
+            lblFecha.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            lblFecha.Font =
+                new Font(
+                    "Segoe UI",
+                    8.5F);
+
+            lblFecha.ForeColor =
+                Color.FromArgb(180, 183, 188);
+
+            lblFecha.Location =
+                new Point(870, 59);
+
+            lblFecha.Name =
+                "lblFecha";
+
+            lblFecha.Size =
+                new Size(265, 22);
+
+            lblFecha.Text =
+                "Lunes, 7 de septiembre de 2026";
+
+            lblFecha.TextAlign =
+                ContentAlignment.MiddleRight;
+
+            // =====================================================
+            // BOTÓN USUARIO
+            // =====================================================
+
+            btnUsuarioMenu.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            btnUsuarioMenu.BackColor =
+                Color.FromArgb(23, 27, 32);
+
+            btnUsuarioMenu.Cursor =
+                Cursors.Hand;
+
+            btnUsuarioMenu.FlatAppearance.BorderColor =
+                Color.FromArgb(190, 137, 45);
+
+            btnUsuarioMenu.FlatAppearance.BorderSize =
+                1;
+
+            btnUsuarioMenu.FlatAppearance.MouseOverBackColor =
+                Color.FromArgb(35, 39, 44);
+
+            btnUsuarioMenu.FlatStyle =
+                FlatStyle.Flat;
+
+            btnUsuarioMenu.Font =
+                new Font(
+                    "Segoe UI",
+                    9.5F,
+                    FontStyle.Bold);
+
+            btnUsuarioMenu.ForeColor =
+                Color.White;
+
+            btnUsuarioMenu.Location =
+                new Point(1160, 40);
+
+            btnUsuarioMenu.Name =
+                "btnUsuarioMenu";
+
+            btnUsuarioMenu.Padding =
+                new Padding(12, 0, 8, 0);
+
+            btnUsuarioMenu.Size =
+                new Size(215, 44);
+
+            btnUsuarioMenu.Text =
+                "●   admin               ▼";
+
+            btnUsuarioMenu.TextAlign =
+                ContentAlignment.MiddleLeft;
+
+            btnUsuarioMenu.UseVisualStyleBackColor =
+                false;
+
+            // =====================================================
+            // LINEA DORADA GLOBAL
+            // =====================================================
+
+            pnlLineaDorada.BackColor =
+                Color.FromArgb(190, 137, 45);
+
+            pnlLineaDorada.Dock =
+                DockStyle.Top;
+
+            pnlLineaDorada.Name =
+                "pnlLineaDorada";
+
+            pnlLineaDorada.Size =
+                new Size(1400, 3);
+
+            // =====================================================
+            // CUERPO
+            // =====================================================
+
+            pnlCuerpo.BackColor =
+                Color.FromArgb(247, 248, 250);
+
             pnlCuerpo.Controls.Add(pnlContenido);
             pnlCuerpo.Controls.Add(pnlMenu);
-            pnlCuerpo.Dock = DockStyle.Fill;
-            pnlCuerpo.Location = new Point(0, 70);
-            pnlCuerpo.Name = "pnlCuerpo";
-            pnlCuerpo.Size = new Size(1200, 680);
-            pnlCuerpo.TabIndex = 1;
 
+            pnlCuerpo.Dock =
+                DockStyle.Fill;
 
-            // ====================================================
-            // pnlMenu
-            // ====================================================
-            pnlMenu.BackColor = Color.FromArgb(30, 31, 34);
+            pnlCuerpo.Name =
+                "pnlCuerpo";
+
+            // =====================================================
+            // MENU LATERAL
+            // =====================================================
+
+            pnlMenu.BackColor =
+                Color.FromArgb(17, 21, 26);
 
             pnlMenu.Controls.Add(btnReportes);
             pnlMenu.Controls.Add(btnUsuarios);
@@ -136,376 +476,585 @@
             pnlMenu.Controls.Add(btnVentas);
             pnlMenu.Controls.Add(btnInicio);
 
-            pnlMenu.Controls.Add(pnlUsuario);
+            pnlMenu.Dock =
+                DockStyle.Left;
 
-            pnlMenu.Dock = DockStyle.Left;
-            pnlMenu.Location = new Point(0, 0);
-            pnlMenu.Name = "pnlMenu";
-            pnlMenu.Size = new Size(185, 680);
-            pnlMenu.TabIndex = 0;
+            pnlMenu.Name =
+                "pnlMenu";
 
+            pnlMenu.Size =
+                new Size(105, 717);
 
-            // ====================================================
-            // btnInicio
-            // ====================================================
-            btnInicio.BackColor = Color.FromArgb(58, 59, 62);
-            btnInicio.Cursor = Cursors.Hand;
-            btnInicio.Dock = DockStyle.Top;
-            btnInicio.FlatAppearance.BorderSize = 0;
-            btnInicio.FlatStyle = FlatStyle.Flat;
+            // =====================================================
+            // INICIO
+            // =====================================================
 
-            btnInicio.Font = new Font(
-                "Segoe UI",
-                9.5F,
-                FontStyle.Bold,
-                GraphicsUnit.Point
-            );
+            btnInicio.BackColor =
+                Color.FromArgb(72, 53, 24);
 
-            btnInicio.ForeColor = Color.White;
-            btnInicio.Location = new Point(0, 0);
-            btnInicio.Name = "btnInicio";
-            btnInicio.Size = new Size(185, 54);
-            btnInicio.TabIndex = 0;
-            btnInicio.Tag = "";
-            btnInicio.Text = "⌂     INICIO";
-            btnInicio.UseVisualStyleBackColor = false;
+            btnInicio.Cursor =
+                Cursors.Hand;
 
+            btnInicio.Dock =
+                DockStyle.Top;
 
-            // ====================================================
-            // btnVentas
-            // ====================================================
-            btnVentas.BackColor = Color.FromArgb(30, 31, 34);
-            btnVentas.Cursor = Cursors.Hand;
-            btnVentas.Dock = DockStyle.Top;
-            btnVentas.FlatAppearance.BorderSize = 0;
-            btnVentas.FlatStyle = FlatStyle.Flat;
+            btnInicio.FlatAppearance.BorderSize =
+                0;
 
-            btnVentas.Font = new Font(
-                "Segoe UI",
-                9.5F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
+            btnInicio.FlatStyle =
+                FlatStyle.Flat;
 
-            btnVentas.ForeColor = Color.White;
-            btnVentas.Location = new Point(0, 54);
-            btnVentas.Name = "btnVentas";
-            btnVentas.Size = new Size(185, 54);
-            btnVentas.TabIndex = 1;
-            btnVentas.Tag = "VENTAS_VER";
-            btnVentas.Text = "$     VENTAS";
-            btnVentas.UseVisualStyleBackColor = false;
+            btnInicio.Font =
+                new Font(
+                    "Segoe UI",
+                    8.5F,
+                    FontStyle.Bold);
 
+            btnInicio.ForeColor =
+                Color.White;
 
-            // ====================================================
-            // btnClientes
-            // ====================================================
-            btnClientes.BackColor = Color.FromArgb(30, 31, 34);
-            btnClientes.Cursor = Cursors.Hand;
-            btnClientes.Dock = DockStyle.Top;
-            btnClientes.FlatAppearance.BorderSize = 0;
-            btnClientes.FlatStyle = FlatStyle.Flat;
+            btnInicio.Name =
+                "btnInicio";
 
-            btnClientes.Font = new Font(
-                "Segoe UI",
-                9.5F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
+            btnInicio.Size =
+                new Size(105, 94);
 
-            btnClientes.ForeColor = Color.White;
-            btnClientes.Location = new Point(0, 108);
-            btnClientes.Name = "btnClientes";
-            btnClientes.Size = new Size(185, 54);
-            btnClientes.TabIndex = 2;
-            btnClientes.Tag = "CLIENTES_VER";
-            btnClientes.Text = "◎     CLIENTES";
-            btnClientes.UseVisualStyleBackColor = false;
+            btnInicio.Text =
+                "⌂\r\n\r\nINICIO";
 
+            btnInicio.TextAlign =
+                ContentAlignment.MiddleCenter;
 
-            // ====================================================
-            // btnProductos
-            // ====================================================
-            btnProductos.BackColor = Color.FromArgb(30, 31, 34);
-            btnProductos.Cursor = Cursors.Hand;
-            btnProductos.Dock = DockStyle.Top;
-            btnProductos.FlatAppearance.BorderSize = 0;
-            btnProductos.FlatStyle = FlatStyle.Flat;
+            btnInicio.UseVisualStyleBackColor =
+                false;
 
-            btnProductos.Font = new Font(
-                "Segoe UI",
-                9.5F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
+            // =====================================================
+            // VENTAS
+            // =====================================================
 
-            btnProductos.ForeColor = Color.White;
-            btnProductos.Location = new Point(0, 162);
-            btnProductos.Name = "btnProductos";
-            btnProductos.Size = new Size(185, 54);
-            btnProductos.TabIndex = 3;
-            btnProductos.Tag = "PRODUCTOS_VER";
-            btnProductos.Text = "▦     PRODUCTOS";
-            btnProductos.UseVisualStyleBackColor = false;
+            btnVentas.BackColor =
+                Color.FromArgb(17, 21, 26);
 
+            btnVentas.Cursor =
+                Cursors.Hand;
 
-            // ====================================================
-            // btnUsuarios
-            // ====================================================
-            btnUsuarios.BackColor = Color.FromArgb(30, 31, 34);
-            btnUsuarios.Cursor = Cursors.Hand;
-            btnUsuarios.Dock = DockStyle.Top;
-            btnUsuarios.FlatAppearance.BorderSize = 0;
-            btnUsuarios.FlatStyle = FlatStyle.Flat;
+            btnVentas.Dock =
+                DockStyle.Top;
 
-            btnUsuarios.Font = new Font(
-                "Segoe UI",
-                9.5F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
+            btnVentas.FlatAppearance.BorderSize =
+                0;
 
-            btnUsuarios.ForeColor = Color.White;
-            btnUsuarios.Location = new Point(0, 216);
-            btnUsuarios.Name = "btnUsuarios";
-            btnUsuarios.Size = new Size(185, 54);
-            btnUsuarios.TabIndex = 4;
-            btnUsuarios.Tag = "USUARIOS_VER";
-            btnUsuarios.Text = "♙     USUARIOS";
-            btnUsuarios.UseVisualStyleBackColor = false;
+            btnVentas.FlatStyle =
+                FlatStyle.Flat;
 
+            btnVentas.Font =
+                new Font(
+                    "Segoe UI",
+                    8.5F);
 
-            // ====================================================
-            // btnReportes
-            // ====================================================
-            btnReportes.BackColor = Color.FromArgb(30, 31, 34);
-            btnReportes.Cursor = Cursors.Hand;
-            btnReportes.Dock = DockStyle.Top;
-            btnReportes.FlatAppearance.BorderSize = 0;
-            btnReportes.FlatStyle = FlatStyle.Flat;
+            btnVentas.ForeColor =
+                Color.White;
 
-            btnReportes.Font = new Font(
-                "Segoe UI",
-                9.5F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
+            btnVentas.Name =
+                "btnVentas";
 
-            btnReportes.ForeColor = Color.White;
-            btnReportes.Location = new Point(0, 270);
-            btnReportes.Name = "btnReportes";
-            btnReportes.Size = new Size(185, 54);
-            btnReportes.TabIndex = 5;
-            btnReportes.Text = "▤     REPORTES";
-            btnReportes.UseVisualStyleBackColor = false;
+            btnVentas.Size =
+                new Size(105, 94);
 
+            btnVentas.Tag =
+                "VENTAS_VER";
 
-            // ====================================================
-            // pnlUsuario
-            //
-            // Información del usuario en la zona inferior.
-            // ====================================================
-            pnlUsuario.BackColor = Color.FromArgb(24, 25, 27);
-            pnlUsuario.Controls.Add(btnCerrarSesion);
-            pnlUsuario.Controls.Add(btnEditarPerfil);
-            pnlUsuario.Controls.Add(lblUsuario);
-            pnlUsuario.Dock = DockStyle.Bottom;
-            pnlUsuario.Location = new Point(0, 495);
-            pnlUsuario.Name = "pnlUsuario";
-            pnlUsuario.Size = new Size(185, 185);
-            pnlUsuario.TabIndex = 6;
+            btnVentas.Text =
+                "🛒\r\n\r\nVENTAS";
 
+            btnVentas.TextAlign =
+                ContentAlignment.MiddleCenter;
 
-            // ====================================================
-            // lblUsuario
-            // ====================================================
-            lblUsuario.Font = new Font(
-                "Segoe UI",
-                10F,
-                FontStyle.Bold,
-                GraphicsUnit.Point
-            );
+            btnVentas.UseVisualStyleBackColor =
+                false;
 
-            lblUsuario.ForeColor = Color.White;
-            lblUsuario.Location = new Point(0, 10);
-            lblUsuario.Name = "lblUsuario";
-            lblUsuario.Size = new Size(185, 50);
-            lblUsuario.TabIndex = 0;
-            lblUsuario.Text = "●     admin";
-            lblUsuario.TextAlign = ContentAlignment.MiddleCenter;
+            // =====================================================
+            // CLIENTES
+            // =====================================================
 
+            btnClientes.BackColor =
+                Color.FromArgb(17, 21, 26);
 
-            // ====================================================
-            // btnEditarPerfil
-            // ====================================================
-            btnEditarPerfil.BackColor = Color.FromArgb(45, 46, 49);
-            btnEditarPerfil.Cursor = Cursors.Hand;
-            btnEditarPerfil.FlatAppearance.BorderSize = 0;
-            btnEditarPerfil.FlatStyle = FlatStyle.Flat;
+            btnClientes.Cursor =
+                Cursors.Hand;
 
-            btnEditarPerfil.Font = new Font(
-                "Segoe UI",
-                9F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
+            btnClientes.Dock =
+                DockStyle.Top;
 
-            btnEditarPerfil.ForeColor = Color.FromArgb(220, 220, 220);
-            btnEditarPerfil.Location = new Point(20, 65);
-            btnEditarPerfil.Name = "btnEditarPerfil";
-            btnEditarPerfil.Size = new Size(145, 34);
-            btnEditarPerfil.TabIndex = 1;
-            btnEditarPerfil.Text = "Editar perfil";
-            btnEditarPerfil.UseVisualStyleBackColor = false;
+            btnClientes.FlatAppearance.BorderSize =
+                0;
 
+            btnClientes.FlatStyle =
+                FlatStyle.Flat;
 
-            // ====================================================
-            // btnCerrarSesion
-            // ====================================================
-            btnCerrarSesion.BackColor = Color.FromArgb(24, 25, 27);
-            btnCerrarSesion.Cursor = Cursors.Hand;
-            btnCerrarSesion.FlatAppearance.BorderSize = 0;
-            btnCerrarSesion.FlatStyle = FlatStyle.Flat;
+            btnClientes.Font =
+                new Font("Segoe UI", 8.5F);
 
-            btnCerrarSesion.Font = new Font(
-                "Segoe UI",
-                9.5F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
+            btnClientes.ForeColor =
+                Color.White;
 
-            btnCerrarSesion.ForeColor = Color.White;
-            btnCerrarSesion.Location = new Point(20, 115);
-            btnCerrarSesion.Name = "btnCerrarSesion";
-            btnCerrarSesion.Size = new Size(145, 40);
-            btnCerrarSesion.TabIndex = 2;
-            btnCerrarSesion.Text = "↩     Cerrar sesión";
-            btnCerrarSesion.UseVisualStyleBackColor = false;
+            btnClientes.Name =
+                "btnClientes";
 
+            btnClientes.Size =
+                new Size(105, 94);
 
-            // ====================================================
-            // pnlContenido
-            //
-            // Única zona del programa que cambia según el módulo.
-            // ====================================================
-            pnlContenido.BackColor = Color.FromArgb(245, 245, 245);
+            btnClientes.Tag =
+                "CLIENTES_VER";
+
+            btnClientes.Text =
+                "♟\r\n\r\nCLIENTES";
+
+            btnClientes.TextAlign =
+                ContentAlignment.MiddleCenter;
+
+            btnClientes.UseVisualStyleBackColor =
+                false;
+
+            // =====================================================
+            // PRODUCTOS
+            // =====================================================
+
+            btnProductos.BackColor =
+                Color.FromArgb(17, 21, 26);
+
+            btnProductos.Cursor =
+                Cursors.Hand;
+
+            btnProductos.Dock =
+                DockStyle.Top;
+
+            btnProductos.FlatAppearance.BorderSize =
+                0;
+
+            btnProductos.FlatStyle =
+                FlatStyle.Flat;
+
+            btnProductos.Font =
+                new Font("Segoe UI", 8.5F);
+
+            btnProductos.ForeColor =
+                Color.White;
+
+            btnProductos.Name =
+                "btnProductos";
+
+            btnProductos.Size =
+                new Size(105, 94);
+
+            btnProductos.Tag =
+                "PRODUCTOS_VER";
+
+            btnProductos.Text =
+                "◇\r\n\r\nPRODUCTOS";
+
+            btnProductos.TextAlign =
+                ContentAlignment.MiddleCenter;
+
+            btnProductos.UseVisualStyleBackColor =
+                false;
+
+            // =====================================================
+            // USUARIOS
+            // =====================================================
+
+            btnUsuarios.BackColor =
+                Color.FromArgb(17, 21, 26);
+
+            btnUsuarios.Cursor =
+                Cursors.Hand;
+
+            btnUsuarios.Dock =
+                DockStyle.Top;
+
+            btnUsuarios.FlatAppearance.BorderSize =
+                0;
+
+            btnUsuarios.FlatStyle =
+                FlatStyle.Flat;
+
+            btnUsuarios.Font =
+                new Font("Segoe UI", 8.5F);
+
+            btnUsuarios.ForeColor =
+                Color.White;
+
+            btnUsuarios.Name =
+                "btnUsuarios";
+
+            btnUsuarios.Size =
+                new Size(105, 94);
+
+            btnUsuarios.Tag =
+                "USUARIOS_VER";
+
+            btnUsuarios.Text =
+                "♙\r\n\r\nUSUARIOS";
+
+            btnUsuarios.TextAlign =
+                ContentAlignment.MiddleCenter;
+
+            btnUsuarios.UseVisualStyleBackColor =
+                false;
+
+            // =====================================================
+            // REPORTES
+            // =====================================================
+
+            btnReportes.BackColor =
+                Color.FromArgb(17, 21, 26);
+
+            btnReportes.Cursor =
+                Cursors.Hand;
+
+            btnReportes.Dock =
+                DockStyle.Top;
+
+            btnReportes.FlatAppearance.BorderSize =
+                0;
+
+            btnReportes.FlatStyle =
+                FlatStyle.Flat;
+
+            btnReportes.Font =
+                new Font("Segoe UI", 8.5F);
+
+            btnReportes.ForeColor =
+                Color.White;
+
+            btnReportes.Name =
+                "btnReportes";
+
+            btnReportes.Size =
+                new Size(105, 94);
+
+            btnReportes.Text =
+                "▥\r\n\r\nREPORTES";
+
+            btnReportes.TextAlign =
+                ContentAlignment.MiddleCenter;
+
+            btnReportes.UseVisualStyleBackColor =
+                false;
+
+            // =====================================================
+            // CONTENIDO
+            // =====================================================
+
+            pnlContenido.BackColor =
+                Color.FromArgb(247, 248, 250);
+
             pnlContenido.Controls.Add(lblDescripcion);
             pnlContenido.Controls.Add(lblBienvenida);
-            pnlContenido.Dock = DockStyle.Fill;
-            pnlContenido.Location = new Point(185, 0);
-            pnlContenido.Name = "pnlContenido";
-            pnlContenido.Size = new Size(1015, 680);
-            pnlContenido.TabIndex = 1;
+            pnlContenido.Controls.Add(pnlLineaTitulo);
+            pnlContenido.Controls.Add(lblTituloInicio);
 
+            pnlContenido.Dock =
+                DockStyle.Fill;
 
-            // ====================================================
-            // lblBienvenida
-            //
-            // Contenido temporal de Inicio.
-            // ====================================================
-            lblBienvenida.Anchor = AnchorStyles.None;
+            pnlContenido.Name =
+                "pnlContenido";
 
-            lblBienvenida.AutoSize = true;
+            // =====================================================
+            // TITULO INICIO
+            // =====================================================
 
-            lblBienvenida.Font = new Font(
-                "Segoe UI",
-                25F,
-                FontStyle.Bold,
-                GraphicsUnit.Point
-            );
+            lblTituloInicio.AutoSize =
+                true;
 
-            lblBienvenida.ForeColor = Color.FromArgb(45, 45, 45);
-            lblBienvenida.Location = new Point(338, 275);
-            lblBienvenida.Name = "lblBienvenida";
-            lblBienvenida.Size = new Size(339, 57);
-            lblBienvenida.TabIndex = 0;
-            lblBienvenida.Text = "Bienvenido, Usuario";
+            lblTituloInicio.Font =
+                new Font(
+                    "Segoe UI",
+                    22F,
+                    FontStyle.Bold);
 
+            lblTituloInicio.ForeColor =
+                Color.FromArgb(27, 34, 42);
 
-            // ====================================================
-            // lblDescripcion
-            // ====================================================
-            lblDescripcion.Anchor = AnchorStyles.None;
+            lblTituloInicio.Location =
+                new Point(50, 40);
 
-            lblDescripcion.AutoSize = true;
+            lblTituloInicio.Name =
+                "lblTituloInicio";
 
-            lblDescripcion.Font = new Font(
-                "Segoe UI",
-                11F,
-                FontStyle.Regular,
-                GraphicsUnit.Point
-            );
+            lblTituloInicio.Text =
+                "Inicio";
 
-            lblDescripcion.ForeColor = Color.FromArgb(100, 100, 100);
-            lblDescripcion.Location = new Point(337, 346);
-            lblDescripcion.Name = "lblDescripcion";
-            lblDescripcion.Size = new Size(341, 25);
-            lblDescripcion.TabIndex = 1;
+            // =====================================================
+            // LINEA TITULO
+            // =====================================================
+
+            pnlLineaTitulo.BackColor =
+                Color.FromArgb(190, 137, 45);
+
+            pnlLineaTitulo.Location =
+                new Point(52, 91);
+
+            pnlLineaTitulo.Name =
+                "pnlLineaTitulo";
+
+            pnlLineaTitulo.Size =
+                new Size(80, 3);
+
+            // =====================================================
+            // BIENVENIDA
+            // =====================================================
+
+            lblBienvenida.AutoSize =
+                true;
+
+            lblBienvenida.Font =
+                new Font(
+                    "Segoe UI",
+                    27F,
+                    FontStyle.Bold);
+
+            lblBienvenida.ForeColor =
+                Color.FromArgb(27, 34, 42);
+
+            lblBienvenida.Location =
+                new Point(50, 155);
+
+            lblBienvenida.Name =
+                "lblBienvenida";
+
+            lblBienvenida.Text =
+                "Bienvenido";
+
+            // =====================================================
+            // DESCRIPCION
+            // =====================================================
+
+            lblDescripcion.AutoSize =
+                true;
+
+            lblDescripcion.Font =
+                new Font(
+                    "Segoe UI",
+                    11F);
+
+            lblDescripcion.ForeColor =
+                Color.FromArgb(95, 102, 110);
+
+            lblDescripcion.Location =
+                new Point(53, 220);
+
+            lblDescripcion.Name =
+                "lblDescripcion";
+
             lblDescripcion.Text =
                 "Seleccione una opción del menú para comenzar.";
 
+            // =====================================================
+            // MENU USUARIO
+            // =====================================================
 
-            // ====================================================
-            // FormPrincipal
-            // ====================================================
-            AutoScaleDimensions = new SizeF(8F, 20F);
-            AutoScaleMode = AutoScaleMode.Font;
+            pnlMenuUsuario.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
 
-            BackColor = Color.FromArgb(245, 245, 245);
+            pnlMenuUsuario.BackColor =
+                Color.White;
 
-            ClientSize = new Size(1200, 750);
+            pnlMenuUsuario.BorderStyle =
+                BorderStyle.FixedSingle;
 
-            Controls.Add(pnlCuerpo);
-            Controls.Add(pnlCabecera);
+            pnlMenuUsuario.Controls.Add(btnCerrarSesion);
+            pnlMenuUsuario.Controls.Add(pnlSeparadorUsuario);
+            pnlMenuUsuario.Controls.Add(btnEditarPerfil);
+            pnlMenuUsuario.Controls.Add(lblUsuario);
 
-            MinimumSize = new Size(1100, 700);
+            pnlMenuUsuario.Location =
+                new Point(1158, 84);
 
-            Name = "FormPrincipal";
+            pnlMenuUsuario.Name =
+                "pnlMenuUsuario";
 
-            StartPosition = FormStartPosition.CenterScreen;
+            pnlMenuUsuario.Size =
+                new Size(217, 150);
 
-            Text = "Hierro y Forja - Sistema de Gestión";
+            pnlMenuUsuario.TabIndex =
+                10;
 
-            WindowState = FormWindowState.Maximized;
+            pnlMenuUsuario.Visible =
+                false;
 
+            // =====================================================
+            // NOMBRE USUARIO
+            // =====================================================
+
+            lblUsuario.Font =
+                new Font(
+                    "Segoe UI",
+                    9F,
+                    FontStyle.Bold);
+
+            lblUsuario.ForeColor =
+                Color.FromArgb(30, 34, 39);
+
+            lblUsuario.Location =
+                new Point(15, 8);
+
+            lblUsuario.Name =
+                "lblUsuario";
+
+            lblUsuario.Size =
+                new Size(185, 34);
+
+            lblUsuario.Text =
+                "Administrador Sistema";
+
+            lblUsuario.TextAlign =
+                ContentAlignment.MiddleLeft;
+
+            // =====================================================
+            // EDITAR PERFIL
+            // =====================================================
+
+            btnEditarPerfil.BackColor =
+                Color.White;
+
+            btnEditarPerfil.Cursor =
+                Cursors.Hand;
+
+            btnEditarPerfil.FlatAppearance.BorderSize =
+                0;
+
+            btnEditarPerfil.FlatAppearance.MouseOverBackColor =
+                Color.FromArgb(245, 241, 232);
+
+            btnEditarPerfil.FlatStyle =
+                FlatStyle.Flat;
+
+            btnEditarPerfil.Font =
+                new Font("Segoe UI", 9F);
+
+            btnEditarPerfil.ForeColor =
+                Color.FromArgb(45, 45, 45);
+
+            btnEditarPerfil.Location =
+                new Point(0, 44);
+
+            btnEditarPerfil.Name =
+                "btnEditarPerfil";
+
+            btnEditarPerfil.Padding =
+                new Padding(15, 0, 0, 0);
+
+            btnEditarPerfil.Size =
+                new Size(215, 43);
+
+            btnEditarPerfil.Text =
+                "⚙   Editar perfil";
+
+            btnEditarPerfil.TextAlign =
+                ContentAlignment.MiddleLeft;
+
+            // =====================================================
+            // SEPARADOR
+            // =====================================================
+
+            pnlSeparadorUsuario.BackColor =
+                Color.FromArgb(220, 220, 220);
+
+            pnlSeparadorUsuario.Location =
+                new Point(14, 89);
+
+            pnlSeparadorUsuario.Name =
+                "pnlSeparadorUsuario";
+
+            pnlSeparadorUsuario.Size =
+                new Size(187, 1);
+
+            // =====================================================
+            // CERRAR SESION
+            // =====================================================
+
+            btnCerrarSesion.BackColor =
+                Color.White;
+
+            btnCerrarSesion.Cursor =
+                Cursors.Hand;
+
+            btnCerrarSesion.FlatAppearance.BorderSize =
+                0;
+
+            btnCerrarSesion.FlatAppearance.MouseOverBackColor =
+                Color.FromArgb(250, 242, 242);
+
+            btnCerrarSesion.FlatStyle =
+                FlatStyle.Flat;
+
+            btnCerrarSesion.Font =
+                new Font("Segoe UI", 9F);
+
+            btnCerrarSesion.ForeColor =
+                Color.FromArgb(150, 48, 48);
+
+            btnCerrarSesion.Location =
+                new Point(0, 96);
+
+            btnCerrarSesion.Name =
+                "btnCerrarSesion";
+
+            btnCerrarSesion.Padding =
+                new Padding(15, 0, 0, 0);
+
+            btnCerrarSesion.Size =
+                new Size(215, 43);
+
+            btnCerrarSesion.Text =
+                "↩   Cerrar sesión";
+
+            btnCerrarSesion.TextAlign =
+                ContentAlignment.MiddleLeft;
+
+            // =====================================================
+            // FINAL
+            // =====================================================
 
             pnlCabecera.ResumeLayout(false);
             pnlCabecera.PerformLayout();
 
+            ((System.ComponentModel.ISupportInitialize)picLogo)
+                .EndInit();
+
             pnlCuerpo.ResumeLayout(false);
-
             pnlMenu.ResumeLayout(false);
-
-            pnlUsuario.ResumeLayout(false);
 
             pnlContenido.ResumeLayout(false);
             pnlContenido.PerformLayout();
+
+            pnlMenuUsuario.ResumeLayout(false);
 
             ResumeLayout(false);
         }
 
         #endregion
 
-
-        // ========================================================
-        // CONTROLES DE LA CABECERA
-        // ========================================================
         private Panel pnlCabecera;
+        private PictureBox picLogo;
         private Label lblMarca;
+
+        private Button btnMinimizar;
+        private Button btnMaximizar;
+        private Button btnCerrarPrograma;
+
         private Label lblPerfil;
+        private Label lblFecha;
+        private Button btnUsuarioMenu;
 
+        private Panel pnlLineaDorada;
 
-        // ========================================================
-        // ESTRUCTURA GENERAL
-        // ========================================================
         private Panel pnlCuerpo;
         private Panel pnlMenu;
         private Panel pnlContenido;
 
-
-        // ========================================================
-        // MENÚ PRINCIPAL
-        // ========================================================
         private Button btnInicio;
         private Button btnVentas;
         private Button btnClientes;
@@ -513,20 +1062,15 @@
         private Button btnUsuarios;
         private Button btnReportes;
 
-
-        // ========================================================
-        // ZONA DE USUARIO
-        // ========================================================
-        private Panel pnlUsuario;
-        private Label lblUsuario;
-        private Button btnEditarPerfil;
-        private Button btnCerrarSesion;
-
-
-        // ========================================================
-        // CONTENIDO INICIAL
-        // ========================================================
+        private Label lblTituloInicio;
+        private Panel pnlLineaTitulo;
         private Label lblBienvenida;
         private Label lblDescripcion;
+
+        private Panel pnlMenuUsuario;
+        private Label lblUsuario;
+        private Panel pnlSeparadorUsuario;
+        private Button btnEditarPerfil;
+        private Button btnCerrarSesion;
     }
 }
