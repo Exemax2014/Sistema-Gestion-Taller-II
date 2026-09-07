@@ -438,28 +438,19 @@ namespace Capa_Vistas
 
 
         private void BtnClientes_Click(
-            object? sender,
-            EventArgs e)
+             object? sender,
+             EventArgs e)
         {
-            MostrarModuloTemporal(
-                "Clientes",
-                "Gestión y consulta de clientes.",
-                btnClientes
-            );
+            AbrirFormularioEnPanel(new FormClientes(), btnClientes);
         }
 
 
         private void BtnProductos_Click(
-            object? sender,
-            EventArgs e)
+             object? sender,
+             EventArgs e)
         {
-            MostrarModuloTemporal(
-                "Productos",
-                "Catálogo, productos e inventario.",
-                btnProductos
-            );
+            AbrirFormularioEnPanel(new FormProductos(), btnProductos);
         }
-
 
         private void BtnUsuarios_Click(
             object? sender,

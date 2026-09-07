@@ -239,3 +239,74 @@ BEGIN
         p.nombre;
 END;
 GO
+
+-- ========================================================
+-- CLIENTES
+-- ========================================================
+
+-- ========================================================
+-- Procedimiento: sp_Cliente_Listar
+--
+-- Descripción:
+-- Devuelve todos los clientes activos (para la grilla del
+-- módulo de Clientes).
+-- ========================================================
+CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Listar
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        id_cliente,
+        nombre,
+        apellido,
+        documento,
+        correo,
+        telefono
+    FROM dbo.CLIENTE
+    WHERE eliminado_en IS NULL
+    ORDER BY apellido, nombre;
+END
+GO
+
+-- ========================================================
+-- Procedimiento: sp_Cliente_Alta
+--
+-- Descripción:
+-- Inserta un nuevo cliente. Devuelve el id generado.
+-- ========================================================
+CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Alta
+    @nombre NVARCHAR(100),
+    @apellido NVARCHAR(100),
+    @documento NVARCHAR(20),
+    @correo NVARCHAR(150) = NULL,
+    @telefono NVARCHAR(30) = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO dbo.CLIENTE (nombre, apellido, documento, correo, telefono)
+    VALUES (@nombre, @apellido, @documento, @correo, @telefono);
+
+    SELECT CAST(SCOPE_IDENTITY() AS INT) AS id_cliente;
+END
+GO
+
+-- ========================================================
+-- Procedimiento: sp_Cliente_Baja
+--
+-- Descripción:
+-- Baja lógica del cliente. Nunca se hace borrado físico.
+-- ========================================================
+CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Baja
+    @id_cliente INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    UPDATE dbo.CLIENTE
+    SET eliminado_en = SYSDATETIME()
+    WHERE id_cliente = @id_cliente
+      AND eliminado_en IS NULL;
+END
+GO
