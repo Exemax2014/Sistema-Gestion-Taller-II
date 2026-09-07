@@ -1,3 +1,4 @@
+
 -- ============================================================
 -- PROCEDIMIENTOS ALMACENADOS
 -- Sistema Hierro y Forja
@@ -310,3 +311,6 @@ BEGIN
       AND eliminado_en IS NULL;
 END
 GO
+
+
+--- comentario de prueba

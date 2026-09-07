@@ -1078,11 +1078,7 @@ namespace Capa_Vistas
              object? sender,
              EventArgs e)
         {
-            MostrarModuloTemporal(
-                "Productos",
-                "Productos, categorías e inventario.",
-                btnProductos
-            );
+            AbrirFormularioEnPanel(new FormProductos(), btnProductos);
         }
 
         private void BtnUsuarios_Click(
