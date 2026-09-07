@@ -1,4 +1,9 @@
-﻿namespace Capa_Vistas
+﻿using System;
+using System.Windows.Forms;
+using Capa_Datos;
+using Capa_Logica;
+
+namespace Capa_Vistas
 {
     public partial class FormClientes : Form
     {
@@ -9,6 +14,9 @@
             FormPrincipal formPrincipal)
         {
             InitializeComponent();
+            ConfigurarPermisos();
+            CargarGrilla();
+        }
 
             this.formPrincipal =
                 formPrincipal;
@@ -16,15 +24,22 @@
             ConfigurarEventos();
         }
 
+        private void BtnAlta_Click(object? sender, EventArgs e)
+        {
+            string nombre = txtNombre.Text;
+            string apellido = txtApellido.Text;
+            string documento = txtDocumento.Text;
+            string correo = txtCorreo.Text;
+            string telefono = txtTelefono.Text;
 
         private void ConfigurarEventos()
-        {
+            {
             btnNuevoCliente.Click +=
                 BtnNuevoCliente_Click;
 
             dgvClientes.CellContentClick +=
                 DgvClientes_CellContentClick;
-        }
+            }
 
 
         // =========================================================
@@ -34,7 +49,7 @@
         private void BtnNuevoCliente_Click(
             object? sender,
             EventArgs e)
-        {
+            {
             FormClienteDetalle detalle =
                 new FormClienteDetalle(
                     formPrincipal
@@ -45,6 +60,15 @@
                 detalle,
                 formPrincipal.BotonClientes
             );
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "No se pudo agregar el cliente: " + ex.Message,
+                    "Alta de cliente",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
         }
 
 
@@ -58,6 +82,11 @@
         {
             if (e.RowIndex < 0)
             {
+                MessageBox.Show(
+                    "Seleccioná un cliente de la grilla antes de dar de baja.",
+                    "Baja de cliente",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
                 return;
             }
 
@@ -109,6 +138,20 @@
                     localidad
                 );
 
+            try
+            {
+                clienteLogica.Baja(cliente.IdCliente);
+                CargarGrilla();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show(
+                    "No se pudo dar de baja al cliente: " + ex.Message,
+                    "Baja de cliente",
+                    MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
+            }
+        }
 
             formPrincipal.AbrirFormularioEnPanel(
                 detalle,

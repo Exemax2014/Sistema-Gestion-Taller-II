@@ -1064,8 +1064,8 @@ namespace Capa_Vistas
 
 
         private void BtnClientes_Click(
-            object? sender,
-            EventArgs e)
+             object? sender,
+             EventArgs e)
         {
             AbrirFormularioEnPanel(
                 new FormClientes(this),
@@ -1075,8 +1075,8 @@ namespace Capa_Vistas
 
 
         private void BtnProductos_Click(
-            object? sender,
-            EventArgs e)
+             object? sender,
+             EventArgs e)
         {
             MostrarModuloTemporal(
                 "Productos",
@@ -1084,7 +1084,6 @@ namespace Capa_Vistas
                 btnProductos
             );
         }
-
 
         private void BtnUsuarios_Click(
             object? sender,
