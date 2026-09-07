@@ -96,3 +96,42 @@ WHERE
         WHERE nombre_usuario = 'vendedor'
     );
 GO
+
+/* =========================================================
+   USUARIO GERENTE DE PRUEBA
+   ========================================================= */
+
+INSERT INTO dbo.USUARIO
+(
+    id_perfil,
+    id_sucursal,
+    nombre,
+    apellido,
+    dni,
+    nombre_usuario,
+    contrasena_hash,
+    correo
+)
+SELECT
+    p.id_perfil,
+    s.id_sucursal,
+    'Gerente',
+    'Prueba',
+    '99000002',
+    'gerente',
+    '100000.zpJ5ba3fjhu0UZQQlS0CSA==.aYlVb4EHb1iq2DDfmmZ/PYf/+s/KygiBFxj6yvyEmAI=',
+    'gerente.prueba@local.test'
+
+FROM dbo.PERFIL AS p
+CROSS JOIN dbo.SUCURSAL AS s
+
+WHERE
+    p.nombre = 'Gerente'
+    AND s.nombre = 'Sucursal Central'
+    AND NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.USUARIO
+        WHERE nombre_usuario = 'gerente'
+    );
+GO
