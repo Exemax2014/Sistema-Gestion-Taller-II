@@ -4,88 +4,132 @@ using Microsoft.Data.SqlClient;
 namespace Capa_Datos
 {
     // ============================================================
-    // Clase: ProductoInfo
-    //
-    // Representa los datos de un producto, junto con su stock
-    // en una sucursal puntual, que necesita Capa_Vistas para
-    // mostrarlo en los buscadores (por ejemplo, en Ventas).
+    // Modelos utilizados por ProductoDatos.
     // ============================================================
+
     public class ProductoInfo
     {
         public int IdProducto { get; set; }
+
         public string CodigoBarra { get; set; } = string.Empty;
+
         public string Nombre { get; set; } = string.Empty;
+
         public string Descripcion { get; set; } = string.Empty;
+
         public decimal PrecioVenta { get; set; }
+
         public int Stock { get; set; }
     }
 
-    // ============================================================
-    // Clase: ProductoListaInfo
-    //
-    // Representa un producto tal como se muestra en la grilla
-    // del módulo de Productos (sin depender de una sucursal ni
-    // de stock).
-    // ============================================================
+
     public class ProductoListaInfo
     {
         public int IdProducto { get; set; }
+
         public string CodigoBarra { get; set; } = string.Empty;
+
         public string Nombre { get; set; } = string.Empty;
+
         public string Descripcion { get; set; } = string.Empty;
+
         public decimal PrecioCosto { get; set; }
+
         public decimal PorcentajeGanancia { get; set; }
+
         public decimal PrecioVenta { get; set; }
+
         public string Categoria { get; set; } = string.Empty;
+
+        public string Marca { get; set; } = string.Empty;
+
+        public bool Activo { get; set; }
     }
 
-    // ============================================================
-    // Clase: CategoriaInfo
-    //
-    // Representa una categoría para poblar combos de selección.
-    // ============================================================
+
+    public class ProductoDetalleInfo
+    {
+        public int IdProducto { get; set; }
+
+        public int IdCategoria { get; set; }
+
+        public int? IdMarca { get; set; }
+
+        public string CodigoBarra { get; set; } = string.Empty;
+
+        public string Nombre { get; set; } = string.Empty;
+
+        public string Descripcion { get; set; } = string.Empty;
+
+        public decimal PrecioCosto { get; set; }
+
+        public decimal PorcentajeGanancia { get; set; }
+
+        public decimal PrecioVenta { get; set; }
+
+        public bool Activo { get; set; }
+    }
+
+
     public class CategoriaInfo
     {
         public int IdCategoria { get; set; }
-        public string Nombre { get; set; } = string.Empty;
 
-        // Se sobrescribe ToString para que el ComboBox muestre
-        // directamente el nombre de la categoría.
-        public override string ToString() => Nombre;
+        public string Nombre { get; set; } = string.Empty;
     }
+
+
+    public class MarcaInfo
+    {
+        public int IdMarca { get; set; }
+
+        public string Nombre { get; set; } = string.Empty;
+    }
+
+
+    public class ResultadoProductoDatos
+    {
+        public int Codigo { get; set; }
+
+        public string Mensaje { get; set; } = string.Empty;
+
+        public int IdGenerado { get; set; }
+
+        public bool Exitoso => Codigo == 0;
+    }
+
 
     // ============================================================
     // Clase: ProductoDatos
     //
-    // Contiene las operaciones de acceso a datos relacionadas
-    // con los productos y sus categorías.
-    //
-    // Esta clase pertenece exclusivamente a Capa_Datos.
+    // Ejecuta los procedimientos almacenados de productos.
     // ============================================================
+
     public class ProductoDatos
     {
-        // ========================================================
-        // Método: Buscar
-        //
-        // Busca productos mediante el procedimiento almacenado:
-        // dbo.sp_Producto_Buscar
-        //
-        // Devuelve una lista de productos activos que coinciden
-        // parcialmente con el texto recibido, junto con su stock
-        // en la sucursal indicada.
-        // ========================================================
-        public List<ProductoInfo> Buscar(string texto, int idSucursal)
+        // Busca productos para el módulo de ventas.
+        public List<ProductoInfo> Buscar(
+            string texto,
+            int idSucursal)
         {
-            List<ProductoInfo> productos = new List<ProductoInfo>();
+            List<ProductoInfo> productos =
+                new List<ProductoInfo>();
 
-            using SqlConnection conexion = Conexion.CrearConexion();
 
-            using SqlCommand comando = new SqlCommand(
-                "dbo.sp_Producto_Buscar",
-                conexion
-            );
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
 
-            comando.CommandType = CommandType.StoredProcedure;
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Producto_Buscar",
+                    conexion
+                );
+
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
 
             comando.Parameters.Add(
                 "@texto",
@@ -93,146 +137,724 @@ namespace Capa_Datos
                 100
             ).Value = texto.Trim();
 
+
             comando.Parameters.Add(
                 "@idSucursal",
                 SqlDbType.Int
             ).Value = idSucursal;
 
+
             conexion.Open();
 
-            using SqlDataReader lector = comando.ExecuteReader();
+
+            using SqlDataReader lector =
+                comando.ExecuteReader();
+
+
             while (lector.Read())
             {
-                productos.Add(new ProductoInfo
-                {
-                    IdProducto = Convert.ToInt32(lector["id_producto"]),
-                    CodigoBarra = lector["codigo_barra"].ToString() ?? string.Empty,
-                    Nombre = lector["nombre"].ToString() ?? string.Empty,
-                    Descripcion = lector["descripcion"].ToString() ?? string.Empty,
-                    PrecioVenta = Convert.ToDecimal(lector["precio_venta"]),
-                    Stock = Convert.ToInt32(lector["stock"])
-                });
+                productos.Add(
+                    new ProductoInfo
+                    {
+                        IdProducto =
+                            Convert.ToInt32(
+                                lector["id_producto"]
+                            ),
+
+                        CodigoBarra =
+                            LeerTexto(
+                                lector,
+                                "codigo_barra"
+                            ),
+
+                        Nombre =
+                            LeerTexto(
+                                lector,
+                                "nombre"
+                            ),
+
+                        Descripcion =
+                            LeerTexto(
+                                lector,
+                                "descripcion"
+                            ),
+
+                        PrecioVenta =
+                            Convert.ToDecimal(
+                                lector["precio_venta"]
+                            ),
+
+                        Stock =
+                            Convert.ToInt32(
+                                lector["stock"]
+                            )
+                    }
+                );
             }
+
 
             return productos;
         }
 
-        // ========================================================
-        // Método: ObtenerActivos
-        //
-        // Trae todos los productos activos junto con el nombre
-        // de su categoría, mediante dbo.sp_Producto_Listar.
-        //
-        // Pensado para poblar la grilla del módulo de Productos.
-        // ========================================================
-        public List<ProductoListaInfo> ObtenerActivos()
+
+        // Trae todo el catálogo no eliminado.
+        public List<ProductoListaInfo> ObtenerTodos()
         {
-            List<ProductoListaInfo> productos = new List<ProductoListaInfo>();
+            List<ProductoListaInfo> productos =
+                new List<ProductoListaInfo>();
 
-            using SqlConnection conexion = Conexion.CrearConexion();
 
-            using SqlCommand comando = new SqlCommand(
-                "dbo.sp_Producto_Listar",
-                conexion
-            );
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
 
-            comando.CommandType = CommandType.StoredProcedure;
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Producto_Listar",
+                    conexion
+                );
+
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
 
             conexion.Open();
 
-            using SqlDataReader lector = comando.ExecuteReader();
+
+            using SqlDataReader lector =
+                comando.ExecuteReader();
+
+
             while (lector.Read())
             {
-                productos.Add(new ProductoListaInfo
-                {
-                    IdProducto = Convert.ToInt32(lector["id_producto"]),
-                    CodigoBarra = lector["codigo_barra"] == DBNull.Value
-                        ? string.Empty
-                        : lector["codigo_barra"].ToString() ?? string.Empty,
-                    Nombre = lector["nombre"].ToString() ?? string.Empty,
-                    Descripcion = lector["descripcion"] == DBNull.Value
-                        ? string.Empty
-                        : lector["descripcion"].ToString() ?? string.Empty,
-                    PrecioCosto = Convert.ToDecimal(lector["precio_costo"]),
-                    PorcentajeGanancia = Convert.ToDecimal(lector["porcentaje_ganancia"]),
-                    PrecioVenta = Convert.ToDecimal(lector["precio_venta"]),
-                    Categoria = lector["categoria"].ToString() ?? string.Empty
-                });
+                productos.Add(
+                    new ProductoListaInfo
+                    {
+                        IdProducto =
+                            Convert.ToInt32(
+                                lector["id_producto"]
+                            ),
+
+                        CodigoBarra =
+                            LeerTexto(
+                                lector,
+                                "codigo_barra"
+                            ),
+
+                        Nombre =
+                            LeerTexto(
+                                lector,
+                                "nombre"
+                            ),
+
+                        Descripcion =
+                            LeerTexto(
+                                lector,
+                                "descripcion"
+                            ),
+
+                        PrecioCosto =
+                            Convert.ToDecimal(
+                                lector["precio_costo"]
+                            ),
+
+                        PorcentajeGanancia =
+                            Convert.ToDecimal(
+                                lector["porcentaje_ganancia"]
+                            ),
+
+                        PrecioVenta =
+                            Convert.ToDecimal(
+                                lector["precio_venta"]
+                            ),
+
+                        Categoria =
+                            LeerTexto(
+                                lector,
+                                "categoria"
+                            ),
+
+                        Marca =
+                            LeerTexto(
+                                lector,
+                                "marca"
+                            ),
+
+                        Activo =
+                            Convert.ToBoolean(
+                                lector["activo"]
+                            )
+                    }
+                );
             }
+
 
             return productos;
         }
 
-        // ========================================================
-        // Método: ObtenerCategorias
-        //
-        // Trae las categorías activas mediante
-        // dbo.sp_Categoria_Listar, para poblar el combo del Alta.
-        // ========================================================
+
+        // Trae el detalle completo de un producto.
+        public ProductoDetalleInfo? ObtenerPorId(
+            int idProducto)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Producto_ObtenerPorId",
+                    conexion
+                );
+
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+
+            comando.Parameters.Add(
+                "@idProducto",
+                SqlDbType.Int
+            ).Value = idProducto;
+
+
+            conexion.Open();
+
+
+            using SqlDataReader lector =
+                comando.ExecuteReader();
+
+
+            if (!lector.Read())
+            {
+                return null;
+            }
+
+
+            return new ProductoDetalleInfo
+            {
+                IdProducto =
+                    Convert.ToInt32(
+                        lector["id_producto"]
+                    ),
+
+                IdCategoria =
+                    Convert.ToInt32(
+                        lector["id_categoria"]
+                    ),
+
+                IdMarca =
+                    lector["id_marca"] == DBNull.Value
+                        ? null
+                        : Convert.ToInt32(
+                            lector["id_marca"]
+                        ),
+
+                CodigoBarra =
+                    LeerTexto(
+                        lector,
+                        "codigo_barra"
+                    ),
+
+                Nombre =
+                    LeerTexto(
+                        lector,
+                        "nombre"
+                    ),
+
+                Descripcion =
+                    LeerTexto(
+                        lector,
+                        "descripcion"
+                    ),
+
+                PrecioCosto =
+                    Convert.ToDecimal(
+                        lector["precio_costo"]
+                    ),
+
+                PorcentajeGanancia =
+                    Convert.ToDecimal(
+                        lector["porcentaje_ganancia"]
+                    ),
+
+                PrecioVenta =
+                    Convert.ToDecimal(
+                        lector["precio_venta"]
+                    ),
+
+                Activo =
+                    Convert.ToBoolean(
+                        lector["activo"]
+                    )
+            };
+        }
+
+
         public List<CategoriaInfo> ObtenerCategorias()
         {
-            List<CategoriaInfo> categorias = new List<CategoriaInfo>();
+            List<CategoriaInfo> categorias =
+                new List<CategoriaInfo>();
 
-            using SqlConnection conexion = Conexion.CrearConexion();
 
-            using SqlCommand comando = new SqlCommand(
-                "dbo.sp_Categoria_Listar",
-                conexion
-            );
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
 
-            comando.CommandType = CommandType.StoredProcedure;
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Categoria_Listar",
+                    conexion
+                );
+
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
 
             conexion.Open();
 
-            using SqlDataReader lector = comando.ExecuteReader();
+
+            using SqlDataReader lector =
+                comando.ExecuteReader();
+
+
             while (lector.Read())
             {
-                categorias.Add(new CategoriaInfo
-                {
-                    IdCategoria = Convert.ToInt32(lector["id_categoria"]),
-                    Nombre = lector["nombre"].ToString() ?? string.Empty
-                });
+                categorias.Add(
+                    new CategoriaInfo
+                    {
+                        IdCategoria =
+                            Convert.ToInt32(
+                                lector["id_categoria"]
+                            ),
+
+                        Nombre =
+                            LeerTexto(
+                                lector,
+                                "nombre"
+                            )
+                    }
+                );
             }
+
 
             return categorias;
         }
 
-        // ========================================================
-        // Método: Alta
-        //
-        // Inserta un nuevo producto mediante dbo.sp_Producto_Alta.
-        // Devuelve el id_producto generado por SQL Server.
-        // ========================================================
-        public int Alta(
+
+        public List<MarcaInfo> ObtenerMarcas()
+        {
+            List<MarcaInfo> marcas =
+                new List<MarcaInfo>();
+
+
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Marca_Listar",
+                    conexion
+                );
+
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+
+            conexion.Open();
+
+
+            using SqlDataReader lector =
+                comando.ExecuteReader();
+
+
+            while (lector.Read())
+            {
+                marcas.Add(
+                    new MarcaInfo
+                    {
+                        IdMarca =
+                            Convert.ToInt32(
+                                lector["id_marca"]
+                            ),
+
+                        Nombre =
+                            LeerTexto(
+                                lector,
+                                "nombre"
+                            )
+                    }
+                );
+            }
+
+
+            return marcas;
+        }
+
+
+        public ResultadoProductoDatos Alta(
             int idCategoria,
+            int? idMarca,
             string? codigoBarra,
             string nombre,
             string? descripcion,
             decimal precioCosto,
-            decimal porcentajeGanancia)
+            decimal porcentajeGanancia,
+            bool activo)
         {
-            using SqlConnection conexion = Conexion.CrearConexion();
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
 
-            using SqlCommand comando = new SqlCommand(
-                "dbo.sp_Producto_Alta",
-                conexion
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Producto_Alta",
+                    conexion
+                );
+
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+
+            CargarParametros(
+                comando,
+                idCategoria,
+                idMarca,
+                codigoBarra,
+                nombre,
+                descripcion,
+                precioCosto,
+                porcentajeGanancia,
+                activo
             );
 
-            comando.CommandType = CommandType.StoredProcedure;
 
-            comando.Parameters.Add("@id_categoria", SqlDbType.Int).Value = idCategoria;
-            comando.Parameters.Add("@codigo_barra", SqlDbType.NVarChar, 50).Value =
-                (object?)codigoBarra ?? DBNull.Value;
-            comando.Parameters.Add("@nombre", SqlDbType.NVarChar, 100).Value = nombre;
-            comando.Parameters.Add("@descripcion", SqlDbType.NVarChar, 250).Value =
-                (object?)descripcion ?? DBNull.Value;
-            comando.Parameters.Add("@precio_costo", SqlDbType.Decimal).Value = precioCosto;
-            comando.Parameters.Add("@porcentaje_ganancia", SqlDbType.Decimal).Value = porcentajeGanancia;
+            SqlParameter idGenerado =
+                CrearSalida(
+                    comando,
+                    "@IdGenerado",
+                    SqlDbType.Int
+                );
+
+
+            SqlParameter codigoResultado =
+                CrearSalida(
+                    comando,
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+
+            SqlParameter mensajeResultado =
+                CrearSalida(
+                    comando,
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
 
             conexion.Open();
 
-            object? resultado = comando.ExecuteScalar();
-            return resultado != null ? Convert.ToInt32(resultado) : 0;
+            comando.ExecuteNonQuery();
+
+
+            return new ResultadoProductoDatos
+            {
+                Codigo =
+                    Convert.ToInt32(
+                        codigoResultado.Value
+                    ),
+
+                Mensaje =
+                    mensajeResultado.Value
+                        ?.ToString()
+                    ?? string.Empty,
+
+                IdGenerado =
+                    idGenerado.Value == DBNull.Value
+                        ? 0
+                        : Convert.ToInt32(
+                            idGenerado.Value
+                        )
+            };
+        }
+
+
+        public ResultadoProductoDatos Modificar(
+            int idProducto,
+            int idCategoria,
+            int? idMarca,
+            string? codigoBarra,
+            string nombre,
+            string? descripcion,
+            decimal precioCosto,
+            decimal porcentajeGanancia,
+            bool activo)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Producto_Modificar",
+                    conexion
+                );
+
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+
+            comando.Parameters.Add(
+                "@idProducto",
+                SqlDbType.Int
+            ).Value = idProducto;
+
+
+            CargarParametros(
+                comando,
+                idCategoria,
+                idMarca,
+                codigoBarra,
+                nombre,
+                descripcion,
+                precioCosto,
+                porcentajeGanancia,
+                activo
+            );
+
+
+            SqlParameter codigoResultado =
+                CrearSalida(
+                    comando,
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+
+            SqlParameter mensajeResultado =
+                CrearSalida(
+                    comando,
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
+
+            conexion.Open();
+
+            comando.ExecuteNonQuery();
+
+
+            return new ResultadoProductoDatos
+            {
+                Codigo =
+                    Convert.ToInt32(
+                        codigoResultado.Value
+                    ),
+
+                Mensaje =
+                    mensajeResultado.Value
+                        ?.ToString()
+                    ?? string.Empty
+            };
+        }
+
+
+        public ResultadoProductoDatos Baja(
+            int idProducto)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Producto_Baja",
+                    conexion
+                );
+
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+
+            comando.Parameters.Add(
+                "@idProducto",
+                SqlDbType.Int
+            ).Value = idProducto;
+
+
+            SqlParameter codigoResultado =
+                CrearSalida(
+                    comando,
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+
+            SqlParameter mensajeResultado =
+                CrearSalida(
+                    comando,
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
+
+            conexion.Open();
+
+            comando.ExecuteNonQuery();
+
+
+            return new ResultadoProductoDatos
+            {
+                Codigo =
+                    Convert.ToInt32(
+                        codigoResultado.Value
+                    ),
+
+                Mensaje =
+                    mensajeResultado.Value
+                        ?.ToString()
+                    ?? string.Empty
+            };
+        }
+
+
+        private static void CargarParametros(
+            SqlCommand comando,
+            int idCategoria,
+            int? idMarca,
+            string? codigoBarra,
+            string nombre,
+            string? descripcion,
+            decimal precioCosto,
+            decimal porcentajeGanancia,
+            bool activo)
+        {
+            comando.Parameters.Add(
+                "@idCategoria",
+                SqlDbType.Int
+            ).Value = idCategoria;
+
+
+            comando.Parameters.Add(
+                "@idMarca",
+                SqlDbType.Int
+            ).Value =
+                (object?)idMarca
+                ?? DBNull.Value;
+
+
+            comando.Parameters.Add(
+                "@codigoBarra",
+                SqlDbType.NVarChar,
+                50
+            ).Value =
+                string.IsNullOrWhiteSpace(
+                    codigoBarra
+                )
+                    ? DBNull.Value
+                    : codigoBarra.Trim();
+
+
+            comando.Parameters.Add(
+                "@nombre",
+                SqlDbType.NVarChar,
+                100
+            ).Value = nombre.Trim();
+
+
+            comando.Parameters.Add(
+                "@descripcion",
+                SqlDbType.NVarChar,
+                -1
+            ).Value =
+                string.IsNullOrWhiteSpace(
+                    descripcion
+                )
+                    ? DBNull.Value
+                    : descripcion.Trim();
+
+
+            SqlParameter costo =
+                comando.Parameters.Add(
+                    "@precioCosto",
+                    SqlDbType.Decimal
+                );
+
+            costo.Precision = 18;
+            costo.Scale = 2;
+            costo.Value = precioCosto;
+
+
+            SqlParameter ganancia =
+                comando.Parameters.Add(
+                    "@porcentajeGanancia",
+                    SqlDbType.Decimal
+                );
+
+            ganancia.Precision = 5;
+            ganancia.Scale = 2;
+            ganancia.Value =
+                porcentajeGanancia;
+
+
+            comando.Parameters.Add(
+                "@activo",
+                SqlDbType.Bit
+            ).Value = activo;
+        }
+
+
+        private static SqlParameter CrearSalida(
+            SqlCommand comando,
+            string nombre,
+            SqlDbType tipo,
+            int tamano = 0)
+        {
+            SqlParameter parametro =
+                tamano > 0
+                    ? comando.Parameters.Add(
+                        nombre,
+                        tipo,
+                        tamano
+                    )
+                    : comando.Parameters.Add(
+                        nombre,
+                        tipo
+                    );
+
+
+            parametro.Direction =
+                ParameterDirection.Output;
+
+
+            return parametro;
+        }
+
+
+        private static string LeerTexto(
+            SqlDataReader lector,
+            string columna)
+        {
+            if (lector[columna] == DBNull.Value)
+            {
+                return string.Empty;
+            }
+
+
+            return lector[columna]
+                .ToString()
+                ?? string.Empty;
         }
     }
 }

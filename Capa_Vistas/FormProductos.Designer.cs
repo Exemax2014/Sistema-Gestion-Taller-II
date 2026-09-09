@@ -1,241 +1,467 @@
-﻿namespace Capa_Vistas
+﻿using Font = System.Drawing.Font;
+
+namespace Capa_Vistas
 {
     partial class FormProductos
     {
-        private System.ComponentModel.IContainer components = null;
+        private System.ComponentModel.IContainer components =
+            null;
 
-        protected override void Dispose(bool disposing)
+
+        private TableLayoutPanel tlpPrincipal;
+
+        private TableLayoutPanel tlpCabecera;
+
+        private Panel pnlTitulo;
+
+        private Label lblTitulo;
+
+        private Label lblSubtitulo;
+
+        private Panel pnlLineaTitulo;
+
+        private Button btnNuevoProducto;
+
+
+        private Panel pnlFiltros;
+
+        private TableLayoutPanel tlpFiltros;
+
+        private Label lblBuscar;
+
+        private TextBox txtBuscar;
+
+        private Label lblCategoriaFiltro;
+
+        private ComboBox cmbCategoriaFiltro;
+
+        private Label lblMarcaFiltro;
+
+        private ComboBox cmbMarcaFiltro;
+
+        private Label lblEstadoFiltro;
+
+        private ComboBox cmbEstadoFiltro;
+
+        private Button btnBuscar;
+
+        private Button btnLimpiarFiltros;
+
+
+        private Label lblCantidad;
+
+        private DataGridView dgvProductos;
+
+
+        protected override void Dispose(
+            bool disposing)
         {
-            if (disposing && (components != null))
+            if (
+                disposing
+                &&
+                components != null)
             {
                 components.Dispose();
             }
-            base.Dispose(disposing);
+
+            base.Dispose(
+                disposing
+            );
         }
 
-        #region Código generado por el Diseñador de Windows Forms
+
+        #region Windows Form Designer generated code
 
         private void InitializeComponent()
         {
-            this.lblTitulo = new System.Windows.Forms.Label();
-            this.pnlAlta = new System.Windows.Forms.Panel();
-            this.lblCategoria = new System.Windows.Forms.Label();
-            this.cmbCategoria = new System.Windows.Forms.ComboBox();
-            this.lblCodigoBarra = new System.Windows.Forms.Label();
-            this.txtCodigoBarra = new System.Windows.Forms.TextBox();
-            this.lblNombre = new System.Windows.Forms.Label();
-            this.txtNombre = new System.Windows.Forms.TextBox();
-            this.lblDescripcion = new System.Windows.Forms.Label();
-            this.txtDescripcion = new System.Windows.Forms.TextBox();
-            this.lblPrecioCosto = new System.Windows.Forms.Label();
-            this.txtPrecioCosto = new System.Windows.Forms.TextBox();
-            this.lblPorcentajeGanancia = new System.Windows.Forms.Label();
-            this.txtPorcentajeGanancia = new System.Windows.Forms.TextBox();
-            this.btnAlta = new System.Windows.Forms.Button();
-            this.dgvProductos = new System.Windows.Forms.DataGridView();
-            this.pnlAlta.SuspendLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvProductos)).BeginInit();
-            this.SuspendLayout();
-            //
+            DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
+            DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
+            tlpPrincipal = new TableLayoutPanel();
+            tlpCabecera = new TableLayoutPanel();
+            pnlTitulo = new Panel();
+            lblTitulo = new Label();
+            lblSubtitulo = new Label();
+            pnlLineaTitulo = new Panel();
+            btnNuevoProducto = new Button();
+            pnlFiltros = new Panel();
+            tlpFiltros = new TableLayoutPanel();
+            lblBuscar = new Label();
+            lblCategoriaFiltro = new Label();
+            lblMarcaFiltro = new Label();
+            lblEstadoFiltro = new Label();
+            txtBuscar = new TextBox();
+            cmbCategoriaFiltro = new ComboBox();
+            cmbMarcaFiltro = new ComboBox();
+            cmbEstadoFiltro = new ComboBox();
+            btnBuscar = new Button();
+            btnLimpiarFiltros = new Button();
+            lblCantidad = new Label();
+            dgvProductos = new DataGridView();
+            tlpPrincipal.SuspendLayout();
+            tlpCabecera.SuspendLayout();
+            pnlTitulo.SuspendLayout();
+            pnlFiltros.SuspendLayout();
+            tlpFiltros.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvProductos).BeginInit();
+            SuspendLayout();
+            // 
+            // tlpPrincipal
+            // 
+            tlpPrincipal.BackColor = Color.FromArgb(241, 243, 245);
+            tlpPrincipal.ColumnCount = 1;
+            tlpPrincipal.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpPrincipal.Controls.Add(tlpCabecera, 0, 0);
+            tlpPrincipal.Controls.Add(pnlFiltros, 0, 1);
+            tlpPrincipal.Controls.Add(lblCantidad, 0, 2);
+            tlpPrincipal.Controls.Add(dgvProductos, 0, 3);
+            tlpPrincipal.Dock = DockStyle.Fill;
+            tlpPrincipal.Location = new Point(0, 0);
+            tlpPrincipal.Margin = new Padding(0);
+            tlpPrincipal.Name = "tlpPrincipal";
+            tlpPrincipal.Padding = new Padding(32, 20, 32, 25);
+            tlpPrincipal.RowCount = 4;
+            tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
+            tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Absolute, 120F));
+            tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
+            tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpPrincipal.Size = new Size(1180, 700);
+            tlpPrincipal.TabIndex = 0;
+            // 
+            // tlpCabecera
+            // 
+            tlpCabecera.ColumnCount = 2;
+            tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 256F));
+            tlpCabecera.Controls.Add(pnlTitulo, 0, 0);
+            tlpCabecera.Controls.Add(btnNuevoProducto, 1, 0);
+            tlpCabecera.Dock = DockStyle.Fill;
+            tlpCabecera.Location = new Point(32, 20);
+            tlpCabecera.Margin = new Padding(0);
+            tlpCabecera.Name = "tlpCabecera";
+            tlpCabecera.RowCount = 1;
+            tlpCabecera.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpCabecera.Size = new Size(1116, 100);
+            tlpCabecera.TabIndex = 0;
+            // 
+            // pnlTitulo
+            // 
+            pnlTitulo.Controls.Add(lblTitulo);
+            pnlTitulo.Controls.Add(lblSubtitulo);
+            pnlTitulo.Controls.Add(pnlLineaTitulo);
+            pnlTitulo.Dock = DockStyle.Fill;
+            pnlTitulo.Location = new Point(0, 0);
+            pnlTitulo.Margin = new Padding(0);
+            pnlTitulo.Name = "pnlTitulo";
+            pnlTitulo.Size = new Size(860, 100);
+            pnlTitulo.TabIndex = 0;
+            // 
             // lblTitulo
-            //
-            this.lblTitulo.AutoSize = true;
-            this.lblTitulo.Font = new System.Drawing.Font("Segoe UI", 14F, System.Drawing.FontStyle.Bold);
-            this.lblTitulo.Location = new System.Drawing.Point(30, 20);
-            this.lblTitulo.Name = "lblTitulo";
-            this.lblTitulo.Size = new System.Drawing.Size(150, 32);
-            this.lblTitulo.TabIndex = 0;
-            this.lblTitulo.Text = "Productos";
-            //
-            // pnlAlta
-            //
-            this.pnlAlta.BackColor = System.Drawing.Color.FromArgb(64, 196, 190);
-            this.pnlAlta.Controls.Add(this.lblCategoria);
-            this.pnlAlta.Controls.Add(this.cmbCategoria);
-            this.pnlAlta.Controls.Add(this.lblCodigoBarra);
-            this.pnlAlta.Controls.Add(this.txtCodigoBarra);
-            this.pnlAlta.Controls.Add(this.lblNombre);
-            this.pnlAlta.Controls.Add(this.txtNombre);
-            this.pnlAlta.Controls.Add(this.lblDescripcion);
-            this.pnlAlta.Controls.Add(this.txtDescripcion);
-            this.pnlAlta.Controls.Add(this.lblPrecioCosto);
-            this.pnlAlta.Controls.Add(this.txtPrecioCosto);
-            this.pnlAlta.Controls.Add(this.lblPorcentajeGanancia);
-            this.pnlAlta.Controls.Add(this.txtPorcentajeGanancia);
-            this.pnlAlta.Controls.Add(this.btnAlta);
-            this.pnlAlta.Location = new System.Drawing.Point(30, 75);
-            this.pnlAlta.Name = "pnlAlta";
-            this.pnlAlta.Size = new System.Drawing.Size(600, 200);
-            this.pnlAlta.TabIndex = 1;
-            //
-            // lblCategoria
-            //
-            this.lblCategoria.AutoSize = true;
-            this.lblCategoria.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblCategoria.ForeColor = System.Drawing.Color.White;
-            this.lblCategoria.Location = new System.Drawing.Point(20, 15);
-            this.lblCategoria.Name = "lblCategoria";
-            this.lblCategoria.Size = new System.Drawing.Size(66, 15);
-            this.lblCategoria.TabIndex = 0;
-            this.lblCategoria.Text = "Categoría";
-            //
-            // cmbCategoria
-            //
-            this.cmbCategoria.DropDownStyle = System.Windows.Forms.ComboBoxStyle.DropDownList;
-            this.cmbCategoria.Location = new System.Drawing.Point(20, 35);
-            this.cmbCategoria.Name = "cmbCategoria";
-            this.cmbCategoria.Size = new System.Drawing.Size(180, 23);
-            this.cmbCategoria.TabIndex = 1;
-            //
-            // lblCodigoBarra
-            //
-            this.lblCodigoBarra.AutoSize = true;
-            this.lblCodigoBarra.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblCodigoBarra.ForeColor = System.Drawing.Color.White;
-            this.lblCodigoBarra.Location = new System.Drawing.Point(220, 15);
-            this.lblCodigoBarra.Name = "lblCodigoBarra";
-            this.lblCodigoBarra.Size = new System.Drawing.Size(93, 15);
-            this.lblCodigoBarra.TabIndex = 2;
-            this.lblCodigoBarra.Text = "Código de barra";
-            //
-            // txtCodigoBarra
-            //
-            this.txtCodigoBarra.Location = new System.Drawing.Point(220, 35);
-            this.txtCodigoBarra.Name = "txtCodigoBarra";
-            this.txtCodigoBarra.Size = new System.Drawing.Size(150, 23);
-            this.txtCodigoBarra.TabIndex = 3;
-            //
-            // lblNombre
-            //
-            this.lblNombre.AutoSize = true;
-            this.lblNombre.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblNombre.ForeColor = System.Drawing.Color.White;
-            this.lblNombre.Location = new System.Drawing.Point(390, 15);
-            this.lblNombre.Name = "lblNombre";
-            this.lblNombre.Size = new System.Drawing.Size(55, 15);
-            this.lblNombre.TabIndex = 4;
-            this.lblNombre.Text = "Nombre";
-            //
-            // txtNombre
-            //
-            this.txtNombre.Location = new System.Drawing.Point(390, 35);
-            this.txtNombre.Name = "txtNombre";
-            this.txtNombre.Size = new System.Drawing.Size(190, 23);
-            this.txtNombre.TabIndex = 5;
-            //
-            // lblDescripcion
-            //
-            this.lblDescripcion.AutoSize = true;
-            this.lblDescripcion.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblDescripcion.ForeColor = System.Drawing.Color.White;
-            this.lblDescripcion.Location = new System.Drawing.Point(20, 75);
-            this.lblDescripcion.Name = "lblDescripcion";
-            this.lblDescripcion.Size = new System.Drawing.Size(78, 15);
-            this.lblDescripcion.TabIndex = 6;
-            this.lblDescripcion.Text = "Descripción";
-            //
-            // txtDescripcion
-            //
-            this.txtDescripcion.Location = new System.Drawing.Point(20, 95);
-            this.txtDescripcion.Name = "txtDescripcion";
-            this.txtDescripcion.Size = new System.Drawing.Size(350, 23);
-            this.txtDescripcion.TabIndex = 7;
-            //
-            // lblPrecioCosto
-            //
-            this.lblPrecioCosto.AutoSize = true;
-            this.lblPrecioCosto.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblPrecioCosto.ForeColor = System.Drawing.Color.White;
-            this.lblPrecioCosto.Location = new System.Drawing.Point(390, 75);
-            this.lblPrecioCosto.Name = "lblPrecioCosto";
-            this.lblPrecioCosto.Size = new System.Drawing.Size(86, 15);
-            this.lblPrecioCosto.TabIndex = 8;
-            this.lblPrecioCosto.Text = "Precio de costo";
-            //
-            // txtPrecioCosto
-            //
-            this.txtPrecioCosto.Location = new System.Drawing.Point(390, 95);
-            this.txtPrecioCosto.Name = "txtPrecioCosto";
-            this.txtPrecioCosto.Size = new System.Drawing.Size(90, 23);
-            this.txtPrecioCosto.TabIndex = 9;
-            //
-            // lblPorcentajeGanancia
-            //
-            this.lblPorcentajeGanancia.AutoSize = true;
-            this.lblPorcentajeGanancia.Font = new System.Drawing.Font("Segoe UI", 9F, System.Drawing.FontStyle.Bold);
-            this.lblPorcentajeGanancia.ForeColor = System.Drawing.Color.White;
-            this.lblPorcentajeGanancia.Location = new System.Drawing.Point(490, 75);
-            this.lblPorcentajeGanancia.Name = "lblPorcentajeGanancia";
-            this.lblPorcentajeGanancia.Size = new System.Drawing.Size(96, 15);
-            this.lblPorcentajeGanancia.TabIndex = 10;
-            this.lblPorcentajeGanancia.Text = "% Ganancia";
-            //
-            // txtPorcentajeGanancia
-            //
-            this.txtPorcentajeGanancia.Location = new System.Drawing.Point(490, 95);
-            this.txtPorcentajeGanancia.Name = "txtPorcentajeGanancia";
-            this.txtPorcentajeGanancia.Size = new System.Drawing.Size(90, 23);
-            this.txtPorcentajeGanancia.TabIndex = 11;
-            //
-            // btnAlta
-            //
-            this.btnAlta.BackColor = System.Drawing.Color.White;
-            this.btnAlta.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.btnAlta.Location = new System.Drawing.Point(20, 140);
-            this.btnAlta.Name = "btnAlta";
-            this.btnAlta.Size = new System.Drawing.Size(180, 40);
-            this.btnAlta.TabIndex = 12;
-            this.btnAlta.Text = "Agregar producto";
-            this.btnAlta.UseVisualStyleBackColor = false;
-            this.btnAlta.Click += new System.EventHandler(this.BtnAlta_Click);
-            //
+            // 
+            lblTitulo.AutoSize = true;
+            lblTitulo.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
+            lblTitulo.ForeColor = Color.FromArgb(45, 49, 54);
+            lblTitulo.Location = new Point(0, 2);
+            lblTitulo.Name = "lblTitulo";
+            lblTitulo.Size = new Size(199, 50);
+            lblTitulo.TabIndex = 0;
+            lblTitulo.Text = "Productos";
+            // 
+            // lblSubtitulo
+            // 
+            lblSubtitulo.AutoSize = true;
+            lblSubtitulo.Font = new Font("Segoe UI", 9.5F);
+            lblSubtitulo.ForeColor = Color.FromArgb(105, 110, 116);
+            lblSubtitulo.Location = new Point(2, 54);
+            lblSubtitulo.Name = "lblSubtitulo";
+            lblSubtitulo.Size = new Size(347, 21);
+            lblSubtitulo.TabIndex = 1;
+            lblSubtitulo.Text = "Catálogo de productos disponibles en el sistema.";
+            // 
+            // pnlLineaTitulo
+            // 
+            pnlLineaTitulo.BackColor = Color.FromArgb(190, 137, 45);
+            pnlLineaTitulo.Location = new Point(2, 84);
+            pnlLineaTitulo.Name = "pnlLineaTitulo";
+            pnlLineaTitulo.Size = new Size(92, 3);
+            pnlLineaTitulo.TabIndex = 2;
+            // 
+            // btnNuevoProducto
+            // 
+            btnNuevoProducto.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnNuevoProducto.BackColor = Color.FromArgb(190, 137, 45);
+            btnNuevoProducto.Cursor = Cursors.Hand;
+            btnNuevoProducto.FlatAppearance.BorderSize = 0;
+            btnNuevoProducto.FlatAppearance.MouseOverBackColor = Color.FromArgb(168, 119, 35);
+            btnNuevoProducto.FlatStyle = FlatStyle.Flat;
+            btnNuevoProducto.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnNuevoProducto.ForeColor = Color.White;
+            btnNuevoProducto.Location = new Point(931, 17);
+            btnNuevoProducto.Margin = new Padding(10, 17, 0, 0);
+            btnNuevoProducto.Name = "btnNuevoProducto";
+            btnNuevoProducto.Size = new Size(185, 42);
+            btnNuevoProducto.TabIndex = 1;
+            btnNuevoProducto.Text = "+ Nuevo producto";
+            btnNuevoProducto.UseVisualStyleBackColor = false;
+            // 
+            // pnlFiltros
+            // 
+            pnlFiltros.BackColor = Color.White;
+            pnlFiltros.BorderStyle = BorderStyle.FixedSingle;
+            pnlFiltros.Controls.Add(tlpFiltros);
+            pnlFiltros.Dock = DockStyle.Fill;
+            pnlFiltros.Location = new Point(32, 125);
+            pnlFiltros.Margin = new Padding(0, 5, 0, 10);
+            pnlFiltros.Name = "pnlFiltros";
+            pnlFiltros.Padding = new Padding(18, 12, 18, 12);
+            pnlFiltros.Size = new Size(1116, 105);
+            pnlFiltros.TabIndex = 1;
+            // 
+            // tlpFiltros
+            // 
+            tlpFiltros.ColumnCount = 6;
+            tlpFiltros.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30.333952F));
+            tlpFiltros.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 17.0686455F));
+            tlpFiltros.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 16.9758816F));
+            tlpFiltros.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 11.1317253F));
+            tlpFiltros.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.0593691F));
+            tlpFiltros.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 12.2448978F));
+            tlpFiltros.Controls.Add(lblBuscar, 0, 0);
+            tlpFiltros.Controls.Add(lblCategoriaFiltro, 1, 0);
+            tlpFiltros.Controls.Add(lblMarcaFiltro, 2, 0);
+            tlpFiltros.Controls.Add(lblEstadoFiltro, 3, 0);
+            tlpFiltros.Controls.Add(txtBuscar, 0, 1);
+            tlpFiltros.Controls.Add(btnBuscar, 4, 1);
+            tlpFiltros.Controls.Add(btnLimpiarFiltros, 5, 1);
+            tlpFiltros.Controls.Add(cmbCategoriaFiltro, 1, 1);
+            tlpFiltros.Controls.Add(cmbMarcaFiltro, 2, 1);
+            tlpFiltros.Controls.Add(cmbEstadoFiltro, 3, 1);
+            tlpFiltros.Dock = DockStyle.Fill;
+            tlpFiltros.Location = new Point(18, 12);
+            tlpFiltros.Margin = new Padding(0);
+            tlpFiltros.Name = "tlpFiltros";
+            tlpFiltros.RowCount = 2;
+            tlpFiltros.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
+            tlpFiltros.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpFiltros.Size = new Size(1078, 79);
+            tlpFiltros.TabIndex = 0;
+            // 
+            // lblBuscar
+            // 
+            lblBuscar.AutoSize = true;
+            lblBuscar.Dock = DockStyle.Fill;
+            lblBuscar.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            lblBuscar.ForeColor = Color.FromArgb(70, 75, 80);
+            lblBuscar.Location = new Point(3, 3);
+            lblBuscar.Margin = new Padding(3, 3, 8, 0);
+            lblBuscar.Name = "lblBuscar";
+            lblBuscar.Size = new Size(316, 25);
+            lblBuscar.TabIndex = 0;
+            lblBuscar.Text = "Buscar";
+            lblBuscar.TextAlign = ContentAlignment.BottomLeft;
+            // 
+            // lblCategoriaFiltro
+            // 
+            lblCategoriaFiltro.AutoSize = true;
+            lblCategoriaFiltro.Dock = DockStyle.Fill;
+            lblCategoriaFiltro.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            lblCategoriaFiltro.ForeColor = Color.FromArgb(70, 75, 80);
+            lblCategoriaFiltro.Location = new Point(330, 3);
+            lblCategoriaFiltro.Margin = new Padding(3, 3, 8, 0);
+            lblCategoriaFiltro.Name = "lblCategoriaFiltro";
+            lblCategoriaFiltro.Size = new Size(173, 25);
+            lblCategoriaFiltro.TabIndex = 1;
+            lblCategoriaFiltro.Text = "Categoría";
+            lblCategoriaFiltro.TextAlign = ContentAlignment.BottomLeft;
+            // 
+            // lblMarcaFiltro
+            // 
+            lblMarcaFiltro.AutoSize = true;
+            lblMarcaFiltro.Dock = DockStyle.Fill;
+            lblMarcaFiltro.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            lblMarcaFiltro.ForeColor = Color.FromArgb(70, 75, 80);
+            lblMarcaFiltro.Location = new Point(514, 3);
+            lblMarcaFiltro.Margin = new Padding(3, 3, 8, 0);
+            lblMarcaFiltro.Name = "lblMarcaFiltro";
+            lblMarcaFiltro.Size = new Size(172, 25);
+            lblMarcaFiltro.TabIndex = 2;
+            lblMarcaFiltro.Text = "Marca";
+            lblMarcaFiltro.TextAlign = ContentAlignment.BottomLeft;
+            // 
+            // lblEstadoFiltro
+            // 
+            lblEstadoFiltro.AutoSize = true;
+            lblEstadoFiltro.Dock = DockStyle.Fill;
+            lblEstadoFiltro.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            lblEstadoFiltro.ForeColor = Color.FromArgb(70, 75, 80);
+            lblEstadoFiltro.Location = new Point(697, 3);
+            lblEstadoFiltro.Margin = new Padding(3, 3, 8, 0);
+            lblEstadoFiltro.Name = "lblEstadoFiltro";
+            lblEstadoFiltro.Size = new Size(109, 25);
+            lblEstadoFiltro.TabIndex = 3;
+            lblEstadoFiltro.Text = "Estado";
+            lblEstadoFiltro.TextAlign = ContentAlignment.BottomLeft;
+            // 
+            // txtBuscar
+            // 
+            txtBuscar.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            txtBuscar.BorderStyle = BorderStyle.FixedSingle;
+            txtBuscar.Font = new Font("Segoe UI", 9.5F);
+            txtBuscar.Location = new Point(3, 39);
+            txtBuscar.Margin = new Padding(3, 3, 12, 3);
+            txtBuscar.Name = "txtBuscar";
+            txtBuscar.PlaceholderText = "Nombre o código de barras";
+            txtBuscar.Size = new Size(312, 29);
+            txtBuscar.TabIndex = 4;
+            // 
+            // cmbCategoriaFiltro
+            // 
+            cmbCategoriaFiltro.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            cmbCategoriaFiltro.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbCategoriaFiltro.FlatStyle = FlatStyle.Flat;
+            cmbCategoriaFiltro.Font = new Font("Segoe UI", 9F);
+            cmbCategoriaFiltro.Location = new Point(330, 39);
+            cmbCategoriaFiltro.Margin = new Padding(3, 3, 12, 3);
+            cmbCategoriaFiltro.Name = "cmbCategoriaFiltro";
+            cmbCategoriaFiltro.Size = new Size(169, 28);
+            cmbCategoriaFiltro.TabIndex = 5;
+            // 
+            // cmbMarcaFiltro
+            // 
+            cmbMarcaFiltro.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            cmbMarcaFiltro.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbMarcaFiltro.FlatStyle = FlatStyle.Flat;
+            cmbMarcaFiltro.Font = new Font("Segoe UI", 9F);
+            cmbMarcaFiltro.Location = new Point(514, 39);
+            cmbMarcaFiltro.Margin = new Padding(3, 3, 12, 3);
+            cmbMarcaFiltro.Name = "cmbMarcaFiltro";
+            cmbMarcaFiltro.Size = new Size(168, 28);
+            cmbMarcaFiltro.TabIndex = 6;
+            // 
+            // cmbEstadoFiltro
+            // 
+            cmbEstadoFiltro.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            cmbEstadoFiltro.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbEstadoFiltro.FlatStyle = FlatStyle.Flat;
+            cmbEstadoFiltro.Font = new Font("Segoe UI", 9F);
+            cmbEstadoFiltro.Location = new Point(697, 39);
+            cmbEstadoFiltro.Margin = new Padding(3, 3, 12, 3);
+            cmbEstadoFiltro.Name = "cmbEstadoFiltro";
+            cmbEstadoFiltro.Size = new Size(105, 28);
+            cmbEstadoFiltro.TabIndex = 7;
+            // 
+            // btnBuscar
+            // 
+            btnBuscar.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            btnBuscar.BackColor = Color.FromArgb(82, 88, 94);
+            btnBuscar.Cursor = Cursors.Hand;
+            btnBuscar.FlatAppearance.BorderSize = 0;
+            btnBuscar.FlatAppearance.MouseOverBackColor = Color.FromArgb(67, 72, 78);
+            btnBuscar.FlatStyle = FlatStyle.Flat;
+            btnBuscar.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            btnBuscar.ForeColor = Color.White;
+            btnBuscar.Location = new Point(817, 36);
+            btnBuscar.Margin = new Padding(3, 3, 6, 3);
+            btnBuscar.Name = "btnBuscar";
+            btnBuscar.Size = new Size(121, 34);
+            btnBuscar.TabIndex = 8;
+            btnBuscar.Text = "Buscar";
+            btnBuscar.UseVisualStyleBackColor = false;
+            // 
+            // btnLimpiarFiltros
+            // 
+            btnLimpiarFiltros.Anchor = AnchorStyles.Left | AnchorStyles.Right;
+            btnLimpiarFiltros.BackColor = Color.White;
+            btnLimpiarFiltros.Cursor = Cursors.Hand;
+            btnLimpiarFiltros.FlatAppearance.BorderColor = Color.FromArgb(180, 184, 188);
+            btnLimpiarFiltros.FlatAppearance.MouseOverBackColor = Color.FromArgb(237, 239, 241);
+            btnLimpiarFiltros.FlatStyle = FlatStyle.Flat;
+            btnLimpiarFiltros.Font = new Font("Segoe UI", 8.5F);
+            btnLimpiarFiltros.ForeColor = Color.FromArgb(70, 75, 80);
+            btnLimpiarFiltros.Location = new Point(950, 36);
+            btnLimpiarFiltros.Margin = new Padding(6, 3, 3, 3);
+            btnLimpiarFiltros.Name = "btnLimpiarFiltros";
+            btnLimpiarFiltros.Size = new Size(125, 34);
+            btnLimpiarFiltros.TabIndex = 9;
+            btnLimpiarFiltros.Text = "Limpiar";
+            btnLimpiarFiltros.UseVisualStyleBackColor = false;
+            // 
+            // lblCantidad
+            // 
+            lblCantidad.AutoSize = true;
+            lblCantidad.Dock = DockStyle.Fill;
+            lblCantidad.Font = new Font("Segoe UI", 8.5F);
+            lblCantidad.ForeColor = Color.FromArgb(105, 110, 116);
+            lblCantidad.Location = new Point(34, 246);
+            lblCantidad.Margin = new Padding(2, 6, 0, 4);
+            lblCantidad.Name = "lblCantidad";
+            lblCantidad.Size = new Size(1114, 28);
+            lblCantidad.TabIndex = 2;
+            lblCantidad.Text = "0 producto(s)";
+            lblCantidad.TextAlign = ContentAlignment.MiddleLeft;
+            // 
             // dgvProductos
-            //
-            this.dgvProductos.AllowUserToAddRows = false;
-            this.dgvProductos.AllowUserToDeleteRows = false;
-            this.dgvProductos.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) | System.Windows.Forms.AnchorStyles.Left) | System.Windows.Forms.AnchorStyles.Right)));
-            this.dgvProductos.Location = new System.Drawing.Point(30, 300);
-            this.dgvProductos.Name = "dgvProductos";
-            this.dgvProductos.ReadOnly = true;
-            this.dgvProductos.RowHeadersVisible = false;
-            this.dgvProductos.Size = new System.Drawing.Size(600, 280);
-            this.dgvProductos.TabIndex = 2;
-            //
+            // 
+            dgvProductos.AllowUserToAddRows = false;
+            dgvProductos.AllowUserToDeleteRows = false;
+            dgvProductos.AllowUserToResizeRows = false;
+            dgvProductos.BackgroundColor = Color.White;
+            dgvProductos.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
+            dgvProductos.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
+            dataGridViewCellStyle1.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle1.BackColor = Color.FromArgb(82, 88, 94);
+            dataGridViewCellStyle1.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            dataGridViewCellStyle1.ForeColor = Color.White;
+            dataGridViewCellStyle1.SelectionBackColor = Color.FromArgb(82, 88, 94);
+            dataGridViewCellStyle1.SelectionForeColor = Color.White;
+            dataGridViewCellStyle1.WrapMode = DataGridViewTriState.True;
+            dgvProductos.ColumnHeadersDefaultCellStyle = dataGridViewCellStyle1;
+            dgvProductos.ColumnHeadersHeight = 42;
+            dgvProductos.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
+            dataGridViewCellStyle2.Alignment = DataGridViewContentAlignment.MiddleLeft;
+            dataGridViewCellStyle2.BackColor = Color.White;
+            dataGridViewCellStyle2.Font = new Font("Segoe UI", 9F);
+            dataGridViewCellStyle2.ForeColor = Color.FromArgb(55, 59, 64);
+            dataGridViewCellStyle2.SelectionBackColor = Color.FromArgb(226, 229, 232);
+            dataGridViewCellStyle2.SelectionForeColor = Color.FromArgb(40, 44, 48);
+            dataGridViewCellStyle2.WrapMode = DataGridViewTriState.False;
+            dgvProductos.DefaultCellStyle = dataGridViewCellStyle2;
+            dgvProductos.Dock = DockStyle.Fill;
+            dgvProductos.EnableHeadersVisualStyles = false;
+            dgvProductos.GridColor = Color.FromArgb(224, 227, 230);
+            dgvProductos.Location = new Point(32, 278);
+            dgvProductos.Margin = new Padding(0);
+            dgvProductos.MultiSelect = false;
+            dgvProductos.Name = "dgvProductos";
+            dgvProductos.ReadOnly = true;
+            dgvProductos.RowHeadersVisible = false;
+            dgvProductos.RowHeadersWidth = 51;
+            dgvProductos.RowTemplate.Height = 40;
+            dgvProductos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvProductos.Size = new Size(1116, 397);
+            dgvProductos.TabIndex = 3;
+            // 
             // FormProductos
-            //
-            this.AutoScaleDimensions = new System.Drawing.SizeF(7F, 15F);
-            this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.BackColor = System.Drawing.Color.White;
-            this.ClientSize = new System.Drawing.Size(660, 610);
-            this.Controls.Add(this.dgvProductos);
-            this.Controls.Add(this.pnlAlta);
-            this.Controls.Add(this.lblTitulo);
-            this.Name = "FormProductos";
-            this.Text = "FormProductos";
-            this.pnlAlta.ResumeLayout(false);
-            this.pnlAlta.PerformLayout();
-            ((System.ComponentModel.ISupportInitialize)(this.dgvProductos)).EndInit();
-            this.ResumeLayout(false);
-            this.PerformLayout();
+            // 
+            AutoScaleDimensions = new SizeF(8F, 20F);
+            AutoScaleMode = AutoScaleMode.Font;
+            BackColor = Color.FromArgb(241, 243, 245);
+            ClientSize = new Size(1180, 700);
+            Controls.Add(tlpPrincipal);
+            FormBorderStyle = FormBorderStyle.None;
+            Name = "FormProductos";
+            Text = "Productos";
+            tlpPrincipal.ResumeLayout(false);
+            tlpPrincipal.PerformLayout();
+            tlpCabecera.ResumeLayout(false);
+            pnlTitulo.ResumeLayout(false);
+            pnlTitulo.PerformLayout();
+            pnlFiltros.ResumeLayout(false);
+            tlpFiltros.ResumeLayout(false);
+            tlpFiltros.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvProductos).EndInit();
+            ResumeLayout(false);
         }
 
         #endregion
-
-        private System.Windows.Forms.Label lblTitulo;
-        private System.Windows.Forms.Panel pnlAlta;
-        private System.Windows.Forms.Label lblCategoria;
-        private System.Windows.Forms.ComboBox cmbCategoria;
-        private System.Windows.Forms.Label lblCodigoBarra;
-        private System.Windows.Forms.TextBox txtCodigoBarra;
-        private System.Windows.Forms.Label lblNombre;
-        private System.Windows.Forms.TextBox txtNombre;
-        private System.Windows.Forms.Label lblDescripcion;
-        private System.Windows.Forms.TextBox txtDescripcion;
-        private System.Windows.Forms.Label lblPrecioCosto;
-        private System.Windows.Forms.TextBox txtPrecioCosto;
-        private System.Windows.Forms.Label lblPorcentajeGanancia;
-        private System.Windows.Forms.TextBox txtPorcentajeGanancia;
-        private System.Windows.Forms.Button btnAlta;
-        private System.Windows.Forms.DataGridView dgvProductos;
     }
 }

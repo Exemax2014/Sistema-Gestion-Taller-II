@@ -16,7 +16,7 @@ namespace Capa_Datos
     {
         public int IdUsuario { get; set; }
         public int IdPerfil { get; set; }
-        public int IdSucursal { get; set; }
+        public int? IdSucursal { get; set; }
 
         public string Nombre { get; set; } = string.Empty;
         public string Apellido { get; set; } = string.Empty;
@@ -92,7 +92,10 @@ namespace Capa_Datos
             {
                 IdUsuario = Convert.ToInt32(lector["id_usuario"]),
                 IdPerfil = Convert.ToInt32(lector["id_perfil"]),
-                IdSucursal = Convert.ToInt32(lector["id_sucursal"]),
+
+                IdSucursal = lector["id_sucursal"] == DBNull.Value
+                    ? null
+                    : Convert.ToInt32(lector["id_sucursal"]),
 
                 Nombre = lector["nombre"].ToString() ?? string.Empty,
                 Apellido = lector["apellido"].ToString() ?? string.Empty,

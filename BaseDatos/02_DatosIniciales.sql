@@ -440,7 +440,6 @@ WHERE p.nombre = N'Gerente'
       N'CLIENTES_BAJA',
 
       N'PRODUCTOS_VER',
-      N'PRODUCTOS_ALTA',
 
       N'REPORTES_GERENTE'
   )
@@ -476,6 +475,8 @@ WHERE p.nombre = N'Vendedor'
 
       N'CLIENTES_VER',
       N'CLIENTES_ALTA',
+
+      N'PRODUCTOS_VER',
 
       N'REPORTES_VENDEDOR'
   )

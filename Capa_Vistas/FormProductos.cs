@@ -1,116 +1,540 @@
-﻿using System;
-using System.Windows.Forms;
-using Capa_Datos;
-using Capa_Logica;
+﻿using Capa_Logica;
 
 namespace Capa_Vistas
 {
-    // =====================================================================
+    // ============================================================
     // Formulario: FormProductos
     //
-    // Responsabilidad:
-    // Por ahora solo permite listar el catálogo activo y dar de alta
-    // productos nuevos. Baja y modificación no están incluidas todavía
-    // (no las pide ningún perfil por ahora salvo Administrador).
-    //
-    // Permisos:
-    // El botón Alta se habilita solo según
-    // SesionActual.TienePermiso("PRODUCTOS_ALTA").
-    // No se hardcodea ningún nombre de perfil acá.
-    //
-    // Se carga dentro de FormPrincipal -> pnlContenido y no repite
-    // cabecera, menú lateral ni cierre de sesión.
-    // =====================================================================
+    // Lista y filtra el catálogo de productos.
+    // El detalle se abre dentro de FormPrincipal.
+    // ============================================================
+
     public partial class FormProductos : Form
     {
-        private readonly ProductoLogica productoLogica = new ProductoLogica();
+        private readonly ProductoLogica productoLogica =
+            new ProductoLogica();
 
-        public FormProductos()
+
+        private readonly FormPrincipal formPrincipal;
+
+
+        public FormProductos(
+            FormPrincipal formPrincipal)
         {
             InitializeComponent();
+
+
+            this.formPrincipal =
+                formPrincipal;
+
+
+            ConfigurarGrilla();
+
+            ConfigurarEventos();
+
             ConfigurarPermisos();
-            CargarCategorias();
-            CargarGrilla();
+
+            CargarFiltros();
+
+            CargarProductos();
         }
+
+
+        // ========================================================
+        // GRILLA
+        // ========================================================
+
+        private void ConfigurarGrilla()
+        {
+            dgvProductos.AutoGenerateColumns =
+                false;
+
+
+            dgvProductos.Columns.Clear();
+
+
+            DataGridViewTextBoxColumn colIdProducto =
+                new DataGridViewTextBoxColumn();
+
+            colIdProducto.Name =
+                "colIdProducto";
+
+            colIdProducto.DataPropertyName =
+                "IdProducto";
+
+            colIdProducto.Visible =
+                false;
+
+
+            DataGridViewTextBoxColumn colCodigo =
+                new DataGridViewTextBoxColumn();
+
+            colCodigo.Name =
+                "colCodigoBarra";
+
+            colCodigo.DataPropertyName =
+                "CodigoBarra";
+
+            colCodigo.HeaderText =
+                "Código";
+
+            colCodigo.Width =
+                135;
+
+
+            DataGridViewTextBoxColumn colNombre =
+                new DataGridViewTextBoxColumn();
+
+            colNombre.Name =
+                "colNombre";
+
+            colNombre.DataPropertyName =
+                "Nombre";
+
+            colNombre.HeaderText =
+                "Producto";
+
+            colNombre.AutoSizeMode =
+                DataGridViewAutoSizeColumnMode.Fill;
+
+            colNombre.MinimumWidth =
+                180;
+
+
+            DataGridViewTextBoxColumn colCategoria =
+                new DataGridViewTextBoxColumn();
+
+            colCategoria.Name =
+                "colCategoria";
+
+            colCategoria.DataPropertyName =
+                "Categoria";
+
+            colCategoria.HeaderText =
+                "Categoría";
+
+            colCategoria.Width =
+                160;
+
+
+            DataGridViewTextBoxColumn colMarca =
+                new DataGridViewTextBoxColumn();
+
+            colMarca.Name =
+                "colMarca";
+
+            colMarca.DataPropertyName =
+                "Marca";
+
+            colMarca.HeaderText =
+                "Marca";
+
+            colMarca.Width =
+                145;
+
+
+            DataGridViewTextBoxColumn colPrecio =
+                new DataGridViewTextBoxColumn();
+
+            colPrecio.Name =
+                "colPrecioVenta";
+
+            colPrecio.DataPropertyName =
+                "PrecioVenta";
+
+            colPrecio.HeaderText =
+                "Precio venta";
+
+            colPrecio.DefaultCellStyle.Format =
+                "C2";
+
+            colPrecio.Width =
+                135;
+
+
+            DataGridViewTextBoxColumn colEstado =
+                new DataGridViewTextBoxColumn();
+
+            colEstado.Name =
+                "colEstado";
+
+            colEstado.DataPropertyName =
+                "Estado";
+
+            colEstado.HeaderText =
+                "Estado";
+
+            colEstado.Width =
+                100;
+
+
+            DataGridViewButtonColumn colDetalle =
+                new DataGridViewButtonColumn();
+
+            colDetalle.Name =
+                "colDetalle";
+
+            colDetalle.HeaderText =
+                "";
+
+            colDetalle.Text =
+                "Ver detalle";
+
+            colDetalle.UseColumnTextForButtonValue =
+                true;
+
+            colDetalle.FlatStyle =
+                FlatStyle.Flat;
+
+            colDetalle.Width =
+                115;
+
+
+            dgvProductos.Columns.AddRange(
+                colIdProducto,
+                colCodigo,
+                colNombre,
+                colCategoria,
+                colMarca,
+                colPrecio,
+                colEstado,
+                colDetalle
+            );
+        }
+
+
+        // ========================================================
+        // EVENTOS
+        // ========================================================
+
+        private void ConfigurarEventos()
+        {
+            btnNuevoProducto.Click +=
+                BtnNuevoProducto_Click;
+
+
+            btnBuscar.Click +=
+                BtnBuscar_Click;
+
+
+            btnLimpiarFiltros.Click +=
+                BtnLimpiarFiltros_Click;
+
+
+            txtBuscar.KeyDown +=
+                TxtBuscar_KeyDown;
+
+
+            dgvProductos.CellContentClick +=
+                DgvProductos_CellContentClick;
+        }
+
+
+        // ========================================================
+        // PERMISOS
+        // ========================================================
 
         private void ConfigurarPermisos()
         {
-            bool puedeAlta = SesionActual.TienePermiso("PRODUCTOS_ALTA");
-
-            btnAlta.Enabled = puedeAlta;
-            cmbCategoria.Enabled = puedeAlta;
-            txtCodigoBarra.Enabled = puedeAlta;
-            txtNombre.Enabled = puedeAlta;
-            txtDescripcion.Enabled = puedeAlta;
-            txtPrecioCosto.Enabled = puedeAlta;
-            txtPorcentajeGanancia.Enabled = puedeAlta;
+            // La Vista no decide qué perfil puede crear.
+            // Solamente consulta la regla definida en Lógica.
+            btnNuevoProducto.Visible =
+                productoLogica.PuedeCrearProducto();
         }
 
-        private void CargarCategorias()
+
+        // ========================================================
+        // FILTROS
+        // ========================================================
+
+        private void CargarFiltros()
         {
-            cmbCategoria.DataSource = productoLogica.ObtenerCategorias();
-            cmbCategoria.DisplayMember = nameof(CategoriaInfo.Nombre);
-            cmbCategoria.ValueMember = nameof(CategoriaInfo.IdCategoria);
-        }
+            cmbCategoriaFiltro.Items.Clear();
 
-        private void CargarGrilla()
-        {
-            dgvProductos.DataSource = null;
-            dgvProductos.DataSource = productoLogica.ObtenerActivos();
-        }
+            cmbCategoriaFiltro.Items.Add(
+                "Todas"
+            );
 
-        private void BtnAlta_Click(object? sender, EventArgs e)
-        {
-            int? idCategoria = cmbCategoria.SelectedValue is int valor ? valor : null;
 
-            string? error = productoLogica.ValidarAlta(
-                idCategoria,
-                txtNombre.Text,
-                txtPrecioCosto.Text,
-                txtPorcentajeGanancia.Text);
-
-            if (error != null)
+            foreach (
+                OpcionProductoModelo categoria
+                in productoLogica.ObtenerCategorias())
             {
-                MessageBox.Show(error, "Alta de producto", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                cmbCategoriaFiltro.Items.Add(
+                    categoria.Nombre
+                );
+            }
+
+
+            cmbCategoriaFiltro.SelectedIndex =
+                0;
+
+
+            cmbMarcaFiltro.Items.Clear();
+
+            cmbMarcaFiltro.Items.Add(
+                "Todas"
+            );
+
+
+            foreach (
+                OpcionProductoModelo marca
+                in productoLogica.ObtenerMarcas())
+            {
+                cmbMarcaFiltro.Items.Add(
+                    marca.Nombre
+                );
+            }
+
+
+            cmbMarcaFiltro.SelectedIndex =
+                0;
+
+
+            cmbEstadoFiltro.Items.Clear();
+
+            cmbEstadoFiltro.Items.Add(
+                "Todos"
+            );
+
+            cmbEstadoFiltro.Items.Add(
+                "Activos"
+            );
+
+            cmbEstadoFiltro.Items.Add(
+                "Inactivos"
+            );
+
+
+            cmbEstadoFiltro.SelectedIndex =
+                0;
+        }
+
+
+        // ========================================================
+        // CARGAR PRODUCTOS
+        // ========================================================
+
+        private void CargarProductos()
+        {
+            IEnumerable<ProductoListaModelo> productos =
+                productoLogica.ObtenerTodos();
+
+
+            string texto =
+                txtBuscar.Text.Trim();
+
+
+            string categoria =
+                cmbCategoriaFiltro.SelectedItem
+                    ?.ToString()
+                ?? "Todas";
+
+
+            string marca =
+                cmbMarcaFiltro.SelectedItem
+                    ?.ToString()
+                ?? "Todas";
+
+
+            string estado =
+                cmbEstadoFiltro.SelectedItem
+                    ?.ToString()
+                ?? "Todos";
+
+
+            if (!string.IsNullOrWhiteSpace(texto))
+            {
+                productos =
+                    productos.Where(
+                        p =>
+                            p.Nombre.Contains(
+                                texto,
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                            ||
+                            p.CodigoBarra.Contains(
+                                texto,
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                    );
+            }
+
+
+            if (categoria != "Todas")
+            {
+                productos =
+                    productos.Where(
+                        p =>
+                            p.Categoria
+                            == categoria
+                    );
+            }
+
+
+            if (marca != "Todas")
+            {
+                productos =
+                    productos.Where(
+                        p =>
+                            p.Marca
+                            == marca
+                    );
+            }
+
+
+            if (estado == "Activos")
+            {
+                productos =
+                    productos.Where(
+                        p => p.Activo
+                    );
+            }
+            else if (estado == "Inactivos")
+            {
+                productos =
+                    productos.Where(
+                        p => !p.Activo
+                    );
+            }
+
+
+            dgvProductos.DataSource =
+                null;
+
+
+            dgvProductos.DataSource =
+                productos.ToList();
+
+
+            lblCantidad.Text =
+                $"{dgvProductos.Rows.Count} producto(s)";
+        }
+
+
+        // ========================================================
+        // NUEVO PRODUCTO
+        // ========================================================
+
+        private void BtnNuevoProducto_Click(
+            object? sender,
+            EventArgs e)
+        {
+            if (!productoLogica.PuedeCrearProducto())
+            {
                 return;
             }
 
-            try
-            {
-                productoLogica.Alta(
-                    idCategoria!.Value,
-                    txtCodigoBarra.Text,
-                    txtNombre.Text,
-                    txtDescripcion.Text,
-                    decimal.Parse(txtPrecioCosto.Text),
-                    decimal.Parse(txtPorcentajeGanancia.Text));
 
-                LimpiarFormulario();
-                CargarGrilla();
-
-                MessageBox.Show(
-                    "Producto agregado correctamente.",
-                    "Alta de producto",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Information);
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show(
-                    "No se pudo agregar el producto: " + ex.Message,
-                    "Alta de producto",
-                    MessageBoxButtons.OK,
-                    MessageBoxIcon.Error);
-            }
+            formPrincipal.AbrirFormularioEnPanel(
+                new FormProductoDetalle(
+                    formPrincipal
+                ),
+                formPrincipal.BotonProductos
+            );
         }
 
-        private void LimpiarFormulario()
+
+        // ========================================================
+        // BUSCAR
+        // ========================================================
+
+        private void BtnBuscar_Click(
+            object? sender,
+            EventArgs e)
         {
-            txtCodigoBarra.Clear();
-            txtNombre.Clear();
-            txtDescripcion.Clear();
-            txtPrecioCosto.Clear();
-            txtPorcentajeGanancia.Clear();
+            CargarProductos();
+        }
+
+
+        private void TxtBuscar_KeyDown(
+            object? sender,
+            KeyEventArgs e)
+        {
+            if (e.KeyCode != Keys.Enter)
+            {
+                return;
+            }
+
+
+            CargarProductos();
+
+
+            e.SuppressKeyPress =
+                true;
+        }
+
+
+        // ========================================================
+        // LIMPIAR FILTROS
+        // ========================================================
+
+        private void BtnLimpiarFiltros_Click(
+            object? sender,
+            EventArgs e)
+        {
+            txtBuscar.Clear();
+
+
+            cmbCategoriaFiltro.SelectedIndex =
+                0;
+
+
+            cmbMarcaFiltro.SelectedIndex =
+                0;
+
+
+            cmbEstadoFiltro.SelectedIndex =
+                0;
+
+
+            CargarProductos();
+        }
+
+
+        // ========================================================
+        // VER DETALLE
+        // ========================================================
+
+        private void DgvProductos_CellContentClick(
+            object? sender,
+            DataGridViewCellEventArgs e)
+        {
+            if (
+                e.RowIndex < 0
+                ||
+                e.ColumnIndex < 0)
+            {
+                return;
+            }
+
+
+            if (
+                dgvProductos
+                    .Columns[e.ColumnIndex]
+                    .Name
+                != "colDetalle")
+            {
+                return;
+            }
+
+
+            int idProducto =
+                Convert.ToInt32(
+                    dgvProductos
+                        .Rows[e.RowIndex]
+                        .Cells["colIdProducto"]
+                        .Value
+                );
+
+
+            formPrincipal.AbrirFormularioEnPanel(
+                new FormProductoDetalle(
+                    formPrincipal,
+                    idProducto
+                ),
+                formPrincipal.BotonProductos
+            );
         }
     }
 }

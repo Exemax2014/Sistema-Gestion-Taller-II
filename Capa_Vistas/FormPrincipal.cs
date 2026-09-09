@@ -7,7 +7,7 @@ namespace Capa_Vistas
     public partial class FormPrincipal : Form
     {
         // =========================================================
-        // ESTADO DEL FORMULARIO
+        // ESTADO
         // =========================================================
 
         private Form? formularioActivo;
@@ -15,12 +15,21 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // CONSTANTES PARA VENTANA SIN BORDE
+        // RELOJ
+        // =========================================================
+
+        private readonly System.Windows.Forms.Timer reloj =
+            new System.Windows.Forms.Timer();
+
+
+        // =========================================================
+        // CONSTANTES VENTANA
         // =========================================================
 
         private const int WM_NCHITTEST = 0x0084;
 
         private const int HTCLIENT = 1;
+
         private const int HTLEFT = 10;
         private const int HTRIGHT = 11;
         private const int HTTOP = 12;
@@ -37,7 +46,7 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // FUNCIONES DE WINDOWS
+        // WINDOWS
         // =========================================================
 
         [DllImport("user32.dll")]
@@ -63,6 +72,8 @@ namespace Capa_Vistas
 
             ConfigurarEventos();
 
+            ConfigurarReloj();
+
             CargarDatosSesion();
 
             AplicarPermisosMenu();
@@ -70,50 +81,87 @@ namespace Capa_Vistas
             MostrarInicio();
 
             ActualizarBotonMaximizar();
+
         }
 
 
         // =========================================================
-        // CONFIGURACIÓN DE EVENTOS
+        // EVENTOS
         // =========================================================
 
         private void ConfigurarEventos()
         {
             // Menú principal
-            btnInicio.Click += BtnInicio_Click;
-            btnVentas.Click += BtnVentas_Click;
-            btnClientes.Click += BtnClientes_Click;
-            btnProductos.Click += BtnProductos_Click;
-            btnUsuarios.Click += BtnUsuarios_Click;
-            btnReportes.Click += BtnReportes_Click;
+            btnInicio.Click +=
+                BtnInicio_Click;
 
-            // Usuario
-            btnUsuarioMenu.Click += BtnUsuarioMenu_Click;
-            btnEditarPerfil.Click += BtnEditarPerfil_Click;
-            btnCerrarSesion.Click += BtnCerrarSesion_Click;
+            btnVentas.Click +=
+                BtnVentas_Click;
+
+            btnClientes.Click +=
+                BtnClientes_Click;
+
+            btnProductos.Click +=
+                BtnProductos_Click;
+
+            btnUsuarios.Click +=
+                BtnUsuarios_Click;
+
+            btnReportes.Click +=
+                BtnReportes_Click;
+
+
+            // Cuenta
+            btnEditarPerfil.Click +=
+                BtnEditarPerfil_Click;
+
+            btnCerrarSesion.Click +=
+                BtnCerrarSesion_Click;
+
 
             // Ventana
-            btnMinimizar.Click += BtnMinimizar_Click;
-            btnMaximizar.Click += BtnMaximizar_Click;
-            btnCerrarPrograma.Click += BtnCerrarPrograma_Click;
+            btnMinimizar.Click +=
+                BtnMinimizar_Click;
 
-            // Arrastrar ventana desde la cabecera
-            pnlCabecera.MouseDown += PnlCabecera_MouseDown;
-            lblMarca.MouseDown += PnlCabecera_MouseDown;
-            picLogo.MouseDown += PnlCabecera_MouseDown;
+            btnMaximizar.Click +=
+                BtnMaximizar_Click;
 
-            // Doble clic para maximizar/restaurar
-            pnlCabecera.DoubleClick += PnlCabecera_DoubleClick;
-            lblMarca.DoubleClick += PnlCabecera_DoubleClick;
+            btnCerrarPrograma.Click +=
+                BtnCerrarPrograma_Click;
 
-            // Reubicar menú del usuario
-            Resize += FormPrincipal_Resize;
 
-            // Hover menú lateral
+            // Arrastrar
+            pnlCabecera.MouseDown +=
+                PnlCabecera_MouseDown;
+
+            lblMarca.MouseDown +=
+                PnlCabecera_MouseDown;
+
+            picLogo.MouseDown +=
+                PnlCabecera_MouseDown;
+
+
+            // Doble clic
+            pnlCabecera.DoubleClick +=
+                PnlCabecera_DoubleClick;
+
+            lblMarca.DoubleClick +=
+                PnlCabecera_DoubleClick;
+
+
+            // Resize
+            Resize +=
+                FormPrincipal_Resize;
+
+
+            // Hover navegación
             foreach (Button boton in ObtenerBotonesMenu())
             {
-                boton.MouseEnter += BotonMenu_MouseEnter;
-                boton.MouseLeave += BotonMenu_MouseLeave;
+                boton.MouseEnter +=
+                    BotonMenu_MouseEnter;
+
+                boton.MouseLeave +=
+                    BotonMenu_MouseLeave;
             }
         }
 
@@ -128,10 +176,57 @@ namespace Capa_Vistas
                 SesionActual.Perfil;
 
 
-            lblUsuario.Text =
-                $"{SesionActual.Nombre} {SesionActual.Apellido}";
+            lblUsuarioActual.Text =
+                SesionActual.NombreUsuario
+                    .ToUpperInvariant();
 
 
+            // =========================================================
+            // SUCURSAL ACTUAL
+            // =========================================================
+
+            if (SesionActual.IdSucursalOperativa.HasValue)
+            {
+                lblSucursalActual.Text =
+                    SesionActual.SucursalOperativa;
+            }
+            else
+            {
+                lblSucursalActual.Text =
+                    "Todas";
+            }
+
+
+            ActualizarFechaHora();
+        }
+
+
+        // =========================================================
+        // RELOJ
+        // =========================================================
+
+        private void ConfigurarReloj()
+        {
+            reloj.Interval =
+                30000;
+
+            reloj.Tick +=
+                Reloj_Tick;
+
+            reloj.Start();
+        }
+
+
+        private void Reloj_Tick(
+            object? sender,
+            EventArgs e)
+        {
+            ActualizarFechaHora();
+        }
+
+
+        private void ActualizarFechaHora()
+        {
             CultureInfo cultura =
                 new CultureInfo("es-AR");
 
@@ -151,104 +246,14 @@ namespace Capa_Vistas
             }
 
 
+            string hora =
+                DateTime.Now.ToString(
+                    "HH:mm"
+                );
+
+
             lblFecha.Text =
-                fecha;
-
-
-            ActualizarBotonUsuario(false);
-        }
-
-
-        // =========================================================
-        // BOTÓN DEL USUARIO
-        // =========================================================
-
-        private void ActualizarBotonUsuario(
-            bool menuAbierto)
-        {
-            string flecha =
-                menuAbierto
-                    ? "▲"
-                    : "▼";
-
-
-            btnUsuarioMenu.Text =
-                $"●   {SesionActual.NombreUsuario}               {flecha}";
-        }
-
-
-        // =========================================================
-        // MENÚ DESPLEGABLE USUARIO
-        // =========================================================
-
-        private void BtnUsuarioMenu_Click(
-            object? sender,
-            EventArgs e)
-        {
-            bool mostrar =
-                !pnlMenuUsuario.Visible;
-
-
-            if (mostrar)
-            {
-                PosicionarMenuUsuario();
-
-                pnlMenuUsuario.Visible =
-                    true;
-
-                pnlMenuUsuario.BringToFront();
-            }
-            else
-            {
-                pnlMenuUsuario.Visible =
-                    false;
-            }
-
-
-            ActualizarBotonUsuario(
-                mostrar
-            );
-        }
-
-
-        private void PosicionarMenuUsuario()
-        {
-            Point posicionPantalla =
-                btnUsuarioMenu.PointToScreen(
-                    new Point(
-                        0,
-                        btnUsuarioMenu.Height
-                    )
-                );
-
-            Point posicionFormulario =
-                PointToClient(
-                    posicionPantalla
-                );
-
-            int xCentrado =
-                posicionFormulario.X
-                +
-                (btnUsuarioMenu.Width / 2)
-                -
-                (pnlMenuUsuario.Width / 2);
-
-            pnlMenuUsuario.Location =
-                new Point(
-                    xCentrado,
-                    posicionFormulario.Y + 4
-                );
-        }
-
-
-        private void OcultarMenuUsuario()
-        {
-            pnlMenuUsuario.Visible =
-                false;
-
-            ActualizarBotonUsuario(
-                false
-            );
+                $"{fecha} · {hora}";
         }
 
 
@@ -260,15 +265,13 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            OcultarMenuUsuario();
-
             WindowState =
                 FormWindowState.Minimized;
         }
 
 
         // =========================================================
-        // MAXIMIZAR / RESTAURAR
+        // MAXIMIZAR
         // =========================================================
 
         private void BtnMaximizar_Click(
@@ -289,10 +292,8 @@ namespace Capa_Vistas
 
         private void CambiarEstadoVentana()
         {
-            OcultarMenuUsuario();
-
-
-            if (WindowState ==
+            if (
+                WindowState ==
                 FormWindowState.Maximized)
             {
                 WindowState =
@@ -311,36 +312,32 @@ namespace Capa_Vistas
 
         private void ActualizarBotonMaximizar()
         {
-            if (WindowState ==
-                FormWindowState.Maximized)
-            {
-                btnMaximizar.Text = "❐";
-            }
-            else
-            {
-                btnMaximizar.Text = "□";
-            }
+            btnMaximizar.Text =
+                WindowState ==
+                FormWindowState.Maximized
+                    ? "❐"
+                    : "□";
         }
 
 
         // =========================================================
-        // ARRASTRAR VENTANA
+        // ARRASTRAR
         // =========================================================
 
         private void PnlCabecera_MouseDown(
             object? sender,
             MouseEventArgs e)
         {
-            if (e.Button !=
+            if (
+                e.Button !=
                 MouseButtons.Left)
             {
                 return;
             }
 
 
-            // Si está maximizada y se intenta arrastrar,
-            // primero restauramos.
-            if (WindowState ==
+            if (
+                WindowState ==
                 FormWindowState.Maximized)
             {
                 WindowState =
@@ -363,13 +360,14 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // REDIMENSIONAR VENTANA SIN BORDE
+        // REDIMENSIONAR
         // =========================================================
 
         protected override void WndProc(
             ref Message mensaje)
         {
-            if (mensaje.Msg ==
+            if (
+                mensaje.Msg ==
                 WM_NCHITTEST
                 &&
                 WindowState !=
@@ -380,7 +378,8 @@ namespace Capa_Vistas
                 );
 
 
-                if ((int)mensaje.Result !=
+                if (
+                    (int)mensaje.Result !=
                     HTCLIENT)
                 {
                     return;
@@ -397,14 +396,17 @@ namespace Capa_Vistas
                     cursor.X <=
                     TAMANIO_BORDE;
 
+
                 bool derecha =
                     cursor.X >=
                     ClientSize.Width -
                     TAMANIO_BORDE;
 
+
                 bool arriba =
                     cursor.Y <=
                     TAMANIO_BORDE;
+
 
                 bool abajo =
                     cursor.Y >=
@@ -415,9 +417,7 @@ namespace Capa_Vistas
                 if (izquierda && arriba)
                 {
                     mensaje.Result =
-                        new IntPtr(
-                            HTTOPLEFT
-                        );
+                        new IntPtr(HTTOPLEFT);
 
                     return;
                 }
@@ -426,9 +426,7 @@ namespace Capa_Vistas
                 if (derecha && arriba)
                 {
                     mensaje.Result =
-                        new IntPtr(
-                            HTTOPRIGHT
-                        );
+                        new IntPtr(HTTOPRIGHT);
 
                     return;
                 }
@@ -437,9 +435,7 @@ namespace Capa_Vistas
                 if (izquierda && abajo)
                 {
                     mensaje.Result =
-                        new IntPtr(
-                            HTBOTTOMLEFT
-                        );
+                        new IntPtr(HTBOTTOMLEFT);
 
                     return;
                 }
@@ -448,9 +444,7 @@ namespace Capa_Vistas
                 if (derecha && abajo)
                 {
                     mensaje.Result =
-                        new IntPtr(
-                            HTBOTTOMRIGHT
-                        );
+                        new IntPtr(HTBOTTOMRIGHT);
 
                     return;
                 }
@@ -459,9 +453,7 @@ namespace Capa_Vistas
                 if (izquierda)
                 {
                     mensaje.Result =
-                        new IntPtr(
-                            HTLEFT
-                        );
+                        new IntPtr(HTLEFT);
 
                     return;
                 }
@@ -470,9 +462,7 @@ namespace Capa_Vistas
                 if (derecha)
                 {
                     mensaje.Result =
-                        new IntPtr(
-                            HTRIGHT
-                        );
+                        new IntPtr(HTRIGHT);
 
                     return;
                 }
@@ -481,9 +471,7 @@ namespace Capa_Vistas
                 if (arriba)
                 {
                     mensaje.Result =
-                        new IntPtr(
-                            HTTOP
-                        );
+                        new IntPtr(HTTOP);
 
                     return;
                 }
@@ -492,9 +480,7 @@ namespace Capa_Vistas
                 if (abajo)
                 {
                     mensaje.Result =
-                        new IntPtr(
-                            HTBOTTOM
-                        );
+                        new IntPtr(HTBOTTOM);
 
                     return;
                 }
@@ -519,14 +505,6 @@ namespace Capa_Vistas
             EventArgs e)
         {
             ActualizarBotonMaximizar();
-
-
-            if (pnlMenuUsuario.Visible)
-            {
-                PosicionarMenuUsuario();
-
-                pnlMenuUsuario.BringToFront();
-            }
         }
 
 
@@ -538,9 +516,6 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            OcultarMenuUsuario();
-
-
             using FormMensaje mensaje =
                 new FormMensaje(
                     "Estás por salir del sistema",
@@ -549,13 +524,25 @@ namespace Capa_Vistas
                     true
                 );
 
+            if (
+                formularioActivo
+                is IControlaCambios formularioConCambios
+                &&
+                !formularioConCambios.PuedeCerrar())
+            {
+                return;
+            }
 
-            if (mensaje.ShowDialog(this) !=
+
+            if (
+                mensaje.ShowDialog(this) !=
                 DialogResult.OK)
             {
                 return;
             }
 
+
+            reloj.Stop();
 
             Application.Exit();
         }
@@ -694,7 +681,7 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // SELECCIÓN DEL MENÚ
+        // BOTÓN ACTIVO
         // =========================================================
 
         private void SeleccionarBoton(
@@ -755,7 +742,6 @@ namespace Capa_Vistas
             }
 
 
-            // Color dorado oscuro para el módulo activo.
             boton.BackColor =
                 Color.FromArgb(
                     72,
@@ -778,7 +764,7 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // HOVER MENÚ
+        // HOVER
         // =========================================================
 
         private void BotonMenu_MouseEnter(
@@ -824,14 +810,27 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // FORMULARIO ACTIVO
+        // CERRAR FORMULARIO ACTIVO
+        //
+        // Antes de cerrar pregunta al formulario si tiene
+        // cambios pendientes.
         // =========================================================
 
-        private void CerrarFormularioActivo()
+        private bool CerrarFormularioActivo()
         {
             if (formularioActivo == null)
             {
-                return;
+                return true;
+            }
+
+
+            if (
+                formularioActivo
+                is IControlaCambios formularioConCambios
+                &&
+                !formularioConCambios.PuedeCerrar())
+            {
+                return false;
             }
 
 
@@ -839,22 +838,22 @@ namespace Capa_Vistas
 
             formularioActivo.Dispose();
 
-            formularioActivo =
-                null;
+            formularioActivo = null;
+
+
+            return true;
         }
 
 
         // =========================================================
-        // ABRIR MÓDULO
+        // ABRIR FORMULARIO
         // =========================================================
+
 
         public void AbrirFormularioEnPanel(
             Form formulario,
             Button botonOrigen)
         {
-            OcultarMenuUsuario();
-
-
             if (!botonOrigen.Enabled)
             {
                 formulario.Dispose();
@@ -863,7 +862,12 @@ namespace Capa_Vistas
             }
 
 
-            CerrarFormularioActivo();
+            if (!CerrarFormularioActivo())
+            {
+                formulario.Dispose();
+
+                return;
+            }
 
 
             SeleccionarBoton(
@@ -871,17 +875,7 @@ namespace Capa_Vistas
             );
 
 
-            lblTituloInicio.Visible =
-                false;
-
-            pnlLineaTitulo.Visible =
-                false;
-
-            lblBienvenida.Visible =
-                false;
-
-            lblDescripcion.Visible =
-                false;
+            OcultarContenidoInicio();
 
 
             formularioActivo =
@@ -912,34 +906,27 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // INICIO
+        // CONTENIDO INICIO
         // =========================================================
 
-        private void MostrarInicio()
+        private void OcultarContenidoInicio()
         {
-            OcultarMenuUsuario();
+            lblTituloInicio.Visible =
+                false;
+
+            pnlLineaTitulo.Visible =
+                false;
+
+            lblBienvenida.Visible =
+                false;
+
+            lblDescripcion.Visible =
+                false;
+        }
 
 
-            CerrarFormularioActivo();
-
-
-            SeleccionarBoton(
-                btnInicio
-            );
-
-
-            lblTituloInicio.Text =
-                "Inicio";
-
-
-            lblBienvenida.Text =
-                $"Bienvenido, {SesionActual.Nombre}";
-
-
-            lblDescripcion.Text =
-                "Seleccione una opción del menú para comenzar.";
-
-
+        private void MostrarContenidoInicio()
+        {
             lblTituloInicio.Visible =
                 true;
 
@@ -964,6 +951,36 @@ namespace Capa_Vistas
 
 
         // =========================================================
+        // INICIO
+        // =========================================================
+
+        private void MostrarInicio()
+        {
+            CerrarFormularioActivo();
+
+
+            SeleccionarBoton(
+                btnInicio
+            );
+
+
+            lblTituloInicio.Text =
+                "Inicio";
+
+
+            lblBienvenida.Text =
+                $"Bienvenido, {SesionActual.Nombre}";
+
+
+            lblDescripcion.Text =
+                "Seleccione una opción del menú para comenzar.";
+
+
+            MostrarContenidoInicio();
+        }
+
+
+        // =========================================================
         // MODULO TEMPORAL
         // =========================================================
 
@@ -972,9 +989,6 @@ namespace Capa_Vistas
             string descripcion,
             Button boton)
         {
-            OcultarMenuUsuario();
-
-
             if (!boton.Enabled)
             {
                 return;
@@ -1001,31 +1015,12 @@ namespace Capa_Vistas
                 descripcion;
 
 
-            lblTituloInicio.Visible =
-                true;
-
-            pnlLineaTitulo.Visible =
-                true;
-
-            lblBienvenida.Visible =
-                true;
-
-            lblDescripcion.Visible =
-                true;
-
-
-            lblTituloInicio.BringToFront();
-
-            pnlLineaTitulo.BringToFront();
-
-            lblBienvenida.BringToFront();
-
-            lblDescripcion.BringToFront();
+            MostrarContenidoInicio();
         }
 
 
         // =========================================================
-        // EVENTOS MÓDULOS
+        // ACCESO BOTON CLIENTES
         // =========================================================
 
         public Button BotonClientes
@@ -1036,6 +1031,11 @@ namespace Capa_Vistas
             }
         }
 
+
+        // =========================================================
+        // INICIO
+        // =========================================================
+
         private void BtnInicio_Click(
             object? sender,
             EventArgs e)
@@ -1044,29 +1044,47 @@ namespace Capa_Vistas
         }
 
 
+        // =========================================================
+        // VENTAS
+        // =========================================================
+
         private void BtnVentas_Click(
             object? sender,
             EventArgs e)
         {
             if (
-                SesionActual.TienePermiso(
+                !SesionActual.TienePermiso(
                     "VENTAS_VER"
                 ))
             {
-                AbrirFormularioEnPanel(
-                    new FormVentas(),
-                    btnVentas
-                );
-
                 return;
             }
+
+
+            AbrirFormularioEnPanel(
+                new FormVentas(),
+                btnVentas
+            );
         }
 
 
+        // =========================================================
+        // CLIENTES
+        // =========================================================
+
         private void BtnClientes_Click(
-             object? sender,
-             EventArgs e)
+            object? sender,
+            EventArgs e)
         {
+            if (
+                !SesionActual.TienePermiso(
+                    "CLIENTES_VER"
+                ))
+            {
+                return;
+            }
+
+
             AbrirFormularioEnPanel(
                 new FormClientes(this),
                 btnClientes
@@ -1074,16 +1092,43 @@ namespace Capa_Vistas
         }
 
 
-        private void BtnProductos_Click(
-             object? sender,
-             EventArgs e)
+        // =========================================================
+        // PRODUCTOS
+        // =========================================================
+
+        // Permite a los formularios internos conservar
+        // seleccionado el módulo Productos.
+        public Button BotonProductos
         {
-            MostrarModuloTemporal(
-                "Productos",
-                "Productos, categorías e inventario.",
+            get
+            {
+                return btnProductos;
+            }
+        }
+
+
+        private void BtnProductos_Click(
+            object? sender,
+            EventArgs e)
+        {
+            if (
+                !SesionActual.TienePermiso(
+                    "PRODUCTOS_VER"
+                ))
+            {
+                return;
+            }
+
+
+            AbrirFormularioEnPanel(
+                new FormProductos(this),
                 btnProductos
             );
         }
+
+        // =========================================================
+        // USUARIOS
+        // =========================================================
 
         private void BtnUsuarios_Click(
             object? sender,
@@ -1097,13 +1142,25 @@ namespace Capa_Vistas
         }
 
 
+        // =========================================================
+        // REPORTES
+        // =========================================================
+
         private void BtnReportes_Click(
             object? sender,
             EventArgs e)
         {
+            if (!btnReportes.Enabled)
+            {
+                return;
+            }
+
+
             if (
-                SesionActual.Perfil ==
-                "Vendedor")
+                SesionActual.Perfil.Equals(
+                    "Vendedor",
+                    StringComparison.OrdinalIgnoreCase
+                ))
             {
                 AbrirFormularioEnPanel(
                     new FormReportesVendedor(),
@@ -1114,9 +1171,24 @@ namespace Capa_Vistas
             }
 
 
+            if (
+                SesionActual.Perfil.Equals(
+                    "Gerente",
+                    StringComparison.OrdinalIgnoreCase
+                ))
+            {
+                AbrirFormularioEnPanel(
+                    new FormReportesGerente(),
+                    btnReportes
+                );
+
+                return;
+            }
+
+
             MostrarModuloTemporal(
                 "Reportes",
-                "Reportes y estadísticas del sistema.",
+                "Reportes y estadísticas de todas las sucursales.",
                 btnReportes
             );
         }
@@ -1130,9 +1202,6 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            OcultarMenuUsuario();
-
-
             using FormMensaje mensaje =
                 new FormMensaje(
                     "Editar perfil",
@@ -1145,16 +1214,13 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // CERRAR SESIÓN
+        // CERRAR SESION
         // =========================================================
 
         private void BtnCerrarSesion_Click(
-    object? sender,
-    EventArgs e)
+            object? sender,
+            EventArgs e)
         {
-            OcultarMenuUsuario();
-
-
             using FormMensaje mensaje =
                 new FormMensaje(
                     "Cerrar sesión",
@@ -1164,11 +1230,15 @@ namespace Capa_Vistas
                 );
 
 
-            if (mensaje.ShowDialog(this) !=
+            if (
+                mensaje.ShowDialog(this) !=
                 DialogResult.OK)
             {
                 return;
             }
+
+
+            reloj.Stop();
 
 
             SesionActual.Cerrar();

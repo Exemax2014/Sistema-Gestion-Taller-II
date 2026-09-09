@@ -136,7 +136,7 @@ namespace Capa_Vistas
         {
             var resultados = productoLogica.Buscar(
                 txtProductoBuscar.Text,
-                SesionActual.IdSucursal);
+                SesionActual.ObtenerIdSucursalOperativa());
 
             cmbProductoResultados.DataSource = null;
             productoSeleccionado = null;
