@@ -78,9 +78,10 @@ namespace Capa_Vistas
 
             AplicarPermisosMenu();
 
-            MostrarInicio();
 
             ActualizarBotonMaximizar();
+
+            MostrarInicio();
 
         }
 
@@ -134,7 +135,7 @@ namespace Capa_Vistas
             pnlCabecera.MouseDown +=
                 PnlCabecera_MouseDown;
 
-            lblMarca.MouseDown +=
+            picNombreMarca.MouseDown +=
                 PnlCabecera_MouseDown;
 
             picLogo.MouseDown +=
@@ -145,7 +146,7 @@ namespace Capa_Vistas
             pnlCabecera.DoubleClick +=
                 PnlCabecera_DoubleClick;
 
-            lblMarca.DoubleClick +=
+            picNombreMarca.DoubleClick +=
                 PnlCabecera_DoubleClick;
 
 
@@ -513,17 +514,9 @@ namespace Capa_Vistas
         // =========================================================
 
         private void BtnCerrarPrograma_Click(
-            object? sender,
-            EventArgs e)
+    object? sender,
+    EventArgs e)
         {
-            using FormMensaje mensaje =
-                new FormMensaje(
-                    "Estás por salir del sistema",
-                    "¿Deseás cerrar la aplicación?",
-                    "Sí, salir",
-                    true
-                );
-
             if (
                 formularioActivo
                 is IControlaCambios formularioConCambios
@@ -532,6 +525,15 @@ namespace Capa_Vistas
             {
                 return;
             }
+
+
+            using FormMensaje mensaje =
+                new FormMensaje(
+                    "Estás por salir del sistema",
+                    "¿Deseás cerrar la aplicación?",
+                    "Sí, salir",
+                    true
+                );
 
 
             if (
@@ -546,7 +548,6 @@ namespace Capa_Vistas
 
             Application.Exit();
         }
-
 
         // =========================================================
         // PERMISOS
@@ -875,9 +876,6 @@ namespace Capa_Vistas
             );
 
 
-            OcultarContenidoInicio();
-
-
             formularioActivo =
                 formulario;
 
@@ -905,49 +903,6 @@ namespace Capa_Vistas
         }
 
 
-        // =========================================================
-        // CONTENIDO INICIO
-        // =========================================================
-
-        private void OcultarContenidoInicio()
-        {
-            lblTituloInicio.Visible =
-                false;
-
-            pnlLineaTitulo.Visible =
-                false;
-
-            lblBienvenida.Visible =
-                false;
-
-            lblDescripcion.Visible =
-                false;
-        }
-
-
-        private void MostrarContenidoInicio()
-        {
-            lblTituloInicio.Visible =
-                true;
-
-            pnlLineaTitulo.Visible =
-                true;
-
-            lblBienvenida.Visible =
-                true;
-
-            lblDescripcion.Visible =
-                true;
-
-
-            lblTituloInicio.BringToFront();
-
-            pnlLineaTitulo.BringToFront();
-
-            lblBienvenida.BringToFront();
-
-            lblDescripcion.BringToFront();
-        }
 
 
         // =========================================================
@@ -956,67 +911,18 @@ namespace Capa_Vistas
 
         private void MostrarInicio()
         {
-            CerrarFormularioActivo();
+            FormInicio inicio =
+                new FormInicio(
+                    this
+                );
 
 
-            SeleccionarBoton(
+            AbrirFormularioEnPanel(
+                inicio,
                 btnInicio
             );
-
-
-            lblTituloInicio.Text =
-                "Inicio";
-
-
-            lblBienvenida.Text =
-                $"Bienvenido, {SesionActual.Nombre}";
-
-
-            lblDescripcion.Text =
-                "Seleccione una opción del menú para comenzar.";
-
-
-            MostrarContenidoInicio();
         }
 
-
-        // =========================================================
-        // MODULO TEMPORAL
-        // =========================================================
-
-        private void MostrarModuloTemporal(
-            string titulo,
-            string descripcion,
-            Button boton)
-        {
-            if (!boton.Enabled)
-            {
-                return;
-            }
-
-
-            CerrarFormularioActivo();
-
-
-            SeleccionarBoton(
-                boton
-            );
-
-
-            lblTituloInicio.Text =
-                titulo;
-
-
-            lblBienvenida.Text =
-                titulo;
-
-
-            lblDescripcion.Text =
-                descripcion;
-
-
-            MostrarContenidoInicio();
-        }
 
 
         // =========================================================
@@ -1028,6 +934,19 @@ namespace Capa_Vistas
             get
             {
                 return btnClientes;
+            }
+        }
+
+
+        // =========================================================
+        // ACCESO BOTÓN VENTAS
+        // =========================================================
+
+        public Button BotonVentas
+        {
+            get
+            {
+                return btnVentas;
             }
         }
 
@@ -1134,9 +1053,17 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            MostrarModuloTemporal(
-                "Usuarios",
-                "Usuarios, perfiles y permisos.",
+            if (
+                !SesionActual.TienePermiso(
+                    "USUARIOS_VER"
+                ))
+            {
+                return;
+            }
+
+
+            AbrirFormularioEnPanel(
+                new FormUsuarios(),
                 btnUsuarios
             );
         }
@@ -1150,45 +1077,12 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            if (!btnReportes.Enabled)
-            {
-                return;
-            }
+            FormReportesGeneral reportes =
+                new FormReportesGeneral();
 
 
-            if (
-                SesionActual.Perfil.Equals(
-                    "Vendedor",
-                    StringComparison.OrdinalIgnoreCase
-                ))
-            {
-                AbrirFormularioEnPanel(
-                    new FormReportesVendedor(),
-                    btnReportes
-                );
-
-                return;
-            }
-
-
-            if (
-                SesionActual.Perfil.Equals(
-                    "Gerente",
-                    StringComparison.OrdinalIgnoreCase
-                ))
-            {
-                AbrirFormularioEnPanel(
-                    new FormReportesGerente(),
-                    btnReportes
-                );
-
-                return;
-            }
-
-
-            MostrarModuloTemporal(
-                "Reportes",
-                "Reportes y estadísticas de todas las sucursales.",
+            AbrirFormularioEnPanel(
+                reportes,
                 btnReportes
             );
         }
@@ -1218,9 +1112,19 @@ namespace Capa_Vistas
         // =========================================================
 
         private void BtnCerrarSesion_Click(
-            object? sender,
-            EventArgs e)
+    object? sender,
+    EventArgs e)
         {
+            if (
+                formularioActivo
+                is IControlaCambios formularioConCambios
+                &&
+                !formularioConCambios.PuedeCerrar())
+            {
+                return;
+            }
+
+
             using FormMensaje mensaje =
                 new FormMensaje(
                     "Cerrar sesión",
@@ -1240,9 +1144,7 @@ namespace Capa_Vistas
 
             reloj.Stop();
 
-
             SesionActual.Cerrar();
-
 
             Close();
         }
