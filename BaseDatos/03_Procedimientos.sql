@@ -78,6 +78,7 @@ GO
 
 
 CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Listar
+    @activo BIT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -95,13 +96,31 @@ BEGIN
         u.id_perfil,
         p.nombre AS perfil,
         u.id_sucursal,
-        ISNULL(s.nombre, N'Todas las sucursales') AS sucursal
+        ISNULL(s.nombre, N'Todas las sucursales') AS sucursal,
+        CAST(
+            CASE
+                WHEN u.eliminado_en IS NULL THEN 1
+                ELSE 0
+            END
+            AS BIT
+        ) AS activo
     FROM dbo.USUARIO AS u
     INNER JOIN dbo.PERFIL AS p
         ON p.id_perfil = u.id_perfil
     LEFT JOIN dbo.SUCURSAL AS s
         ON s.id_sucursal = u.id_sucursal
-    WHERE u.eliminado_en IS NULL
+    WHERE
+        (
+            @activo IS NULL
+            OR (
+                @activo = 1
+                AND u.eliminado_en IS NULL
+            )
+            OR (
+                @activo = 0
+                AND u.eliminado_en IS NOT NULL
+            )
+        )
     ORDER BY u.apellido, u.nombre;
 END;
 GO
