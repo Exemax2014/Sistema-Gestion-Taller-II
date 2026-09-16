@@ -29,7 +29,8 @@
             txtBuscar = new TextBox();
             btnBuscar = new Button();
             btnNuevoCliente = new Button();
-
+            cmbEstado = new ComboBox();
+            
             pnlTabla = new Panel();
             dgvClientes = new DataGridView();
 
@@ -202,6 +203,7 @@
             pnlBusqueda.Controls.Add(txtBuscar);
             pnlBusqueda.Controls.Add(btnBuscar);
             pnlBusqueda.Controls.Add(btnNuevoCliente);
+            pnlBusqueda.Controls.Add(cmbEstado);
 
             pnlBusqueda.Dock =
                 DockStyle.Top;
@@ -297,7 +299,38 @@
 
             btnBuscar.UseVisualStyleBackColor =
                 false;
+            // =====================================================
+            // COMBO ESTADO
+            // =====================================================
 
+            cmbEstado.Anchor =
+                AnchorStyles.Top |
+                AnchorStyles.Right;
+
+            cmbEstado.DropDownStyle =
+                ComboBoxStyle.DropDownList;
+
+            cmbEstado.Font =
+                new Font("Segoe UI", 9.5F);
+
+            cmbEstado.Items.AddRange(
+                new object[] { "Activos", "Dados de baja", "Todos" }
+            );
+
+            cmbEstado.Location =
+                new Point(710, 25);
+
+            cmbEstado.Name =
+                "cmbEstado";
+
+            cmbEstado.SelectedIndex =
+                0;
+
+            cmbEstado.Size =
+                new Size(145, 30);
+
+            cmbEstado.TabIndex =
+                2;
             // =====================================================
             // NUEVO CLIENTE
             // =====================================================
@@ -332,7 +365,7 @@
                 Color.White;
 
             btnNuevoCliente.Location =
-                new Point(710, 20);
+                new Point(875, 20);
 
             btnNuevoCliente.Name =
                 "btnNuevoCliente";
@@ -341,7 +374,7 @@
                 new Size(175, 40);
 
             btnNuevoCliente.TabIndex =
-                2;
+                3;
 
             btnNuevoCliente.Text =
                 "+ Nuevo cliente";
@@ -685,6 +718,7 @@
         private TextBox txtBuscar;
         private Button btnBuscar;
         private Button btnNuevoCliente;
+        private ComboBox cmbEstado;
 
         private Panel pnlTabla;
         private DataGridView dgvClientes;
