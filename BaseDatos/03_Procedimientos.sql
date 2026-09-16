@@ -136,6 +136,261 @@ END;
 GO
 
 -- ============================================================
+-- AGREGAR A: 03_Procedimientos.sql
+-- Sección sugerida: antes de "-- CLIENTES" (porque Cliente
+-- depende de Dirección) o en una sección nueva "UBICACIONES".
+--
+-- Estos procedimientos faltaban para poder completar el alta
+-- y modificación de una dirección desde Clientes (y a futuro
+-- Usuarios, que también usa id_direccion).
+-- ============================================================
+
+USE SistemaGestion;
+GO
+
+
+-- ============================================================
+-- UBICACIONES (PROVINCIA / LOCALIDAD / DIRECCION)
+-- ============================================================
+
+CREATE OR ALTER PROCEDURE dbo.sp_Provincia_Listar
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        id_provincia,
+        nombre
+    FROM dbo.PROVINCIA
+    WHERE eliminado_en IS NULL
+    ORDER BY nombre;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Localidad_ListarPorProvincia
+    @idProvincia INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        id_localidad,
+        nombre,
+        codigo_postal
+    FROM dbo.LOCALIDAD
+    WHERE id_provincia = @idProvincia
+      AND eliminado_en IS NULL
+    ORDER BY nombre;
+END;
+GO
+
+
+/* ============================================================
+   Procedimiento: sp_Direccion_Alta
+
+   Códigos de resultado:
+   0   = Correcto
+   1   = Registro relacionado inexistente (localidad)
+   3   = Datos inválidos
+   500 = Error interno de base de datos
+   ============================================================ */
+
+CREATE OR ALTER PROCEDURE dbo.sp_Direccion_Alta
+    @idLocalidad INT,
+    @calle NVARCHAR(150),
+    @altura NVARCHAR(20) = NULL,
+
+    @IdGenerado INT OUTPUT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @IdGenerado = 0;
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.LOCALIDAD
+            WHERE id_localidad = @idLocalidad
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La localidad indicada no existe o está inactiva.';
+            RETURN;
+        END;
+
+        IF LTRIM(RTRIM(ISNULL(@calle, N''))) = N''
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle es obligatoria.';
+            RETURN;
+        END;
+
+        INSERT INTO dbo.DIRECCION
+        (
+            id_localidad,
+            calle,
+            altura
+        )
+        VALUES
+        (
+            @idLocalidad,
+            LTRIM(RTRIM(@calle)),
+            NULLIF(LTRIM(RTRIM(@altura)), N'')
+        );
+
+        SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado = N'Dirección registrada correctamente.';
+
+    END TRY
+    BEGIN CATCH
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+    END CATCH;
+END;
+GO
+
+
+/* ============================================================
+   Procedimiento: sp_Direccion_Modificar
+
+   Códigos de resultado:
+   0   = Correcto
+   1   = Registro relacionado inexistente (dirección o localidad)
+   3   = Datos inválidos
+   500 = Error interno de base de datos
+   ============================================================ */
+
+CREATE OR ALTER PROCEDURE dbo.sp_Direccion_Modificar
+    @idDireccion INT,
+    @idLocalidad INT,
+    @calle NVARCHAR(150),
+    @altura NVARCHAR(20) = NULL,
+
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.DIRECCION
+            WHERE id_direccion = @idDireccion
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La dirección no existe o fue dada de baja.';
+            RETURN;
+        END;
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.LOCALIDAD
+            WHERE id_localidad = @idLocalidad
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La localidad indicada no existe o está inactiva.';
+            RETURN;
+        END;
+
+        IF LTRIM(RTRIM(ISNULL(@calle, N''))) = N''
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle es obligatoria.';
+            RETURN;
+        END;
+
+        UPDATE dbo.DIRECCION
+        SET
+            id_localidad = @idLocalidad,
+            calle = LTRIM(RTRIM(@calle)),
+            altura = NULLIF(LTRIM(RTRIM(@altura)), N'')
+        WHERE id_direccion = @idDireccion
+          AND eliminado_en IS NULL;
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado = N'Dirección modificada correctamente.';
+
+    END TRY
+    BEGIN CATCH
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+    END CATCH;
+END;
+GO
+
+
+-- ============================================================
+-- OPCIONAL: permisos de Clientes (FUNCIONALIDAD + PERFIL_FUNCIONALIDAD)
+--
+-- Solo asigna las 4 funcionalidades al Administrador.
+-- DECISIÓN ABIERTA (según AGENTS.md): falta definir el alcance
+-- final de Gerente y Vendedor sobre Clientes. No los asigno acá
+-- para no asumir esa decisión por ustedes.
+-- ============================================================
+
+IF NOT EXISTS (SELECT 1 FROM dbo.FUNCIONALIDAD WHERE codigo = N'CLIENTES_VER')
+BEGIN
+    INSERT INTO dbo.FUNCIONALIDAD (codigo, nombre, descripcion)
+    VALUES (N'CLIENTES_VER', N'Ver clientes', N'Permite ver el listado y detalle de clientes.');
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.FUNCIONALIDAD WHERE codigo = N'CLIENTES_ALTA')
+BEGIN
+    INSERT INTO dbo.FUNCIONALIDAD (codigo, nombre, descripcion)
+    VALUES (N'CLIENTES_ALTA', N'Alta de clientes', N'Permite registrar nuevos clientes.');
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.FUNCIONALIDAD WHERE codigo = N'CLIENTES_MODIFICAR')
+BEGIN
+    INSERT INTO dbo.FUNCIONALIDAD (codigo, nombre, descripcion)
+    VALUES (N'CLIENTES_MODIFICAR', N'Modificar clientes', N'Permite modificar clientes existentes.');
+END;
+GO
+
+IF NOT EXISTS (SELECT 1 FROM dbo.FUNCIONALIDAD WHERE codigo = N'CLIENTES_BAJA')
+BEGIN
+    INSERT INTO dbo.FUNCIONALIDAD (codigo, nombre, descripcion)
+    VALUES (N'CLIENTES_BAJA', N'Baja de clientes', N'Permite dar de baja clientes.');
+END;
+GO
+
+INSERT INTO dbo.PERFIL_FUNCIONALIDAD (id_perfil, id_funcionalidad)
+SELECT p.id_perfil, f.id_funcionalidad
+FROM dbo.PERFIL AS p
+CROSS JOIN dbo.FUNCIONALIDAD AS f
+WHERE p.nombre = N'Administrador'
+  AND f.codigo IN (N'CLIENTES_VER', N'CLIENTES_ALTA', N'CLIENTES_MODIFICAR', N'CLIENTES_BAJA')
+  AND NOT EXISTS (
+      SELECT 1 FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+      WHERE pf.id_perfil = p.id_perfil AND pf.id_funcionalidad = f.id_funcionalidad
+  );
+GO
+
+
+-- ============================================================
 -- CLIENTES
 -- ============================================================
 
