@@ -101,11 +101,38 @@ BEGIN
         id_perfil INT IDENTITY(1,1) PRIMARY KEY,
         nombre NVARCHAR(50) NOT NULL,
         descripcion NVARCHAR(200) NULL,
+
+        /* Indica si los usuarios de este perfil trabajan a nivel global.
+           1 = no requieren una sucursal fija.
+           0 = deben tener una sucursal asignada. */
+        alcance_global BIT NOT NULL
+            CONSTRAINT DF_PERFIL_alcance_global DEFAULT (0),
+
         eliminado_en DATETIME2 NULL,
 
         CONSTRAINT UQ_PERFIL_nombre
             UNIQUE (nombre)
     );
+END;
+GO
+
+
+/* =========================================================
+   ADAPTACIÓN PERFIL - ALCANCE DE SUCURSAL
+   =========================================================
+   Permite que la regla de sucursal dependa de un dato del perfil
+   y no del nombre hardcodeado "Administrador".
+
+   Se agrega con valor 0 para conservar de forma segura los perfiles
+   existentes. El Script 02 asignará los valores iniciales correctos.
+   ========================================================= */
+
+IF OBJECT_ID('dbo.PERFIL', 'U') IS NOT NULL
+   AND COL_LENGTH('dbo.PERFIL', 'alcance_global') IS NULL
+BEGIN
+    ALTER TABLE dbo.PERFIL
+    ADD alcance_global BIT NOT NULL
+        CONSTRAINT DF_PERFIL_alcance_global DEFAULT (0) WITH VALUES;
 END;
 GO
 
@@ -314,12 +341,13 @@ END;
 GO
 
 /* =========================================================
-   ADAPTACIÓN USUARIO - ADMINISTRADOR SIN SUCURSAL
+   ADAPTACIÓN USUARIO - SUCURSAL OPCIONAL
    =========================================================
-   El Administrador puede gestionar varias sucursales, por eso
-   no debe quedar asociado obligatoriamente a una sola.
+   La obligatoriedad de sucursal se determina dinámicamente
+   mediante PERFIL.alcance_global.
 
-   Gerente y Vendedor sí tendrán una sucursal asignada.
+   Los perfiles globales pueden tener id_sucursal = NULL.
+   Los perfiles no globales deben tener una sucursal asignada.
    ========================================================= */
 
 IF OBJECT_ID('dbo.USUARIO', 'U') IS NOT NULL

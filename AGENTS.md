@@ -1,7 +1,7 @@
 AGENTS.md — Sistema Hierro y Forja / Taller de Programación II
 
 Documento operativo del proyecto para integrantes del equipo y agentes de IA.
-Última actualización: 2026-09-02.
+Última actualización: 2026-09-16.
 Rama de integración: desarrollo.
 Ramas personales: exe-dev y josi-dev.
 
@@ -11,7 +11,7 @@ Ramas personales: exe-dev y josi-dev.
 
 <!-- ===================================================================== -->
 
-1. Contexto
+Contexto
 
 Proyecto final de Taller de Programación II.
 
@@ -61,14 +61,14 @@ futura conexión de varias PCs a SQL Server central.
 
 <!-- ===================================================================== -->
 
-2. Arquitectura
+Arquitectura
 
 Capa_Vistas
-     ↓
+↓
 Capa_Logica
-     ↓
+↓
 Capa_Datos
-     ↓
+↓
 SQL Server
 
 Capa_Vistas
@@ -146,13 +146,45 @@ Prohibido:
 
 Capa_Vistas -> Capa_Datos
 
+Principio de datos dinámicos:
+
+La aplicación debe ser dinámica respecto de datos, permisos, perfiles,
+sucursales, catálogos, estados y reglas configurables.
+
+Los valores que provengan o puedan administrarse desde la base de datos
+deben cargarse siguiendo:
+
+Capa_Vistas
+↓
+Capa_Logica
+↓
+Capa_Datos
+↓
+SQL Server
+
+No hardcodear en formularios ni en la lógica:
+
+nombres de perfiles para decidir permisos;
+
+listas de perfiles, sucursales, categorías, marcas o estados administrables;
+
+permisos;
+
+IDs de entidades;
+
+datos de negocio que puedan cambiar desde SQL Server.
+
+Sí pueden estar definidos en código los aspectos puramente visuales o técnicos,
+por ejemplo colores, tamaños, textos fijos de interfaz y nombres de controles,
+siempre que no representen datos o reglas de negocio.
+
 <!-- ===================================================================== -->
 
 <!-- ====================== 3. ESTRUCTURA ACTUAL ========================= -->
 
 <!-- ===================================================================== -->
 
-3. Estructura actual
+Estructura actual
 
 Sistema_Hierro_y_Forja/
 ├── BaseDatos/
@@ -185,7 +217,7 @@ No volver a utilizar nombres antiguos de proyectos o carpetas.
 
 <!-- ===================================================================== -->
 
-4. Base de datos
+Base de datos
 
 Nombre:
 
@@ -238,7 +270,7 @@ Todo procedimiento creado o modificado en SSMS debe actualizar también 03_Proce
 
 <!-- ===================================================================== -->
 
-5. Configuración y seguridad
+Configuración y seguridad
 
 La conexión se crea desde:
 
@@ -268,53 +300,114 @@ autenticación de usuarios con PBKDF2 + SHA-256.
 
 <!-- ===================================================================== -->
 
-6. Autenticación y permisos
+Autenticación y permisos
 
 Flujo actual:
 
 FormLogin
-   ↓
+↓
 UsuarioLogica.IniciarSesion()
-   ↓
+↓
 UsuarioDatos.BuscarPorNombreUsuario()
-   ↓
+↓
 sp_Usuario_BuscarPorNombreUsuario
-   ↓
+↓
 PasswordHelper.Verificar()
-   ↓
+↓
 UsuarioDatos.ObtenerFuncionalidadesPerfil()
-   ↓
+↓
 sp_Perfil_ObtenerFuncionalidades
-   ↓
+↓
 SesionActual
-   ↓
+↓
 FormPrincipal
 
-SesionActual mantiene:
+SesionActual mantiene en memoria:
 
 usuario;
 
 perfil;
 
-sucursal;
+sucursal asignada;
+
+sucursal operativa;
 
 estado de sesión;
 
 funcionalidades permitidas.
 
-Consulta:
+SesionActual no consulta directamente Capa_Datos ni SQL Server.
+
+Los datos de sesión y permisos se obtienen durante la autenticación mediante:
+
+UsuarioLogica
+↓
+UsuarioDatos
+↓
+SQL Server
+
+y luego UsuarioLogica carga:
+
+SesionActual.Iniciar(...)
+
+Consulta en memoria:
 
 SesionActual.TienePermiso("VENTAS_VER")
 
-Los permisos provienen de SQL Server.
+Los permisos provienen de SQL Server y no deben definirse manualmente en la vista.
 
 <!-- ===================================================================== -->
 
-<!-- ======================== 7. VISTAS WINFORMS ========================= -->
+<!-- ======================== 7. VALIDACIONES ============================ -->
 
 <!-- ===================================================================== -->
 
-7. Convención de vistas
+Validaciones
+
+Todo campo editable por el usuario debe validarse en tres niveles cuando corresponda.
+
+Vista:
+
+validación preventiva e inmediata;
+
+impedir o advertir entradas inválidas antes de enviar;
+
+controlar formato, longitud, caracteres permitidos, campos obligatorios,
+rangos y selección de opciones;
+
+no confiar solamente en la Vista.
+
+Capa_Logica:
+
+repetir las validaciones de negocio antes de llamar a Capa_Datos;
+
+ser la validación autoritativa de la aplicación;
+
+validar reglas entre campos y reglas dependientes de sesión, permisos,
+estado, sucursal u otras entidades.
+
+Base de datos:
+
+mantener restricciones de integridad cuando corresponda;
+
+NOT NULL, UNIQUE, CHECK, FK y reglas implementadas mediante procedimientos
+almacenados o mecanismos definidos por el proyecto.
+
+Regla:
+
+Vista = experiencia de usuario y prevención.
+Lógica = regla de negocio y validación autoritativa.
+Base de datos = integridad final.
+
+Nunca depender de una sola capa para validar información.
+
+<!-- ===================================================================== -->
+
+<!-- ======================== 8. VISTAS WINFORMS ========================= -->
+
+<!-- ===================================================================== -->
+
+Convención de vistas
 
 Separación obligatoria:
 
@@ -367,7 +460,7 @@ No crear nuevamente por código controles que ya existen en Designer.
 
 <!-- ===================================================================== -->
 
-8. FormPrincipal
+FormPrincipal
 
 FormPrincipal ya está implementado.
 
@@ -433,7 +526,7 @@ INICIO siempre está habilitado.
 
 <!-- ===================================================================== -->
 
-9. Convenciones
+Convenciones
 
 Nombres:
 
@@ -466,7 +559,7 @@ evitar comentar instrucciones obvias.
 
 <!-- ===================================================================== -->
 
-10. Git
+Git
 
 master     -> versión estable
 desarrollo -> integración
@@ -476,15 +569,15 @@ josi-dev   -> Josias
 Flujo:
 
 actualizar desarrollo
-      ↓
+↓
 actualizar rama personal
-      ↓
+↓
 trabajar
-      ↓
+↓
 compilar/probar
-      ↓
+↓
 commit + push personal
-      ↓
+↓
 merge a desarrollo
 
 La rama seleccionada es la que recibe el merge.
@@ -497,15 +590,17 @@ No trabajar directamente sobre master.
 
 <!-- ===================================================================== -->
 
-11. División actual
+División actual
 
 Exequiel
 
-Principalmente:
+Responsable principal de:
 
-infraestructura;
+módulo Usuarios;
 
-base de datos;
+integración general;
+
+arquitectura;
 
 autenticación;
 
@@ -519,21 +614,29 @@ acceso a datos;
 
 procedimientos;
 
-integración general.
+base de datos.
 
 Josias
 
-Principalmente:
+Responsable principal de:
 
-vistas particulares.
+módulo Clientes.
 
-Previsto:
+Regla para ambos módulos:
 
-FormVentas
-FormClientes
-FormProductos
-FormUsuarios
-FormReportes
+seguir la misma arquitectura ya aplicada en Productos e Inventario;
+
+Vista -> Lógica -> Datos -> SQL Server;
+
+datos dinámicos;
+
+validación preventiva en Vista;
+
+validación de negocio en Capa_Logica;
+
+integridad final en SQL Server;
+
+sin acceso directo de Vistas a Capa_Datos.
 
 FormPrincipal ya existe y no debe recrearse.
 
@@ -541,11 +644,11 @@ Las vistas particulares deben cargarse dentro de pnlContenido.
 
 <!-- ===================================================================== -->
 
-<!-- =================== 12. RESTRICCIONES PARA AGENTES ================== -->
+<!-- =================== 13. RESTRICCIONES PARA AGENTES ================== -->
 
 <!-- ===================================================================== -->
 
-12. Reglas para agentes de IA
+Reglas para agentes de IA
 
 Antes de modificar:
 
@@ -573,6 +676,8 @@ mostrar MessageBox desde Datos;
 
 hardcodear credenciales;
 
+hardcodear datos de negocio, permisos, perfiles, sucursales o catálogos administrables;
+
 subir configuracion.json;
 
 concatenar entradas del usuario en SQL;
@@ -595,6 +700,10 @@ realizar cambios pequeños;
 
 reutilizar código existente;
 
+preferir datos dinámicos obtenidos mediante Capa_Logica;
+
+validar campos editables en Vista y volver a validar reglas en Capa_Logica;
+
 respetar las capas;
 
 comentar código importante;
@@ -613,9 +722,9 @@ actualizar este documento al cerrar hitos.
 
 <!-- ===================================================================== -->
 
-13. Estado completado
+Estado completado
 
-Hasta 2026-09-02:
+Hasta 2026-09-16:
 
 solución y arquitectura de tres capas;
 
@@ -661,7 +770,29 @@ botones sin permiso visibles, grisados y deshabilitados;
 
 pruebas con Administrador y Vendedor;
 
-04_DatosPrueba.sql para desarrollo.
+04_DatosPrueba.sql para desarrollo;
+
+MARCA y catálogo inicial;
+
+inventario por PRODUCTO + SUCURSAL;
+
+lógica de Productos e Inventario;
+
+permisos de Productos aplicados desde Capa_Logica;
+
+FormProductos y FormProductoDetalle;
+
+FormClientes maquetado con columnas dinámicas fuera del Designer;
+
+FormUsuarios maquetado con columnas dinámicas fuera del Designer;
+
+FormReportesGeneral maquetado;
+
+FormInicio maquetado e integrado;
+
+FormPrincipal actualizado para cargar FormInicio y módulos dentro de pnlContenido;
+
+patrón Designer seguro: estructura visual en Designer y comportamiento/columnas dinámicas en .cs.
 
 <!-- ===================================================================== -->
 
@@ -669,7 +800,7 @@ pruebas con Administrador y Vendedor;
 
 <!-- ===================================================================== -->
 
-14. Proyección pendiente
+Proyección pendiente
 
 Esta sección debe reducirse a medida que se completa el proyecto.
 
@@ -683,25 +814,11 @@ actualizar reglas si cambió alguna decisión.
 
 Próximo objetivo
 
-Integrar las vistas particulares dentro de FormPrincipal -> pnlContenido.
+Completar módulos Usuarios y Clientes con el patrón aplicado en Productos/Inventario.
 
-Usuarios y permisos
+Usuarios — responsable: Exequiel
 
-listar;
-
-alta;
-
-modificación;
-
-baja lógica;
-
-gestionar perfiles/permisos;
-
-cambio o restablecimiento de contraseña.
-
-Clientes
-
-listar y buscar;
+listar y buscar dinámicamente;
 
 alta;
 
@@ -709,7 +826,42 @@ modificación;
 
 baja lógica;
 
-dirección.
+cargar perfiles y sucursales desde SQL Server;
+
+gestionar perfiles/permisos sin hardcodear nombres de perfil;
+
+cambio o restablecimiento de contraseña;
+
+validar todos los campos en Vista y repetir reglas en Capa_Logica;
+
+mantener restricciones de integridad en SQL Server.
+
+Clientes — responsable: Josias
+
+listar y buscar dinámicamente;
+
+alta;
+
+modificación;
+
+baja lógica;
+
+dirección;
+
+cargar localidades/provincias dinámicamente cuando corresponda;
+
+validar todos los campos en Vista y repetir reglas en Capa_Logica;
+
+mantener restricciones de integridad en SQL Server.
+
+Corrección arquitectónica pendiente
+
+Mover de FormPrincipal y otras vistas las decisiones de permisos que todavía consultan
+directamente SesionActual.TienePermiso(...), para que la Vista consulte métodos de
+Capa_Logica.
+
+Revisar ComboBox, listas, estados y datos temporales de las vistas ya maquetadas y
+reemplazar valores de negocio hardcodeados por carga dinámica desde Capa_Logica.
 
 Productos y categorías
 

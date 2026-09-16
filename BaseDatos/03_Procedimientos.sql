@@ -143,9 +143,10 @@ GO
    Procedimiento: sp_Usuario_Alta
 
    Regla de sucursal:
-   - Administrador: no pertenece a una sucursal específica.
-     Su id_sucursal se guarda en NULL.
-   - Gerente y Vendedor: deben tener una sucursal asignada.
+   - Perfil con alcance_global = 1:
+     id_sucursal se guarda en NULL.
+   - Perfil con alcance_global = 0:
+     debe tener una sucursal asignada.
 
    Códigos de resultado:
    0   = Correcto
@@ -177,7 +178,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @nombrePerfil NVARCHAR(100);
+    DECLARE @alcanceGlobal BIT;
 
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
@@ -191,13 +192,13 @@ BEGIN
            ----------------------------------------------------- */
 
         SELECT
-            @nombrePerfil = nombre
+            @alcanceGlobal = alcance_global
         FROM dbo.PERFIL
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
 
 
-        IF @nombrePerfil IS NULL
+        IF @alcanceGlobal IS NULL
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado =
@@ -211,11 +212,11 @@ BEGIN
            Regla de sucursal según perfil
            ----------------------------------------------------- */
 
-        IF @nombrePerfil = N'Administrador'
+        IF @alcanceGlobal = 1
         BEGIN
             /*
-               El administrador trabaja a nivel global,
-               por lo tanto no se asocia a una sucursal.
+               Los perfiles de alcance global no pertenecen
+               obligatoriamente a una sucursal específica.
             */
             SET @idSucursal = NULL;
         END
@@ -223,8 +224,8 @@ BEGIN
         BEGIN
 
             /*
-               Gerentes, vendedores y demás perfiles
-               deben estar asociados a una sucursal.
+               Los perfiles sin alcance global deben estar
+               asociados a una sucursal activa.
             */
             IF @idSucursal IS NULL
             BEGIN
@@ -389,9 +390,10 @@ GO
    Procedimiento: sp_Usuario_Modificar
 
    Regla de sucursal:
-   - Administrador: no pertenece a una sucursal específica.
-     Su id_sucursal se guarda en NULL.
-   - Gerente y Vendedor: deben tener una sucursal asignada.
+   - Perfil con alcance_global = 1:
+     id_sucursal se guarda en NULL.
+   - Perfil con alcance_global = 0:
+     debe tener una sucursal asignada.
 
    Códigos de resultado:
    0   = Correcto
@@ -422,7 +424,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-    DECLARE @nombrePerfil NVARCHAR(100);
+    DECLARE @alcanceGlobal BIT;
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
@@ -454,13 +456,13 @@ BEGIN
            ----------------------------------------------------- */
 
         SELECT
-            @nombrePerfil = nombre
+            @alcanceGlobal = alcance_global
         FROM dbo.PERFIL
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
 
 
-        IF @nombrePerfil IS NULL
+        IF @alcanceGlobal IS NULL
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado =
@@ -474,7 +476,7 @@ BEGIN
            Regla de sucursal según perfil
            ----------------------------------------------------- */
 
-        IF @nombrePerfil = N'Administrador'
+        IF @alcanceGlobal = 1
         BEGIN
             SET @idSucursal = NULL;
         END
@@ -694,7 +696,8 @@ BEGIN
     SELECT
         id_perfil,
         nombre,
-        descripcion
+        descripcion,
+        alcance_global
     FROM dbo.PERFIL
     WHERE eliminado_en IS NULL
     ORDER BY nombre;

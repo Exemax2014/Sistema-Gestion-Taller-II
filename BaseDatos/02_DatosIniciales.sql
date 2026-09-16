@@ -9,6 +9,7 @@
    - Reactivar registros iniciales que hayan sido dados de baja.
    - Evitar duplicados al ejecutar el script varias veces.
    - Mantener las asignaciones de permisos ya existentes.
+   - Definir el alcance de sucursal de los perfiles iniciales.
    ========================================================= */
 
 USE SistemaGestion;
@@ -22,33 +23,36 @@ GO
 UPDATE p
 SET
     p.descripcion = v.descripcion,
+    p.alcance_global = v.alcance_global,
     p.eliminado_en = NULL
 FROM dbo.PERFIL AS p
 INNER JOIN
 (
     VALUES
-        (N'Administrador', N'Acceso general a la administración del sistema'),
-        (N'Gerente',       N'Acceso a funciones de gestión y reportes'),
-        (N'Vendedor',      N'Acceso principalmente a ventas y atención de clientes')
-) AS v(nombre, descripcion)
+        (N'Administrador', N'Acceso general a la administración del sistema', CAST(1 AS BIT)),
+        (N'Gerente',       N'Acceso a funciones de gestión y reportes',       CAST(0 AS BIT)),
+        (N'Vendedor',      N'Acceso principalmente a ventas y atención de clientes', CAST(0 AS BIT))
+) AS v(nombre, descripcion, alcance_global)
     ON v.nombre = p.nombre;
 GO
 
 INSERT INTO dbo.PERFIL
 (
     nombre,
-    descripcion
+    descripcion,
+    alcance_global
 )
 SELECT
     v.nombre,
-    v.descripcion
+    v.descripcion,
+    v.alcance_global
 FROM
 (
     VALUES
-        (N'Administrador', N'Acceso general a la administración del sistema'),
-        (N'Gerente',       N'Acceso a funciones de gestión y reportes'),
-        (N'Vendedor',      N'Acceso principalmente a ventas y atención de clientes')
-) AS v(nombre, descripcion)
+        (N'Administrador', N'Acceso general a la administración del sistema', CAST(1 AS BIT)),
+        (N'Gerente',       N'Acceso a funciones de gestión y reportes',       CAST(0 AS BIT)),
+        (N'Vendedor',      N'Acceso principalmente a ventas y atención de clientes', CAST(0 AS BIT))
+) AS v(nombre, descripcion, alcance_global)
 WHERE NOT EXISTS
 (
     SELECT 1
