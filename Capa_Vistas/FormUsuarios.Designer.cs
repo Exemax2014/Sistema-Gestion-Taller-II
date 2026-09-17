@@ -92,17 +92,19 @@ namespace Capa_Vistas
             pnlCabecera.Controls.Add(lblTitulo);
             pnlCabecera.Controls.Add(lblSubtitulo);
             pnlCabecera.Controls.Add(pnlLineaTitulo);
-            pnlCabecera.Location = new Point(32, 18);
+            pnlCabecera.Controls.Add(btnNuevoUsuario);
+            pnlCabecera.Location = new Point(32, 12);
             pnlCabecera.Name = "pnlCabecera";
-            pnlCabecera.Size = new Size(1116, 82);
+            pnlCabecera.Size = new Size(1243, 88);
             pnlCabecera.TabIndex = 0;
+            pnlCabecera.Paint += pnlCabecera_Paint;
             // 
             // lblTitulo
             // 
             lblTitulo.AutoSize = true;
             lblTitulo.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
             lblTitulo.ForeColor = Color.FromArgb(45, 49, 54);
-            lblTitulo.Location = new Point(0, 0);
+            lblTitulo.Location = new Point(0, 4);
             lblTitulo.Name = "lblTitulo";
             lblTitulo.Size = new Size(172, 50);
             lblTitulo.TabIndex = 0;
@@ -113,7 +115,7 @@ namespace Capa_Vistas
             lblSubtitulo.AutoSize = true;
             lblSubtitulo.Font = new Font("Segoe UI", 9F);
             lblSubtitulo.ForeColor = Color.FromArgb(105, 110, 116);
-            lblSubtitulo.Location = new Point(2, 48);
+            lblSubtitulo.Location = new Point(3, 50);
             lblSubtitulo.Name = "lblSubtitulo";
             lblSubtitulo.Size = new Size(328, 20);
             lblSubtitulo.TabIndex = 1;
@@ -140,16 +142,15 @@ namespace Capa_Vistas
             pnlFiltros.Controls.Add(cmbEstado);
             pnlFiltros.Controls.Add(btnBuscar);
             pnlFiltros.Controls.Add(btnLimpiarFiltros);
-            pnlFiltros.Controls.Add(btnNuevoUsuario);
             pnlFiltros.Location = new Point(32, 106);
             pnlFiltros.Name = "pnlFiltros";
-            pnlFiltros.Size = new Size(1116, 116);
+            pnlFiltros.Size = new Size(1243, 73);
             pnlFiltros.TabIndex = 1;
             // 
             // lblBuscar
             // 
             lblBuscar.AutoSize = true;
-            lblBuscar.Location = new Point(20, 17);
+            lblBuscar.Location = new Point(18, 25);
             lblBuscar.Name = "lblBuscar";
             lblBuscar.Size = new Size(104, 20);
             lblBuscar.TabIndex = 0;
@@ -157,7 +158,7 @@ namespace Capa_Vistas
             // 
             // txtBuscar
             // 
-            txtBuscar.Location = new Point(20, 44);
+            txtBuscar.Location = new Point(126, 21);
             txtBuscar.Name = "txtBuscar";
             txtBuscar.PlaceholderText = "Usuario, nombre o apellido";
             txtBuscar.Size = new Size(300, 27);
@@ -166,7 +167,7 @@ namespace Capa_Vistas
             // lblPerfil
             // 
             lblPerfil.AutoSize = true;
-            lblPerfil.Location = new Point(345, 17);
+            lblPerfil.Location = new Point(473, 25);
             lblPerfil.Name = "lblPerfil";
             lblPerfil.Size = new Size(42, 20);
             lblPerfil.TabIndex = 2;
@@ -175,7 +176,7 @@ namespace Capa_Vistas
             // cmbPerfil
             // 
             cmbPerfil.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbPerfil.Location = new Point(345, 44);
+            cmbPerfil.Location = new Point(521, 20);
             cmbPerfil.Name = "cmbPerfil";
             cmbPerfil.Size = new Size(180, 28);
             cmbPerfil.TabIndex = 3;
@@ -183,7 +184,7 @@ namespace Capa_Vistas
             // lblEstado
             // 
             lblEstado.AutoSize = true;
-            lblEstado.Location = new Point(550, 17);
+            lblEstado.Location = new Point(729, 25);
             lblEstado.Name = "lblEstado";
             lblEstado.Size = new Size(54, 20);
             lblEstado.TabIndex = 4;
@@ -192,7 +193,7 @@ namespace Capa_Vistas
             // cmbEstado
             // 
             cmbEstado.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbEstado.Location = new Point(550, 44);
+            cmbEstado.Location = new Point(789, 21);
             cmbEstado.Name = "cmbEstado";
             cmbEstado.Size = new Size(160, 28);
             cmbEstado.TabIndex = 5;
@@ -205,7 +206,7 @@ namespace Capa_Vistas
             btnBuscar.FlatAppearance.BorderSize = 0;
             btnBuscar.FlatStyle = FlatStyle.Flat;
             btnBuscar.ForeColor = Color.White;
-            btnBuscar.Location = new Point(748, 41);
+            btnBuscar.Location = new Point(990, 15);
             btnBuscar.Name = "btnBuscar";
             btnBuscar.Size = new Size(110, 40);
             btnBuscar.TabIndex = 6;
@@ -219,7 +220,7 @@ namespace Capa_Vistas
             btnLimpiarFiltros.Cursor = Cursors.Hand;
             btnLimpiarFiltros.FlatAppearance.BorderColor = Color.FromArgb(160, 165, 170);
             btnLimpiarFiltros.FlatStyle = FlatStyle.Flat;
-            btnLimpiarFiltros.Location = new Point(875, 41);
+            btnLimpiarFiltros.Location = new Point(1120, 14);
             btnLimpiarFiltros.Name = "btnLimpiarFiltros";
             btnLimpiarFiltros.Size = new Size(105, 40);
             btnLimpiarFiltros.TabIndex = 7;
@@ -234,7 +235,7 @@ namespace Capa_Vistas
             btnNuevoUsuario.FlatAppearance.BorderSize = 0;
             btnNuevoUsuario.FlatStyle = FlatStyle.Flat;
             btnNuevoUsuario.ForeColor = Color.White;
-            btnNuevoUsuario.Location = new Point(995, 41);
+            btnNuevoUsuario.Location = new Point(1124, 30);
             btnNuevoUsuario.Name = "btnNuevoUsuario";
             btnNuevoUsuario.Size = new Size(100, 40);
             btnNuevoUsuario.TabIndex = 8;
@@ -250,9 +251,9 @@ namespace Capa_Vistas
             pnlListado.Controls.Add(lblListadoDescripcion);
             pnlListado.Controls.Add(dgvUsuarios);
             pnlListado.Controls.Add(lblCantidad);
-            pnlListado.Location = new Point(32, 236);
+            pnlListado.Location = new Point(32, 185);
             pnlListado.Name = "pnlListado";
-            pnlListado.Size = new Size(1116, 492);
+            pnlListado.Size = new Size(1243, 543);
             pnlListado.TabIndex = 2;
             // 
             // lblListadoTitulo
@@ -273,9 +274,9 @@ namespace Capa_Vistas
             lblListadoDescripcion.ForeColor = Color.FromArgb(105, 110, 116);
             lblListadoDescripcion.Location = new Point(180, 18);
             lblListadoDescripcion.Name = "lblListadoDescripcion";
-            lblListadoDescripcion.Size = new Size(295, 19);
+            lblListadoDescripcion.Size = new Size(297, 19);
             lblListadoDescripcion.TabIndex = 1;
-            lblListadoDescripcion.Text = "Consulta los usuarios habilitados en el sistema.";
+            lblListadoDescripcion.Text = "Consulta los usuarios registrados en el sistema.";
             // 
             // dgvUsuarios
             // 
@@ -305,7 +306,7 @@ namespace Capa_Vistas
             dgvUsuarios.DefaultCellStyle = dataGridViewCellStyle2;
             dgvUsuarios.EnableHeadersVisualStyles = false;
             dgvUsuarios.GridColor = Color.FromArgb(224, 227, 230);
-            dgvUsuarios.Location = new Point(18, 50);
+            dgvUsuarios.Location = new Point(18, 51);
             dgvUsuarios.MultiSelect = false;
             dgvUsuarios.Name = "dgvUsuarios";
             dgvUsuarios.ReadOnly = true;
@@ -313,7 +314,7 @@ namespace Capa_Vistas
             dgvUsuarios.RowHeadersWidth = 51;
             dgvUsuarios.RowTemplate.Height = 38;
             dgvUsuarios.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
-            dgvUsuarios.Size = new Size(1078, 392);
+            dgvUsuarios.Size = new Size(1205, 452);
             dgvUsuarios.TabIndex = 2;
             // 
             // lblCantidad
@@ -322,7 +323,7 @@ namespace Capa_Vistas
             lblCantidad.AutoSize = true;
             lblCantidad.Font = new Font("Segoe UI", 8.5F);
             lblCantidad.ForeColor = Color.FromArgb(105, 110, 116);
-            lblCantidad.Location = new Point(18, 455);
+            lblCantidad.Location = new Point(18, 506);
             lblCantidad.Name = "lblCantidad";
             lblCantidad.Size = new Size(85, 20);
             lblCantidad.TabIndex = 3;
@@ -332,7 +333,7 @@ namespace Capa_Vistas
             // 
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.FromArgb(245, 246, 248);
-            ClientSize = new Size(1180, 760);
+            ClientSize = new Size(1307, 760);
             Controls.Add(pnlCabecera);
             Controls.Add(pnlFiltros);
             Controls.Add(pnlListado);

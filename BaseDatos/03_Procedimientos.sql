@@ -1745,18 +1745,83 @@ BEGIN
         v.subtotal,
         v.descuento,
         v.total,
+
+        c.id_cliente,
         c.nombre + N' ' + c.apellido AS cliente,
+
+        u.id_usuario,
+        u.nombre + N' ' + u.apellido AS vendedor,
+
+        s.id_sucursal,
         s.nombre AS sucursal
+
     FROM dbo.VENTA AS v
+
     INNER JOIN dbo.CLIENTE AS c
         ON c.id_cliente = v.id_cliente
+
+    INNER JOIN dbo.USUARIO AS u
+        ON u.id_usuario = v.id_usuario
+
     INNER JOIN dbo.SUCURSAL AS s
         ON s.id_sucursal = v.id_sucursal
-    WHERE v.eliminado_en IS NULL
-      AND v.id_usuario = @idUsuario
-      AND v.fecha_hora >= @desde
-      AND v.fecha_hora < DATEADD(DAY, 1, @hasta)
-    ORDER BY v.fecha_hora DESC;
+
+    WHERE
+        v.eliminado_en IS NULL
+        AND v.id_usuario = @idUsuario
+        AND v.fecha_hora >= @desde
+        AND v.fecha_hora < DATEADD(DAY, 1, @hasta)
+
+    ORDER BY
+        v.fecha_hora DESC;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Venta_ListarPorCliente
+    @idCliente INT,
+    @desde DATE,
+    @hasta DATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        v.id_venta,
+        v.fecha_hora,
+        v.tipo_factura,
+        v.subtotal,
+        v.descuento,
+        v.total,
+
+        c.id_cliente,
+        c.nombre + N' ' + c.apellido AS cliente,
+
+        u.id_usuario,
+        u.nombre + N' ' + u.apellido AS vendedor,
+
+        s.id_sucursal,
+        s.nombre AS sucursal
+
+    FROM dbo.VENTA AS v
+
+    INNER JOIN dbo.CLIENTE AS c
+        ON c.id_cliente = v.id_cliente
+
+    INNER JOIN dbo.USUARIO AS u
+        ON u.id_usuario = v.id_usuario
+
+    INNER JOIN dbo.SUCURSAL AS s
+        ON s.id_sucursal = v.id_sucursal
+
+    WHERE
+        v.eliminado_en IS NULL
+        AND v.id_cliente = @idCliente
+        AND v.fecha_hora >= @desde
+        AND v.fecha_hora < DATEADD(DAY, 1, @hasta)
+
+    ORDER BY
+        v.fecha_hora DESC;
 END;
 GO
 
@@ -1767,6 +1832,50 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+
+    -- ========================================================
+    -- RESULTADO 1: DATOS GENERALES DE LA VENTA
+    -- ========================================================
+
+    SELECT TOP 1
+        v.id_venta,
+        v.fecha_hora,
+        v.tipo_factura,
+        v.subtotal,
+        v.descuento,
+        v.total,
+
+        c.id_cliente,
+        c.nombre + N' ' + c.apellido AS cliente,
+        c.documento AS documento_cliente,
+
+        u.id_usuario,
+        u.nombre + N' ' + u.apellido AS vendedor,
+        u.nombre_usuario,
+
+        s.id_sucursal,
+        s.nombre AS sucursal
+
+    FROM dbo.VENTA AS v
+
+    INNER JOIN dbo.CLIENTE AS c
+        ON c.id_cliente = v.id_cliente
+
+    INNER JOIN dbo.USUARIO AS u
+        ON u.id_usuario = v.id_usuario
+
+    INNER JOIN dbo.SUCURSAL AS s
+        ON s.id_sucursal = v.id_sucursal
+
+    WHERE
+        v.id_venta = @idVenta
+        AND v.eliminado_en IS NULL;
+
+
+    -- ========================================================
+    -- RESULTADO 2: PRODUCTOS DE LA VENTA
+    -- ========================================================
+
     SELECT
         dv.id_detalle_venta,
         dv.id_producto,
@@ -1775,23 +1884,609 @@ BEGIN
         dv.cantidad,
         dv.precio_unitario,
         dv.subtotal
+
     FROM dbo.DETALLE_VENTA AS dv
+
     INNER JOIN dbo.PRODUCTO AS p
         ON p.id_producto = dv.id_producto
-    WHERE dv.id_venta = @idVenta
-      AND dv.eliminado_en IS NULL
-    ORDER BY dv.id_detalle_venta;
+
+    WHERE
+        dv.id_venta = @idVenta
+        AND dv.eliminado_en IS NULL
+
+    ORDER BY
+        dv.id_detalle_venta;
+
+
+    -- ========================================================
+    -- RESULTADO 3: PAGOS DE LA VENTA
+    -- ========================================================
 
     SELECT
         pg.id_pago,
+        pg.id_metodo_pago,
         mp.nombre AS metodo_pago,
         pg.monto
+
     FROM dbo.PAGO AS pg
+
     INNER JOIN dbo.METODO_PAGO AS mp
         ON mp.id_metodo_pago = pg.id_metodo_pago
-    WHERE pg.id_venta = @idVenta
-      AND pg.eliminado_en IS NULL
-    ORDER BY pg.id_pago;
+
+    WHERE
+        pg.id_venta = @idVenta
+        AND pg.eliminado_en IS NULL
+
+    ORDER BY
+        pg.id_pago;
+END;
+GO
+
+
+
+-- ============================================================
+-- VENTAS - REGISTRO
+-- ============================================================
+
+/* ============================================================
+   Procedimiento: sp_Venta_Registrar
+
+   Registra una venta completa en una única transacción:
+
+   1. Valida usuario y permiso VENTAS_REALIZAR.
+   2. Valida sucursal y alcance del perfil.
+   3. Valida cliente.
+   4. Valida productos activos.
+   5. Valida y bloquea stock por sucursal.
+   6. Obtiene el precio vigente desde PRODUCTO.precio_venta.
+   7. Valida pagos.
+   8. Inserta VENTA.
+   9. Inserta DETALLE_VENTA.
+   10. Inserta PAGO.
+   11. Descuenta INVENTARIO.
+
+   La fecha se genera en SQL Server mediante SYSDATETIME().
+   El precio NO se recibe desde la Vista.
+   El descuento queda en 0 hasta definir la política correspondiente.
+   tipo_factura queda en NULL hasta definir la facturación real.
+
+   Códigos de resultado:
+   0   = Operación correcta
+   1   = Registro relacionado inexistente/inactivo
+   3   = Datos inválidos
+   4   = Stock insuficiente
+   5   = Operación no permitida
+   500 = Error interno / inesperado
+   ============================================================ */
+
+CREATE OR ALTER PROCEDURE dbo.sp_Venta_Registrar
+    @idCliente INT,
+    @idUsuario INT,
+    @idSucursal INT,
+
+    @items dbo.VentaItemTipo READONLY,
+    @pagos dbo.VentaPagoTipo READONLY,
+
+    @IdGenerado INT OUTPUT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @IdGenerado = 0;
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+
+    /* --------------------------------------------------------
+       Validaciones básicas
+       -------------------------------------------------------- */
+
+    IF @idCliente IS NULL OR @idCliente <= 0
+       OR @idUsuario IS NULL OR @idUsuario <= 0
+       OR @idSucursal IS NULL OR @idSucursal <= 0
+    BEGIN
+        SET @CodigoResultado = 3;
+        SET @MensajeResultado =
+            N'Cliente, usuario y sucursal son obligatorios.';
+        RETURN;
+    END;
+
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM @items
+    )
+    BEGIN
+        SET @CodigoResultado = 3;
+        SET @MensajeResultado =
+            N'La venta debe contener al menos un producto.';
+        RETURN;
+    END;
+
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM @pagos
+    )
+    BEGIN
+        SET @CodigoResultado = 3;
+        SET @MensajeResultado =
+            N'La venta debe contener al menos un pago.';
+        RETURN;
+    END;
+
+
+    BEGIN TRY
+
+        BEGIN TRANSACTION;
+
+
+        /* ----------------------------------------------------
+           Usuario activo
+           ---------------------------------------------------- */
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.USUARIO AS u
+            INNER JOIN dbo.PERFIL AS p
+                ON p.id_perfil = u.id_perfil
+               AND p.eliminado_en IS NULL
+            WHERE u.id_usuario = @idUsuario
+              AND u.eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'El usuario no existe o fue dado de baja.';
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Permiso VENTAS_REALIZAR
+           ---------------------------------------------------- */
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.USUARIO AS u
+            INNER JOIN dbo.PERFIL_FUNCIONALIDAD AS pf
+                ON pf.id_perfil = u.id_perfil
+            INNER JOIN dbo.FUNCIONALIDAD AS f
+                ON f.id_funcionalidad = pf.id_funcionalidad
+            WHERE u.id_usuario = @idUsuario
+              AND u.eliminado_en IS NULL
+              AND f.codigo = N'VENTAS_REALIZAR'
+              AND f.eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'El usuario no tiene permiso para realizar ventas.';
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Sucursal activa
+           ---------------------------------------------------- */
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.SUCURSAL
+            WHERE id_sucursal = @idSucursal
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'La sucursal indicada no existe o está inactiva.';
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Alcance del perfil
+
+           alcance_global = 0:
+           el usuario solo puede vender en su sucursal asignada.
+
+           alcance_global = 1:
+           puede operar en la sucursal seleccionada.
+           ---------------------------------------------------- */
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.USUARIO AS u
+            INNER JOIN dbo.PERFIL AS p
+                ON p.id_perfil = u.id_perfil
+            WHERE u.id_usuario = @idUsuario
+              AND ISNULL(p.alcance_global, 0) = 0
+              AND
+              (
+                  u.id_sucursal IS NULL
+                  OR u.id_sucursal <> @idSucursal
+              )
+        )
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'El usuario no puede registrar ventas en la sucursal seleccionada.';
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Cliente activo
+           ---------------------------------------------------- */
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.CLIENTE
+            WHERE id_cliente = @idCliente
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'El cliente seleccionado no existe o está inactivo.';
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Productos válidos
+           ---------------------------------------------------- */
+
+        DECLARE @ProductoInvalido NVARCHAR(100);
+
+
+        SELECT TOP 1
+            @ProductoInvalido =
+                COALESCE(
+                    p.nombre,
+                    CONCAT(
+                        N'ID ',
+                        CAST(i.id_producto AS NVARCHAR(20))
+                    )
+                )
+        FROM @items AS i
+        LEFT JOIN dbo.PRODUCTO AS p
+            ON p.id_producto = i.id_producto
+           AND p.eliminado_en IS NULL
+           AND p.activo = 1
+        WHERE p.id_producto IS NULL;
+
+
+        IF @ProductoInvalido IS NOT NULL
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                LEFT(
+                    N'El producto ' +
+                    @ProductoInvalido +
+                    N' no existe, está inactivo o fue dado de baja.',
+                    250
+                );
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Validar y bloquear stock
+
+           UPDLOCK + HOLDLOCK evita que dos ventas simultáneas
+           consuman las mismas unidades de inventario.
+           ---------------------------------------------------- */
+
+        DECLARE
+            @ProductoStock NVARCHAR(100),
+            @StockDisponible INT,
+            @CantidadSolicitada INT;
+
+
+        SELECT TOP 1
+            @ProductoStock = p.nombre,
+            @StockDisponible = ISNULL(inv.stock, 0),
+            @CantidadSolicitada = i.cantidad
+        FROM @items AS i
+        INNER JOIN dbo.PRODUCTO AS p
+            ON p.id_producto = i.id_producto
+        LEFT JOIN dbo.INVENTARIO AS inv WITH (UPDLOCK, HOLDLOCK)
+            ON inv.id_producto = i.id_producto
+           AND inv.id_sucursal = @idSucursal
+           AND inv.eliminado_en IS NULL
+        WHERE inv.id_inventario IS NULL
+           OR inv.stock < i.cantidad;
+
+
+        IF @ProductoStock IS NOT NULL
+        BEGIN
+            SET @CodigoResultado = 4;
+            SET @MensajeResultado =
+                LEFT(
+                    N'Stock insuficiente para ' +
+                    @ProductoStock +
+                    N'. Disponible: ' +
+                    CAST(@StockDisponible AS NVARCHAR(20)) +
+                    N'. Solicitado: ' +
+                    CAST(@CantidadSolicitada AS NVARCHAR(20)) +
+                    N'.',
+                    250
+                );
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Calcular detalle con el precio vigente real
+           ---------------------------------------------------- */
+
+        DECLARE @DetalleCalculado TABLE
+        (
+            id_producto INT NOT NULL PRIMARY KEY,
+            cantidad INT NOT NULL,
+            precio_unitario DECIMAL(18,2) NOT NULL,
+            subtotal DECIMAL(18,2) NOT NULL
+        );
+
+
+        INSERT INTO @DetalleCalculado
+        (
+            id_producto,
+            cantidad,
+            precio_unitario,
+            subtotal
+        )
+        SELECT
+            i.id_producto,
+            i.cantidad,
+            CAST(p.precio_venta AS DECIMAL(18,2)),
+            CAST(
+                p.precio_venta * i.cantidad
+                AS DECIMAL(18,2)
+            )
+        FROM @items AS i
+        INNER JOIN dbo.PRODUCTO AS p
+            ON p.id_producto = i.id_producto
+        WHERE p.eliminado_en IS NULL
+          AND p.activo = 1;
+
+
+        DECLARE
+            @Subtotal DECIMAL(18,2),
+            @Descuento DECIMAL(18,2),
+            @Total DECIMAL(18,2),
+            @TotalPagos DECIMAL(18,2);
+
+
+        SELECT
+            @Subtotal =
+                CAST(
+                    ISNULL(SUM(subtotal), 0)
+                    AS DECIMAL(18,2)
+                )
+        FROM @DetalleCalculado;
+
+
+        SET @Descuento = 0;
+        SET @Total = @Subtotal;
+
+
+        IF @Total <= 0
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado =
+                N'El total de la venta debe ser mayor que cero.';
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Validar métodos de pago
+           ---------------------------------------------------- */
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM @pagos AS pg
+            LEFT JOIN dbo.METODO_PAGO AS mp
+                ON mp.id_metodo_pago = pg.id_metodo_pago
+               AND mp.eliminado_en IS NULL
+            WHERE mp.id_metodo_pago IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado =
+                N'Uno de los métodos de pago no existe o está inactivo.';
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        SELECT
+            @TotalPagos =
+                CAST(
+                    ISNULL(SUM(monto), 0)
+                    AS DECIMAL(18,2)
+                )
+        FROM @pagos;
+
+
+        IF @TotalPagos <> @Total
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado =
+                LEFT(
+                    N'El total de los pagos debe coincidir con el total de la venta. ' +
+                    N'Total venta: $' +
+                    CAST(@Total AS NVARCHAR(30)) +
+                    N'. Total pagos: $' +
+                    CAST(@TotalPagos AS NVARCHAR(30)) +
+                    N'.',
+                    250
+                );
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        /* ----------------------------------------------------
+           Registrar cabecera
+
+           Fecha: automática.
+           Descuento: 0.
+           Tipo factura: NULL hasta implementar facturación.
+           ---------------------------------------------------- */
+
+        INSERT INTO dbo.VENTA
+        (
+            id_cliente,
+            id_usuario,
+            id_sucursal,
+            fecha_hora,
+            tipo_factura,
+            subtotal,
+            descuento,
+            total
+        )
+        VALUES
+        (
+            @idCliente,
+            @idUsuario,
+            @idSucursal,
+            SYSDATETIME(),
+            NULL,
+            @Subtotal,
+            @Descuento,
+            @Total
+        );
+
+
+        SET @IdGenerado =
+            CAST(SCOPE_IDENTITY() AS INT);
+
+
+        /* ----------------------------------------------------
+           Registrar detalle
+           ---------------------------------------------------- */
+
+        INSERT INTO dbo.DETALLE_VENTA
+        (
+            id_venta,
+            id_producto,
+            cantidad,
+            precio_unitario,
+            subtotal
+        )
+        SELECT
+            @IdGenerado,
+            id_producto,
+            cantidad,
+            precio_unitario,
+            subtotal
+        FROM @DetalleCalculado;
+
+
+        /* ----------------------------------------------------
+           Registrar pagos
+           ---------------------------------------------------- */
+
+        INSERT INTO dbo.PAGO
+        (
+            id_venta,
+            id_metodo_pago,
+            monto
+        )
+        SELECT
+            @IdGenerado,
+            id_metodo_pago,
+            monto
+        FROM @pagos;
+
+
+        /* ----------------------------------------------------
+           Descontar inventario
+           ---------------------------------------------------- */
+
+        UPDATE inv
+        SET
+            inv.stock =
+                inv.stock - i.cantidad
+        FROM dbo.INVENTARIO AS inv
+        INNER JOIN @items AS i
+            ON i.id_producto = inv.id_producto
+        WHERE inv.id_sucursal = @idSucursal
+          AND inv.eliminado_en IS NULL;
+
+
+        IF @@ROWCOUNT <>
+        (
+            SELECT COUNT(*)
+            FROM @items
+        )
+        BEGIN
+            SET @IdGenerado = 0;
+            SET @CodigoResultado = 500;
+            SET @MensajeResultado =
+                N'No se pudo actualizar el inventario completo de la venta.';
+
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+
+        COMMIT TRANSACTION;
+
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado =
+            N'Venta registrada correctamente.';
+
+
+    END TRY
+
+    BEGIN CATCH
+
+        IF XACT_STATE() <> 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+
+        SET @IdGenerado = 0;
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado =
+            LEFT(ERROR_MESSAGE(), 250);
+
+    END CATCH;
 END;
 GO
 
@@ -1931,24 +2626,4 @@ GO
 
 -- ============================================================
 -- FIN DEL SCRIPT
---
--- NOTA IMPORTANTE SOBRE VENTA:
--- La registración completa de una venta todavía debe resolverse
--- como UNA TRANSACCIÓN ATÓMICA que incluya:
---
--- 1. VENTA
--- 2. DETALLE_VENTA
--- 3. PAGO
--- 4. descuento de INVENTARIO en la SUCURSAL de la venta
---
--- También deberá devolver:
--- @IdGenerado
--- @CodigoResultado
--- @MensajeResultado
---
--- Código 4 quedará reservado para STOCK INSUFICIENTE.
---
--- Para implementarlo correctamente primero se debe definir cómo
--- Capa_Logica enviará múltiples productos y múltiples pagos
--- (por ejemplo, usando Table-Valued Parameters).
 -- ============================================================
