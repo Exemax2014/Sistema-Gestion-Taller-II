@@ -20,6 +20,7 @@ namespace Capa_Vistas
 
         private readonly System.Windows.Forms.Timer reloj =
             new System.Windows.Forms.Timer();
+      
 
 
         // =========================================================
@@ -1019,6 +1020,7 @@ namespace Capa_Vistas
         // seleccionado el módulo Productos.
         public Button BotonProductos
         {
+
             get
             {
                 return btnProductos;
@@ -1043,6 +1045,9 @@ namespace Capa_Vistas
                 new FormProductos(this),
                 btnProductos
             );
+
+            AbrirFormularioEnPanel(new FormProductos(), btnProductos);
+
         }
 
         // =========================================================

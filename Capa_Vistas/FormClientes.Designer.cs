@@ -38,6 +38,7 @@ namespace Capa_Vistas
             pnlBusqueda = new Panel();
             txtBuscar = new TextBox();
             btnBuscar = new Button();
+            cmbEstado = new ComboBox();
             btnNuevoCliente = new Button();
             pnlEncabezado = new Panel();
             lblTitulo = new Label();
@@ -125,6 +126,7 @@ namespace Capa_Vistas
             pnlBusqueda.BorderStyle = BorderStyle.FixedSingle;
             pnlBusqueda.Controls.Add(txtBuscar);
             pnlBusqueda.Controls.Add(btnBuscar);
+            pnlBusqueda.Controls.Add(cmbEstado);
             pnlBusqueda.Controls.Add(btnNuevoCliente);
             pnlBusqueda.Dock = DockStyle.Top;
             pnlBusqueda.Location = new Point(32, 114);
@@ -134,13 +136,13 @@ namespace Capa_Vistas
             // 
             // txtBuscar
             // 
-            txtBuscar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtBuscar.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             txtBuscar.BorderStyle = BorderStyle.FixedSingle;
             txtBuscar.Font = new Font("Segoe UI", 10F);
             txtBuscar.Location = new Point(18, 26);
             txtBuscar.Name = "txtBuscar";
             txtBuscar.PlaceholderText = "Buscar por nombre, apellido, DNI o teléfono...";
-            txtBuscar.Size = new Size(625, 30);
+            txtBuscar.Size = new Size(460, 30);
             txtBuscar.TabIndex = 0;
             // 
             // btnBuscar
@@ -152,12 +154,24 @@ namespace Capa_Vistas
             btnBuscar.FlatStyle = FlatStyle.Flat;
             btnBuscar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnBuscar.ForeColor = Color.White;
-            btnBuscar.Location = new Point(666, 20);
+            btnBuscar.Location = new Point(500, 20);
             btnBuscar.Name = "btnBuscar";
-            btnBuscar.Size = new Size(140, 40);
+            btnBuscar.Size = new Size(120, 40);
             btnBuscar.TabIndex = 1;
             btnBuscar.Text = "Buscar";
             btnBuscar.UseVisualStyleBackColor = false;
+            // 
+            // cmbEstado
+            // 
+            cmbEstado.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            cmbEstado.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbEstado.Font = new Font("Segoe UI", 9.5F);
+            cmbEstado.Items.AddRange(new object[] { "Activos", "Dados de baja", "Todos" });
+            cmbEstado.Location = new Point(636, 24);
+            cmbEstado.Name = "cmbEstado";
+            cmbEstado.SelectedIndex = 0;
+            cmbEstado.Size = new Size(150, 32);
+            cmbEstado.TabIndex = 2;
             // 
             // btnNuevoCliente
             // 
@@ -171,7 +185,7 @@ namespace Capa_Vistas
             btnNuevoCliente.Location = new Point(831, 21);
             btnNuevoCliente.Name = "btnNuevoCliente";
             btnNuevoCliente.Size = new Size(263, 40);
-            btnNuevoCliente.TabIndex = 2;
+            btnNuevoCliente.TabIndex = 3;
             btnNuevoCliente.Text = "+ Nuevo cliente";
             btnNuevoCliente.UseVisualStyleBackColor = false;
             // 
@@ -285,6 +299,8 @@ namespace Capa_Vistas
         private TextBox txtBuscar;
 
         private Button btnBuscar;
+
+        private ComboBox cmbEstado;
 
         private Button btnNuevoCliente;
 

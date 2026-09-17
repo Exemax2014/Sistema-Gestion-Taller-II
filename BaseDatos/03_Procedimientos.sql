@@ -78,7 +78,10 @@ GO
 
 
 CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Listar
+<<<<<<< HEAD
     @activo BIT = NULL
+=======
+>>>>>>> josi-dev
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -96,6 +99,7 @@ BEGIN
         u.id_perfil,
         p.nombre AS perfil,
         u.id_sucursal,
+<<<<<<< HEAD
         ISNULL(s.nombre, N'Todas las sucursales') AS sucursal,
         CAST(
             CASE
@@ -104,11 +108,15 @@ BEGIN
             END
             AS BIT
         ) AS activo
+=======
+        ISNULL(s.nombre, N'Todas las sucursales') AS sucursal
+>>>>>>> josi-dev
     FROM dbo.USUARIO AS u
     INNER JOIN dbo.PERFIL AS p
         ON p.id_perfil = u.id_perfil
     LEFT JOIN dbo.SUCURSAL AS s
         ON s.id_sucursal = u.id_sucursal
+<<<<<<< HEAD
     WHERE
         (
             @activo IS NULL
@@ -121,6 +129,9 @@ BEGIN
                 AND u.eliminado_en IS NOT NULL
             )
         )
+=======
+    WHERE u.eliminado_en IS NULL
+>>>>>>> josi-dev
     ORDER BY u.apellido, u.nombre;
 END;
 GO
@@ -162,10 +173,16 @@ GO
    Procedimiento: sp_Usuario_Alta
 
    Regla de sucursal:
+<<<<<<< HEAD
    - Perfil con alcance_global = 1:
      id_sucursal se guarda en NULL.
    - Perfil con alcance_global = 0:
      debe tener una sucursal asignada.
+=======
+   - Administrador: no pertenece a una sucursal específica.
+     Su id_sucursal se guarda en NULL.
+   - Gerente y Vendedor: deben tener una sucursal asignada.
+>>>>>>> josi-dev
 
    Códigos de resultado:
    0   = Correcto
@@ -197,7 +214,11 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+<<<<<<< HEAD
     DECLARE @alcanceGlobal BIT;
+=======
+    DECLARE @nombrePerfil NVARCHAR(100);
+>>>>>>> josi-dev
 
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
@@ -211,13 +232,21 @@ BEGIN
            ----------------------------------------------------- */
 
         SELECT
+<<<<<<< HEAD
             @alcanceGlobal = alcance_global
+=======
+            @nombrePerfil = nombre
+>>>>>>> josi-dev
         FROM dbo.PERFIL
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
 
 
+<<<<<<< HEAD
         IF @alcanceGlobal IS NULL
+=======
+        IF @nombrePerfil IS NULL
+>>>>>>> josi-dev
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado =
@@ -231,11 +260,19 @@ BEGIN
            Regla de sucursal según perfil
            ----------------------------------------------------- */
 
+<<<<<<< HEAD
         IF @alcanceGlobal = 1
         BEGIN
             /*
                Los perfiles de alcance global no pertenecen
                obligatoriamente a una sucursal específica.
+=======
+        IF @nombrePerfil = N'Administrador'
+        BEGIN
+            /*
+               El administrador trabaja a nivel global,
+               por lo tanto no se asocia a una sucursal.
+>>>>>>> josi-dev
             */
             SET @idSucursal = NULL;
         END
@@ -243,8 +280,13 @@ BEGIN
         BEGIN
 
             /*
+<<<<<<< HEAD
                Los perfiles sin alcance global deben estar
                asociados a una sucursal activa.
+=======
+               Gerentes, vendedores y demás perfiles
+               deben estar asociados a una sucursal.
+>>>>>>> josi-dev
             */
             IF @idSucursal IS NULL
             BEGIN
@@ -409,10 +451,16 @@ GO
    Procedimiento: sp_Usuario_Modificar
 
    Regla de sucursal:
+<<<<<<< HEAD
    - Perfil con alcance_global = 1:
      id_sucursal se guarda en NULL.
    - Perfil con alcance_global = 0:
      debe tener una sucursal asignada.
+=======
+   - Administrador: no pertenece a una sucursal específica.
+     Su id_sucursal se guarda en NULL.
+   - Gerente y Vendedor: deben tener una sucursal asignada.
+>>>>>>> josi-dev
 
    Códigos de resultado:
    0   = Correcto
@@ -443,7 +491,11 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
+<<<<<<< HEAD
     DECLARE @alcanceGlobal BIT;
+=======
+    DECLARE @nombrePerfil NVARCHAR(100);
+>>>>>>> josi-dev
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
@@ -475,13 +527,21 @@ BEGIN
            ----------------------------------------------------- */
 
         SELECT
+<<<<<<< HEAD
             @alcanceGlobal = alcance_global
+=======
+            @nombrePerfil = nombre
+>>>>>>> josi-dev
         FROM dbo.PERFIL
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
 
 
+<<<<<<< HEAD
         IF @alcanceGlobal IS NULL
+=======
+        IF @nombrePerfil IS NULL
+>>>>>>> josi-dev
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado =
@@ -495,7 +555,11 @@ BEGIN
            Regla de sucursal según perfil
            ----------------------------------------------------- */
 
+<<<<<<< HEAD
         IF @alcanceGlobal = 1
+=======
+        IF @nombrePerfil = N'Administrador'
+>>>>>>> josi-dev
         BEGIN
             SET @idSucursal = NULL;
         END
@@ -715,8 +779,12 @@ BEGIN
     SELECT
         id_perfil,
         nombre,
+<<<<<<< HEAD
         descripcion,
         alcance_global
+=======
+        descripcion
+>>>>>>> josi-dev
     FROM dbo.PERFIL
     WHERE eliminado_en IS NULL
     ORDER BY nombre;
@@ -724,6 +792,205 @@ END;
 GO
 
 
+<<<<<<< HEAD
+=======
+-- ============================================================
+-- UBICACIONES (PROVINCIA / LOCALIDAD / DIRECCION)
+--
+-- Se agregan estos procedimientos porque Clientes (y a futuro
+-- Usuarios/Sucursales) necesitan cargar provincia y localidad
+-- dinámicamente, y crear/modificar la DIRECCION asociada antes
+-- de dar de alta o modificar el registro que la usa.
+-- ============================================================
+
+CREATE OR ALTER PROCEDURE dbo.sp_Provincia_Listar
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        id_provincia,
+        nombre
+    FROM dbo.PROVINCIA
+    WHERE eliminado_en IS NULL
+    ORDER BY nombre;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Localidad_ListarPorProvincia
+    @idProvincia INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        id_localidad,
+        nombre,
+        codigo_postal
+    FROM dbo.LOCALIDAD
+    WHERE id_provincia = @idProvincia
+      AND eliminado_en IS NULL
+    ORDER BY nombre;
+END;
+GO
+
+
+/* ============================================================
+   Procedimiento: sp_Direccion_Alta
+
+   Códigos de resultado:
+   0   = Correcto
+   1   = Registro relacionado inexistente (localidad)
+   3   = Datos inválidos
+   500 = Error interno de base de datos
+   ============================================================ */
+
+CREATE OR ALTER PROCEDURE dbo.sp_Direccion_Alta
+    @idLocalidad INT,
+    @calle NVARCHAR(150),
+    @altura NVARCHAR(20) = NULL,
+
+    @IdGenerado INT OUTPUT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @IdGenerado = 0;
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.LOCALIDAD
+            WHERE id_localidad = @idLocalidad
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La localidad indicada no existe o está inactiva.';
+            RETURN;
+        END;
+
+        IF LTRIM(RTRIM(ISNULL(@calle, N''))) = N''
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle es obligatoria.';
+            RETURN;
+        END;
+
+        INSERT INTO dbo.DIRECCION
+        (
+            id_localidad,
+            calle,
+            altura
+        )
+        VALUES
+        (
+            @idLocalidad,
+            LTRIM(RTRIM(@calle)),
+            NULLIF(LTRIM(RTRIM(@altura)), N'')
+        );
+
+        SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado = N'Dirección registrada correctamente.';
+
+    END TRY
+    BEGIN CATCH
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+    END CATCH;
+END;
+GO
+
+
+/* ============================================================
+   Procedimiento: sp_Direccion_Modificar
+
+   Códigos de resultado:
+   0   = Correcto
+   1   = Registro relacionado inexistente (dirección o localidad)
+   3   = Datos inválidos
+   500 = Error interno de base de datos
+   ============================================================ */
+
+CREATE OR ALTER PROCEDURE dbo.sp_Direccion_Modificar
+    @idDireccion INT,
+    @idLocalidad INT,
+    @calle NVARCHAR(150),
+    @altura NVARCHAR(20) = NULL,
+
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.DIRECCION
+            WHERE id_direccion = @idDireccion
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La dirección no existe o fue dada de baja.';
+            RETURN;
+        END;
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.LOCALIDAD
+            WHERE id_localidad = @idLocalidad
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La localidad indicada no existe o está inactiva.';
+            RETURN;
+        END;
+
+        IF LTRIM(RTRIM(ISNULL(@calle, N''))) = N''
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle es obligatoria.';
+            RETURN;
+        END;
+
+        UPDATE dbo.DIRECCION
+        SET
+            id_localidad = @idLocalidad,
+            calle = LTRIM(RTRIM(@calle)),
+            altura = NULLIF(LTRIM(RTRIM(@altura)), N'')
+        WHERE id_direccion = @idDireccion
+          AND eliminado_en IS NULL;
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado = N'Dirección modificada correctamente.';
+
+    END TRY
+    BEGIN CATCH
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+    END CATCH;
+END;
+GO
+
+
+>>>>>>> josi-dev
 -- ============================================================
 -- CLIENTES
 -- ============================================================
@@ -1951,4 +2218,15 @@ GO
 -- Para implementarlo correctamente primero se debe definir cómo
 -- Capa_Logica enviará múltiples productos y múltiples pagos
 -- (por ejemplo, usando Table-Valued Parameters).
+<<<<<<< HEAD
 -- ============================================================
+=======
+--
+-- NOTA SOBRE PERMISOS DE CLIENTES:
+-- Falta decidir e insertar (en 02_DatosIniciales.sql o similar)
+-- las funcionalidades CLIENTES_VER / CLIENTES_ALTA /
+-- CLIENTES_MODIFICAR / CLIENTES_BAJA y su asignación a los
+-- perfiles Gerente y Vendedor (Administrador puede asignarse
+-- directamente). Es una decisión abierta del equipo.
+-- ============================================================
+>>>>>>> josi-dev
