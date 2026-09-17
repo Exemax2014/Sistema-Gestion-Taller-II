@@ -60,6 +60,8 @@ namespace Capa_Logica
 
         public string Perfil { get; set; } = string.Empty;
         public string Sucursal { get; set; } = string.Empty;
+
+        public bool Activo { get; set; }
     }
 
 
@@ -266,11 +268,48 @@ namespace Capa_Logica
         }
 
 
+        public bool PuedeReactivarUsuario()
+        {
+            return SesionActual.TienePermiso(
+                "USUARIOS_ALTA"
+            );
+        }
+
+
         public bool PuedeGestionarPermisos()
         {
             return SesionActual.TienePermiso(
                 "PERMISOS_GESTIONAR"
             );
+        }
+
+
+        public bool PerfilTienePermiso(
+            int idPerfil,
+            string codigoFuncionalidad)
+        {
+            if (
+                idPerfil <= 0
+                ||
+                string.IsNullOrWhiteSpace(
+                    codigoFuncionalidad))
+            {
+                return false;
+            }
+
+
+            return usuarioDatos
+                .ObtenerFuncionalidadesPerfil(
+                    idPerfil
+                )
+                .Any(
+                    codigo =>
+                        string.Equals(
+                            codigo,
+                            codigoFuncionalidad.Trim(),
+                            StringComparison.OrdinalIgnoreCase
+                        )
+                );
         }
 
 
@@ -465,7 +504,10 @@ namespace Capa_Logica
                     usuario.Perfil,
 
                 Sucursal =
-                    usuario.Sucursal
+                    usuario.Sucursal,
+
+                Activo =
+                    usuario.Activo
             };
         }
 
@@ -773,6 +815,41 @@ namespace Capa_Logica
 
             ResultadoUsuarioDatos resultado =
                 usuarioDatos.Baja(
+                    idUsuario
+                );
+
+
+            return ConvertirResultado(
+                resultado
+            );
+        }
+
+
+        // ========================================================
+        // REACTIVAR USUARIO
+        // ========================================================
+
+        public ResultadoUsuario Reactivar(
+            int idUsuario)
+        {
+            if (!PuedeReactivarUsuario())
+            {
+                return ResultadoNoPermitido(
+                    "No tiene permiso para reactivar usuarios."
+                );
+            }
+
+
+            if (idUsuario <= 0)
+            {
+                return ResultadoInvalido(
+                    "El usuario indicado no es válido."
+                );
+            }
+
+
+            ResultadoUsuarioDatos resultado =
+                usuarioDatos.Reactivar(
                     idUsuario
                 );
 

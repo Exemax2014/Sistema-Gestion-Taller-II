@@ -83,17 +83,17 @@ namespace Capa_Vistas
             // 
             // btnCerrar
             // 
-            btnCerrar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnCerrar.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnCerrar.BackColor = Color.FromArgb(45, 49, 54);
             btnCerrar.Cursor = Cursors.Hand;
             btnCerrar.FlatAppearance.BorderSize = 0;
             btnCerrar.FlatStyle = FlatStyle.Flat;
             btnCerrar.ForeColor = Color.White;
-            btnCerrar.Location = new Point(986, 4);
+            btnCerrar.Location = new Point(0, 4);
             btnCerrar.Name = "btnCerrar";
-            btnCerrar.Size = new Size(126, 40);
+            btnCerrar.Size = new Size(175, 40);
             btnCerrar.TabIndex = 0;
-            btnCerrar.Text = "Cerrar";
+            btnCerrar.Text = "← Volver";
             btnCerrar.UseVisualStyleBackColor = false;
             // 
             // pnlListado

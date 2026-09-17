@@ -18,6 +18,9 @@ namespace Capa_Vistas
     public partial class FormVentaDetalle : Form
     {
         private readonly VentaLogica ventaLogica;
+        private readonly FormPrincipal? formPrincipal;
+        private readonly OrigenHistorialVentas origenHistorial;
+        private readonly string nombreReferencia;
 
         private readonly int idVenta;
         private readonly TipoHistorialVentas tipoOrigen;
@@ -40,8 +43,37 @@ namespace Capa_Vistas
             int idVenta,
             TipoHistorialVentas tipoOrigen,
             int idReferencia)
+            : this(
+                null,
+                OrigenHistorialVentas.Modal,
+                idVenta,
+                tipoOrigen,
+                idReferencia,
+                string.Empty
+            )
+        {
+        }
+
+
+        public FormVentaDetalle(
+            FormPrincipal? formPrincipal,
+            OrigenHistorialVentas origenHistorial,
+            int idVenta,
+            TipoHistorialVentas tipoOrigen,
+            int idReferencia,
+            string nombreReferencia)
         {
             InitializeComponent();
+
+            this.formPrincipal =
+                formPrincipal;
+
+            this.origenHistorial =
+                origenHistorial;
+
+            this.nombreReferencia =
+                nombreReferencia
+                ?? string.Empty;
 
             ventaLogica =
                 new VentaLogica();
@@ -392,7 +424,32 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            Close();
+            if (formPrincipal == null)
+            {
+                Close();
+
+                return;
+            }
+
+
+            Button botonOrigen =
+                origenHistorial == OrigenHistorialVentas.Ventas
+                    ? formPrincipal.BotonVentas
+                    : origenHistorial == OrigenHistorialVentas.Clientes
+                        ? formPrincipal.BotonClientes
+                        : formPrincipal.BotonUsuarios;
+
+
+            formPrincipal.AbrirFormularioEnPanel(
+                new FormListadoVentas(
+                    formPrincipal,
+                    origenHistorial,
+                    tipoOrigen,
+                    idReferencia,
+                    nombreReferencia
+                ),
+                botonOrigen
+            );
         }
 
 

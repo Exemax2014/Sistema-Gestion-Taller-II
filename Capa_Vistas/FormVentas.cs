@@ -18,6 +18,7 @@ namespace Capa_Vistas
     public partial class FormVentas : Form
     {
         private readonly VentaLogica ventaLogica;
+        private readonly FormPrincipal? formPrincipal;
 
         private readonly BindingList<ItemVentaVista> itemsVenta;
         private readonly BindingList<PagoVentaVista> pagosVenta;
@@ -26,8 +27,18 @@ namespace Capa_Vistas
 
 
         public FormVentas()
+            : this(null)
+        {
+        }
+
+
+        public FormVentas(
+            FormPrincipal? formPrincipal)
         {
             InitializeComponent();
+
+            this.formPrincipal =
+                formPrincipal;
 
             ventaLogica =
                 new VentaLogica();
@@ -1647,16 +1658,32 @@ namespace Capa_Vistas
                     .Trim();
 
 
-            using FormListadoVentas historial =
+            if (formPrincipal == null)
+            {
+                using FormListadoVentas historial =
+                    new FormListadoVentas(
+                        TipoHistorialVentas.Vendedor,
+                        SesionActual.IdUsuario,
+                        nombre
+                    );
+
+                historial.ShowDialog(
+                    this
+                );
+
+                return;
+            }
+
+
+            formPrincipal.AbrirFormularioEnPanel(
                 new FormListadoVentas(
+                    formPrincipal,
+                    OrigenHistorialVentas.Ventas,
                     TipoHistorialVentas.Vendedor,
                     SesionActual.IdUsuario,
                     nombre
-                );
-
-
-            historial.ShowDialog(
-                this
+                ),
+                formPrincipal.BotonVentas
             );
         }
 

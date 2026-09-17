@@ -13,6 +13,9 @@ namespace Capa_Vistas
         private Form? formularioActivo;
         private Button? botonActivo;
 
+        private readonly UsuarioLogica usuarioLogicaSucursal;
+        private bool cargandoSucursalesOperativas;
+
 
         // =========================================================
         // RELOJ
@@ -20,7 +23,7 @@ namespace Capa_Vistas
 
         private readonly System.Windows.Forms.Timer reloj =
             new System.Windows.Forms.Timer();
-      
+
 
 
         // =========================================================
@@ -71,6 +74,9 @@ namespace Capa_Vistas
         {
             InitializeComponent();
 
+            usuarioLogicaSucursal =
+                new UsuarioLogica();
+
             ConfigurarEventos();
 
             ConfigurarReloj();
@@ -111,6 +117,11 @@ namespace Capa_Vistas
 
             btnReportes.Click +=
                 BtnReportes_Click;
+
+
+            // Sucursal operativa
+            cmbSucursalOperativa.SelectedIndexChanged +=
+                CmbSucursalOperativa_SelectedIndexChanged;
 
 
             // Cuenta
@@ -199,7 +210,260 @@ namespace Capa_Vistas
             }
 
 
+            ConfigurarSelectorSucursalOperativa();
+
             ActualizarFechaHora();
+        }
+
+
+        // =========================================================
+        // SUCURSAL OPERATIVA
+        // =========================================================
+
+        private void ConfigurarSelectorSucursalOperativa()
+        {
+            /*
+                Usuario con sucursal fija:
+                muestra solamente su sucursal y no permite cambiarla.
+
+                Usuario global:
+                puede elegir una sucursal específica o "Todas".
+            */
+            if (SesionActual.IdSucursal.HasValue)
+            {
+                cmbSucursalOperativa.Visible =
+                    false;
+
+                lblSucursalActual.Visible =
+                    true;
+
+                lblSucursalActual.Text =
+                    string.IsNullOrWhiteSpace(
+                        SesionActual.SucursalOperativa)
+                        ? SesionActual.Sucursal
+                        : SesionActual.SucursalOperativa;
+
+                return;
+            }
+
+
+            lblSucursalActual.Visible =
+                false;
+
+            cmbSucursalOperativa.Visible =
+                true;
+
+            CargarSucursalesOperativas();
+        }
+
+
+        private void CargarSucursalesOperativas()
+        {
+            try
+            {
+                cargandoSucursalesOperativas =
+                    true;
+
+
+                List<OpcionSucursalOperativa> opciones =
+                    new List<OpcionSucursalOperativa>
+                    {
+                        new OpcionSucursalOperativa
+                        {
+                            IdSucursal = null,
+                            Nombre = "Todas"
+                        }
+                    };
+
+
+                List<SucursalUsuarioModelo> sucursales =
+                    usuarioLogicaSucursal
+                        .ObtenerSucursalesDisponibles();
+
+
+                opciones.AddRange(
+                    sucursales.Select(
+                        sucursal =>
+                            new OpcionSucursalOperativa
+                            {
+                                IdSucursal =
+                                    sucursal.IdSucursal,
+
+                                Nombre =
+                                    sucursal.Nombre
+                            }
+                    )
+                );
+
+
+                cmbSucursalOperativa.DataSource =
+                    opciones;
+
+                cmbSucursalOperativa.DisplayMember =
+                    nameof(
+                        OpcionSucursalOperativa.Nombre
+                    );
+
+                cmbSucursalOperativa.ValueMember =
+                    nameof(
+                        OpcionSucursalOperativa.IdSucursal
+                    );
+
+
+                OpcionSucursalOperativa? seleccion =
+                    opciones.FirstOrDefault(
+                        opcion =>
+                            opcion.IdSucursal
+                            ==
+                            SesionActual.IdSucursalOperativa
+                    );
+
+
+                if (seleccion != null)
+                {
+                    cmbSucursalOperativa.SelectedItem =
+                        seleccion;
+                }
+                else
+                {
+                    cmbSucursalOperativa.SelectedIndex =
+                        0;
+                }
+            }
+            catch (Exception ex)
+            {
+                cmbSucursalOperativa.DataSource =
+                    null;
+
+                MostrarMensajePrincipal(
+                    "No se pudieron cargar las sucursales",
+                    ex.Message
+                );
+            }
+            finally
+            {
+                cargandoSucursalesOperativas =
+                    false;
+            }
+        }
+
+
+        private void CmbSucursalOperativa_SelectedIndexChanged(
+            object? sender,
+            EventArgs e)
+        {
+            if (cargandoSucursalesOperativas)
+            {
+                return;
+            }
+
+
+            if (SesionActual.IdSucursal.HasValue)
+            {
+                return;
+            }
+
+
+            if (
+                cmbSucursalOperativa.SelectedItem
+                is not OpcionSucursalOperativa opcion)
+            {
+                return;
+            }
+
+
+            int? sucursalAnterior =
+                SesionActual.IdSucursalOperativa;
+
+
+            bool cambioPermitido =
+                SesionActual.CambiarSucursalOperativa(
+                    opcion.IdSucursal,
+                    opcion.Nombre
+                );
+
+
+            if (!cambioPermitido)
+            {
+                SeleccionarSucursalOperativaActual();
+
+                return;
+            }
+
+
+            lblSucursalActual.Text =
+                SesionActual.SucursalOperativa;
+
+
+            /*
+                Si Ventas está abierto, se vuelve a crear para que
+                tome inmediatamente el nuevo contexto de sucursal.
+            */
+            if (
+                formularioActivo is FormVentas
+                &&
+                sucursalAnterior !=
+                    SesionActual.IdSucursalOperativa)
+            {
+                AbrirFormularioEnPanel(
+                    new FormVentas(
+                        this
+                    ),
+                    btnVentas
+                );
+            }
+        }
+
+
+        private void SeleccionarSucursalOperativaActual()
+        {
+            if (
+                cmbSucursalOperativa.DataSource
+                is not List<OpcionSucursalOperativa> opciones)
+            {
+                return;
+            }
+
+
+            cargandoSucursalesOperativas =
+                true;
+
+
+            OpcionSucursalOperativa? seleccion =
+                opciones.FirstOrDefault(
+                    opcion =>
+                        opcion.IdSucursal
+                        ==
+                        SesionActual.IdSucursalOperativa
+                );
+
+
+            if (seleccion != null)
+            {
+                cmbSucursalOperativa.SelectedItem =
+                    seleccion;
+            }
+
+
+            cargandoSucursalesOperativas =
+                false;
+        }
+
+
+        private void MostrarMensajePrincipal(
+            string titulo,
+            string mensaje)
+        {
+            using FormMensaje formMensaje =
+                new FormMensaje(
+                    titulo,
+                    mensaje
+                );
+
+
+            formMensaje.ShowDialog(
+                this
+            );
         }
 
 
@@ -982,7 +1246,9 @@ namespace Capa_Vistas
 
 
             AbrirFormularioEnPanel(
-                new FormVentas(),
+                new FormVentas(
+                    this
+                ),
                 btnVentas
             );
         }
@@ -1050,6 +1316,19 @@ namespace Capa_Vistas
         }
 
         // =========================================================
+        // ACCESO BOTÓN USUARIOS
+        // =========================================================
+
+        public Button BotonUsuarios
+        {
+            get
+            {
+                return btnUsuarios;
+            }
+        }
+
+
+        // =========================================================
         // USUARIOS
         // =========================================================
 
@@ -1067,7 +1346,7 @@ namespace Capa_Vistas
 
 
             AbrirFormularioEnPanel(
-                new FormUsuarios(),
+                new FormUsuarios(this),
                 btnUsuarios
             );
         }
@@ -1108,6 +1387,15 @@ namespace Capa_Vistas
 
 
             mensaje.ShowDialog(this);
+        }
+
+
+        private class OpcionSucursalOperativa
+        {
+            public int? IdSucursal { get; set; }
+
+            public string Nombre { get; set; } =
+                string.Empty;
         }
 
 

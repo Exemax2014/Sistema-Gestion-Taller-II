@@ -57,6 +57,7 @@ namespace Capa_Vistas
             txtConfirmarContrasena = new TextBox();
             pnlAcciones = new Panel();
             btnCancelar = new Button();
+            btnDarBaja = new Button();
             btnGuardar = new Button();
             pnlCabecera = new Panel();
             lblTitulo = new Label();
@@ -83,7 +84,7 @@ namespace Capa_Vistas
             // 
             // pnlDatos
             // 
-            pnlDatos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlDatos.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlDatos.BackColor = Color.White;
             pnlDatos.BorderStyle = BorderStyle.FixedSingle;
             pnlDatos.Controls.Add(lblNombre);
@@ -328,27 +329,44 @@ namespace Capa_Vistas
             // 
             // pnlAcciones
             // 
-            pnlAcciones.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlAcciones.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlAcciones.Controls.Add(btnCancelar);
+            pnlAcciones.Controls.Add(btnDarBaja);
             pnlAcciones.Controls.Add(btnGuardar);
             pnlAcciones.Location = new Point(32, 642);
             pnlAcciones.Name = "pnlAcciones";
-            pnlAcciones.Size = new Size(1116, 86);
+            pnlAcciones.Size = new Size(1116, 68);
             pnlAcciones.TabIndex = 2;
             // 
             // btnCancelar
             // 
-            btnCancelar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnCancelar.BackColor = Color.White;
             btnCancelar.Cursor = Cursors.Hand;
             btnCancelar.FlatAppearance.BorderColor = Color.FromArgb(160, 165, 170);
             btnCancelar.FlatStyle = FlatStyle.Flat;
-            btnCancelar.Location = new Point(876, 8);
+            btnCancelar.Location = new Point(0, 8);
             btnCancelar.Name = "btnCancelar";
-            btnCancelar.Size = new Size(110, 40);
+            btnCancelar.Size = new Size(175, 40);
             btnCancelar.TabIndex = 0;
-            btnCancelar.Text = "Cancelar";
+            btnCancelar.Text = "← Volver a usuarios";
             btnCancelar.UseVisualStyleBackColor = false;
+            // 
+            // btnDarBaja
+            // 
+            btnDarBaja.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnDarBaja.BackColor = Color.FromArgb(150, 45, 45);
+            btnDarBaja.Cursor = Cursors.Hand;
+            btnDarBaja.FlatAppearance.BorderSize = 0;
+            btnDarBaja.FlatStyle = FlatStyle.Flat;
+            btnDarBaja.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
+            btnDarBaja.ForeColor = Color.White;
+            btnDarBaja.Location = new Point(846, 8);
+            btnDarBaja.Name = "btnDarBaja";
+            btnDarBaja.Size = new Size(148, 40);
+            btnDarBaja.TabIndex = 1;
+            btnDarBaja.Text = "Dar de baja";
+            btnDarBaja.UseVisualStyleBackColor = false;
+            btnDarBaja.Visible = false;
             // 
             // btnGuardar
             // 
@@ -358,7 +376,7 @@ namespace Capa_Vistas
             btnGuardar.FlatAppearance.BorderSize = 0;
             btnGuardar.FlatStyle = FlatStyle.Flat;
             btnGuardar.ForeColor = Color.White;
-            btnGuardar.Location = new Point(1002, 8);
+            btnGuardar.Location = new Point(1006, 8);
             btnGuardar.Name = "btnGuardar";
             btnGuardar.Size = new Size(110, 40);
             btnGuardar.TabIndex = 1;
@@ -474,6 +492,7 @@ namespace Capa_Vistas
 
         private Panel pnlAcciones;
         private Button btnCancelar;
+        private Button btnDarBaja;
         private Button btnGuardar;
     }
 }

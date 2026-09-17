@@ -17,6 +17,7 @@ namespace Capa_Vistas
     public partial class FormUsuarioDetalle : Form
     {
         private readonly UsuarioLogica usuarioLogica;
+        private readonly FormPrincipal formPrincipal;
 
         private readonly int? idUsuario;
 
@@ -31,16 +32,24 @@ namespace Capa_Vistas
         // CONSTRUCTORES
         // ========================================================
 
-        public FormUsuarioDetalle()
-            : this(null)
+        public FormUsuarioDetalle(
+            FormPrincipal formPrincipal)
+            : this(
+                formPrincipal,
+                null
+            )
         {
         }
 
 
         public FormUsuarioDetalle(
+            FormPrincipal formPrincipal,
             int? idUsuario)
         {
             InitializeComponent();
+
+            this.formPrincipal =
+                formPrincipal;
 
             usuarioLogica =
                 new UsuarioLogica();
@@ -59,6 +68,8 @@ namespace Capa_Vistas
             CargarSucursales();
 
             PrepararVista();
+
+            AjustarDisenoResponsivo();
         }
 
 
@@ -82,6 +93,9 @@ namespace Capa_Vistas
             btnCancelar.Click +=
                 BtnCancelar_Click;
 
+            btnDarBaja.Click +=
+                BtnDarBaja_Click;
+
             cmbPerfil.SelectedIndexChanged +=
                 CmbPerfil_SelectedIndexChanged;
 
@@ -99,6 +113,9 @@ namespace Capa_Vistas
 
             txtUsuario.KeyPress +=
                 TxtUsuario_KeyPress;
+
+            Resize +=
+                FormUsuarioDetalle_Resize;
         }
 
 
@@ -286,6 +303,8 @@ namespace Capa_Vistas
 
 
             ConfigurarPermisos();
+
+            AjustarDisenoResponsivo();
         }
 
 
@@ -299,6 +318,321 @@ namespace Capa_Vistas
 
             btnGuardar.Enabled =
                 puedeGuardar;
+
+            bool puedeDarBaja =
+                EsEdicion
+                &&
+                usuarioLogica.PuedeEliminarUsuario()
+                &&
+                idUsuario.HasValue
+                &&
+                (
+                    !SesionActual.SesionIniciada
+                    ||
+                    SesionActual.IdUsuario !=
+                        idUsuario.Value
+                );
+
+
+            btnDarBaja.Visible =
+                puedeDarBaja;
+
+            btnDarBaja.Enabled =
+                puedeDarBaja;
+
+        }
+
+
+        // ========================================================
+        // DISEÑO RESPONSIVO
+        //
+        // El Designer conserva únicamente los controles y una
+        // distribución base. Acá se adapta el formulario al tamaño
+        // disponible del panel principal.
+        // ========================================================
+
+        private void FormUsuarioDetalle_Resize(
+            object? sender,
+            EventArgs e)
+        {
+            AjustarDisenoResponsivo();
+        }
+
+
+        private void AjustarDisenoResponsivo()
+        {
+            if (
+                pnlPrincipal.ClientSize.Width <= 0
+                ||
+                pnlPrincipal.ClientSize.Height <= 0)
+            {
+                return;
+            }
+
+
+            int anchoDisponible =
+                pnlPrincipal.ClientSize.Width;
+
+            int altoDisponible =
+                pnlPrincipal.ClientSize.Height;
+
+
+            int margenHorizontal =
+                anchoDisponible >= 1200
+                    ? 42
+                    : anchoDisponible >= 900
+                        ? 30
+                        : 20;
+
+
+            int anchoContenido =
+                Math.Max(
+                    620,
+                    anchoDisponible -
+                    (margenHorizontal * 2)
+                );
+
+
+            int anchoMaximo =
+                1320;
+
+
+            if (anchoContenido > anchoMaximo)
+            {
+                anchoContenido =
+                    anchoMaximo;
+            }
+
+
+            int izquierdaContenido =
+                Math.Max(
+                    margenHorizontal,
+                    (anchoDisponible - anchoContenido) / 2
+                );
+
+
+            // CABECERA
+            pnlCabecera.Location =
+                new Point(
+                    izquierdaContenido,
+                    18
+                );
+
+            pnlCabecera.Size =
+                new Size(
+                    anchoContenido,
+                    82
+                );
+
+
+            // DATOS
+            int yDatos =
+                114;
+
+            int altoAcciones =
+                68;
+
+            int separacionAcciones =
+                12;
+
+            int altoDatosDisponible =
+                Math.Max(
+                    430,
+                    altoDisponible -
+                    yDatos -
+                    altoAcciones -
+                    separacionAcciones -
+                    18
+                );
+
+
+            pnlDatos.Location =
+                new Point(
+                    izquierdaContenido,
+                    yDatos
+                );
+
+            pnlDatos.Size =
+                new Size(
+                    anchoContenido,
+                    altoDatosDisponible
+                );
+
+
+            // ACCIONES
+            pnlAcciones.Location =
+                new Point(
+                    izquierdaContenido,
+                    yDatos +
+                    altoDatosDisponible +
+                    separacionAcciones
+                );
+
+            pnlAcciones.Size =
+                new Size(
+                    anchoContenido,
+                    altoAcciones
+                );
+
+
+            AjustarCamposDatos();
+
+
+            btnCancelar.Location =
+                new Point(
+                    0,
+                    8
+                );
+
+
+            btnGuardar.Location =
+                new Point(
+                    Math.Max(
+                        0,
+                        pnlAcciones.ClientSize.Width -
+                        btnGuardar.Width
+                    ),
+                    8
+                );
+
+
+            btnDarBaja.Location =
+                new Point(
+                    Math.Max(
+                        0,
+                        btnGuardar.Left -
+                        btnDarBaja.Width -
+                        12
+                    ),
+                    8
+                );
+        }
+
+
+        private void AjustarCamposDatos()
+        {
+            int anchoPanel =
+                pnlDatos.ClientSize.Width;
+
+
+            int margen =
+                anchoPanel >= 1000
+                    ? 30
+                    : 22;
+
+            int separacionHorizontal =
+                anchoPanel >= 1000
+                    ? 28
+                    : 20;
+
+            int columnas =
+                anchoPanel >= 980
+                    ? 3
+                    : anchoPanel >= 660
+                        ? 2
+                        : 1;
+
+
+            int anchoCampo =
+                (
+                    anchoPanel
+                    -
+                    (margen * 2)
+                    -
+                    (separacionHorizontal * (columnas - 1))
+                )
+                /
+                columnas;
+
+
+            anchoCampo =
+                Math.Max(
+                    220,
+                    anchoCampo
+                );
+
+
+            int altoFila =
+                104;
+
+            int yInicial =
+                58;
+
+
+            Control[] etiquetas =
+            {
+                lblNombre,
+                lblApellido,
+                lblDni,
+                lblTelefono,
+                lblUsuario,
+                lblCorreo,
+                lblSexo,
+                lblFechaNacimiento,
+                lblPerfil,
+                lblSucursal,
+                lblContrasena,
+                lblConfirmarContrasena
+            };
+
+
+            Control[] campos =
+            {
+                txtNombre,
+                txtApellido,
+                txtDni,
+                txtTelefono,
+                txtUsuario,
+                txtCorreo,
+                cmbSexo,
+                dtpFechaNacimiento,
+                cmbPerfil,
+                cmbSucursal,
+                txtContrasena,
+                txtConfirmarContrasena
+            };
+
+
+            for (int i = 0; i < campos.Length; i++)
+            {
+                int fila =
+                    i / columnas;
+
+                int columna =
+                    i % columnas;
+
+
+                int x =
+                    margen +
+                    columna *
+                    (
+                        anchoCampo +
+                        separacionHorizontal
+                    );
+
+
+                int yEtiqueta =
+                    yInicial +
+                    fila * altoFila;
+
+
+                etiquetas[i].Location =
+                    new Point(
+                        x,
+                        yEtiqueta
+                    );
+
+
+                campos[i].Location =
+                    new Point(
+                        x,
+                        yEtiqueta + 27
+                    );
+
+
+                campos[i].Width =
+                    anchoCampo;
+            }
         }
 
 
@@ -652,6 +986,80 @@ namespace Capa_Vistas
 
 
         // ========================================================
+        // BAJA LÓGICA
+        // ========================================================
+
+        private void BtnDarBaja_Click(
+            object? sender,
+            EventArgs e)
+        {
+            if (
+                !EsEdicion
+                ||
+                !idUsuario.HasValue)
+            {
+                return;
+            }
+
+
+            using FormMensaje confirmacion =
+                new FormMensaje(
+                    "Dar de baja usuario",
+                    "¿Desea dar de baja este usuario? El usuario dejará de poder ingresar al sistema.",
+                    "Dar de baja",
+                    true
+                );
+
+
+            if (
+                confirmacion.ShowDialog(this)
+                !=
+                DialogResult.OK)
+            {
+                return;
+            }
+
+
+            ResultadoUsuario resultado;
+
+
+            try
+            {
+                resultado =
+                    usuarioLogica.Eliminar(
+                        idUsuario.Value
+                    );
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje(
+                    "No se pudo dar de baja",
+                    ex.Message
+                );
+
+                return;
+            }
+
+
+            MostrarMensaje(
+                resultado.Exitoso
+                    ? "Usuario dado de baja"
+                    : "No se pudo dar de baja",
+                resultado.Mensaje
+            );
+
+
+            if (!resultado.Exitoso)
+            {
+                return;
+            }
+
+
+            VolverAUsuarios();
+        }
+
+
+        // ========================================================
         // GUARDAR
         // ========================================================
 
@@ -694,10 +1102,7 @@ namespace Capa_Vistas
             }
 
 
-            DialogResult =
-                DialogResult.OK;
-
-            Close();
+            VolverAUsuarios();
         }
 
 
@@ -979,10 +1384,18 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            DialogResult =
-                DialogResult.Cancel;
+            VolverAUsuarios();
+        }
 
-            Close();
+
+        private void VolverAUsuarios()
+        {
+            formPrincipal.AbrirFormularioEnPanel(
+                new FormUsuarios(
+                    formPrincipal
+                ),
+                formPrincipal.BotonUsuarios
+            );
         }
 
 

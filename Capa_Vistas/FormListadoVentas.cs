@@ -17,6 +17,15 @@ namespace Capa_Vistas
     }
 
 
+    public enum OrigenHistorialVentas
+    {
+        Modal = 0,
+        Ventas = 1,
+        Usuarios = 2,
+        Clientes = 3
+    }
+
+
     // ============================================================
     // Formulario: FormListadoVentas
     //
@@ -28,6 +37,8 @@ namespace Capa_Vistas
     public partial class FormListadoVentas : Form
     {
         private readonly VentaLogica ventaLogica;
+        private readonly FormPrincipal? formPrincipal;
+        private readonly OrigenHistorialVentas origenHistorial;
 
         private readonly TipoHistorialVentas tipoHistorial;
         private readonly int idReferencia;
@@ -38,8 +49,49 @@ namespace Capa_Vistas
             TipoHistorialVentas tipoHistorial,
             int idReferencia,
             string nombreReferencia)
+            : this(
+                null,
+                OrigenHistorialVentas.Modal,
+                tipoHistorial,
+                idReferencia,
+                nombreReferencia
+            )
+        {
+        }
+
+
+        public FormListadoVentas(
+            FormPrincipal? formPrincipal,
+            TipoHistorialVentas tipoHistorial,
+            int idReferencia,
+            string nombreReferencia)
+            : this(
+                formPrincipal,
+                tipoHistorial == TipoHistorialVentas.Cliente
+                    ? OrigenHistorialVentas.Clientes
+                    : OrigenHistorialVentas.Usuarios,
+                tipoHistorial,
+                idReferencia,
+                nombreReferencia
+            )
+        {
+        }
+
+
+        public FormListadoVentas(
+            FormPrincipal? formPrincipal,
+            OrigenHistorialVentas origenHistorial,
+            TipoHistorialVentas tipoHistorial,
+            int idReferencia,
+            string nombreReferencia)
         {
             InitializeComponent();
+
+            this.formPrincipal =
+                formPrincipal;
+
+            this.origenHistorial =
+                origenHistorial;
 
             ventaLogica =
                 new VentaLogica();
@@ -405,16 +457,41 @@ namespace Capa_Vistas
             }
 
 
-            using FormVentaDetalle detalle =
-                new FormVentaDetalle(
-                    venta.IdVenta,
-                    tipoHistorial,
-                    idReferencia
+            if (formPrincipal == null)
+            {
+                using FormVentaDetalle detalle =
+                    new FormVentaDetalle(
+                        venta.IdVenta,
+                        tipoHistorial,
+                        idReferencia
+                    );
+
+                detalle.ShowDialog(
+                    this
                 );
 
+                return;
+            }
 
-            detalle.ShowDialog(
-                this
+
+            Button botonOrigen =
+                origenHistorial == OrigenHistorialVentas.Ventas
+                    ? formPrincipal.BotonVentas
+                    : origenHistorial == OrigenHistorialVentas.Clientes
+                        ? formPrincipal.BotonClientes
+                        : formPrincipal.BotonUsuarios;
+
+
+            formPrincipal.AbrirFormularioEnPanel(
+                new FormVentaDetalle(
+                    formPrincipal,
+                    origenHistorial,
+                    venta.IdVenta,
+                    tipoHistorial,
+                    idReferencia,
+                    nombreReferencia
+                ),
+                botonOrigen
             );
         }
 
@@ -427,7 +504,51 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            Close();
+            if (formPrincipal == null)
+            {
+                Close();
+
+                return;
+            }
+
+
+            switch (origenHistorial)
+            {
+                case OrigenHistorialVentas.Ventas:
+
+                    formPrincipal.AbrirFormularioEnPanel(
+                        new FormVentas(
+                            formPrincipal
+                        ),
+                        formPrincipal.BotonVentas
+                    );
+
+                    break;
+
+
+                case OrigenHistorialVentas.Clientes:
+
+                    formPrincipal.AbrirFormularioEnPanel(
+                        new FormClientes(
+                            formPrincipal
+                        ),
+                        formPrincipal.BotonClientes
+                    );
+
+                    break;
+
+
+                default:
+
+                    formPrincipal.AbrirFormularioEnPanel(
+                        new FormUsuarios(
+                            formPrincipal
+                        ),
+                        formPrincipal.BotonUsuarios
+                    );
+
+                    break;
+            }
         }
 
 

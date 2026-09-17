@@ -78,10 +78,7 @@ GO
 
 
 CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Listar
-<<<<<<< HEAD
     @activo BIT = NULL
-=======
->>>>>>> josi-dev
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -99,7 +96,6 @@ BEGIN
         u.id_perfil,
         p.nombre AS perfil,
         u.id_sucursal,
-<<<<<<< HEAD
         ISNULL(s.nombre, N'Todas las sucursales') AS sucursal,
         CAST(
             CASE
@@ -108,15 +104,11 @@ BEGIN
             END
             AS BIT
         ) AS activo
-=======
-        ISNULL(s.nombre, N'Todas las sucursales') AS sucursal
->>>>>>> josi-dev
     FROM dbo.USUARIO AS u
     INNER JOIN dbo.PERFIL AS p
         ON p.id_perfil = u.id_perfil
     LEFT JOIN dbo.SUCURSAL AS s
         ON s.id_sucursal = u.id_sucursal
-<<<<<<< HEAD
     WHERE
         (
             @activo IS NULL
@@ -129,9 +121,6 @@ BEGIN
                 AND u.eliminado_en IS NOT NULL
             )
         )
-=======
-    WHERE u.eliminado_en IS NULL
->>>>>>> josi-dev
     ORDER BY u.apellido, u.nombre;
 END;
 GO
@@ -173,16 +162,10 @@ GO
    Procedimiento: sp_Usuario_Alta
 
    Regla de sucursal:
-<<<<<<< HEAD
    - Perfil con alcance_global = 1:
      id_sucursal se guarda en NULL.
    - Perfil con alcance_global = 0:
      debe tener una sucursal asignada.
-=======
-   - Administrador: no pertenece a una sucursal específica.
-     Su id_sucursal se guarda en NULL.
-   - Gerente y Vendedor: deben tener una sucursal asignada.
->>>>>>> josi-dev
 
    Códigos de resultado:
    0   = Correcto
@@ -214,11 +197,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-<<<<<<< HEAD
     DECLARE @alcanceGlobal BIT;
-=======
-    DECLARE @nombrePerfil NVARCHAR(100);
->>>>>>> josi-dev
 
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
@@ -232,21 +211,13 @@ BEGIN
            ----------------------------------------------------- */
 
         SELECT
-<<<<<<< HEAD
             @alcanceGlobal = alcance_global
-=======
-            @nombrePerfil = nombre
->>>>>>> josi-dev
         FROM dbo.PERFIL
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
 
 
-<<<<<<< HEAD
         IF @alcanceGlobal IS NULL
-=======
-        IF @nombrePerfil IS NULL
->>>>>>> josi-dev
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado =
@@ -260,19 +231,11 @@ BEGIN
            Regla de sucursal según perfil
            ----------------------------------------------------- */
 
-<<<<<<< HEAD
         IF @alcanceGlobal = 1
         BEGIN
             /*
                Los perfiles de alcance global no pertenecen
                obligatoriamente a una sucursal específica.
-=======
-        IF @nombrePerfil = N'Administrador'
-        BEGIN
-            /*
-               El administrador trabaja a nivel global,
-               por lo tanto no se asocia a una sucursal.
->>>>>>> josi-dev
             */
             SET @idSucursal = NULL;
         END
@@ -280,13 +243,8 @@ BEGIN
         BEGIN
 
             /*
-<<<<<<< HEAD
                Los perfiles sin alcance global deben estar
                asociados a una sucursal activa.
-=======
-               Gerentes, vendedores y demás perfiles
-               deben estar asociados a una sucursal.
->>>>>>> josi-dev
             */
             IF @idSucursal IS NULL
             BEGIN
@@ -451,16 +409,10 @@ GO
    Procedimiento: sp_Usuario_Modificar
 
    Regla de sucursal:
-<<<<<<< HEAD
    - Perfil con alcance_global = 1:
      id_sucursal se guarda en NULL.
    - Perfil con alcance_global = 0:
      debe tener una sucursal asignada.
-=======
-   - Administrador: no pertenece a una sucursal específica.
-     Su id_sucursal se guarda en NULL.
-   - Gerente y Vendedor: deben tener una sucursal asignada.
->>>>>>> josi-dev
 
    Códigos de resultado:
    0   = Correcto
@@ -491,11 +443,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-<<<<<<< HEAD
     DECLARE @alcanceGlobal BIT;
-=======
-    DECLARE @nombrePerfil NVARCHAR(100);
->>>>>>> josi-dev
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
@@ -527,21 +475,13 @@ BEGIN
            ----------------------------------------------------- */
 
         SELECT
-<<<<<<< HEAD
             @alcanceGlobal = alcance_global
-=======
-            @nombrePerfil = nombre
->>>>>>> josi-dev
         FROM dbo.PERFIL
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
 
 
-<<<<<<< HEAD
         IF @alcanceGlobal IS NULL
-=======
-        IF @nombrePerfil IS NULL
->>>>>>> josi-dev
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado =
@@ -555,11 +495,7 @@ BEGIN
            Regla de sucursal según perfil
            ----------------------------------------------------- */
 
-<<<<<<< HEAD
         IF @alcanceGlobal = 1
-=======
-        IF @nombrePerfil = N'Administrador'
->>>>>>> josi-dev
         BEGIN
             SET @idSucursal = NULL;
         END
@@ -779,12 +715,8 @@ BEGIN
     SELECT
         id_perfil,
         nombre,
-<<<<<<< HEAD
         descripcion,
         alcance_global
-=======
-        descripcion
->>>>>>> josi-dev
     FROM dbo.PERFIL
     WHERE eliminado_en IS NULL
     ORDER BY nombre;
@@ -792,8 +724,765 @@ END;
 GO
 
 
-<<<<<<< HEAD
-=======
+
+-- ============================================================
+-- ADMINISTRACIÓN DE TIPOS DE USUARIO Y PERMISOS
+--
+-- Reglas:
+-- - Administrador es el único perfil global.
+-- - Los perfiles creados desde la aplicación tienen alcance_global = 0.
+-- - PERMISOS_GESTIONAR es exclusivo del Administrador.
+-- - El Administrador no puede darse de baja.
+-- - No puede darse de baja un perfil con usuarios activos.
+-- - El Administrador debe conservar todas las funcionalidades.
+-- ============================================================
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Funcionalidad_Listar
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        f.id_funcionalidad,
+        f.codigo,
+        f.nombre,
+        f.descripcion
+    FROM dbo.FUNCIONALIDAD AS f
+    WHERE f.eliminado_en IS NULL
+    ORDER BY f.codigo;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_ObtenerPorId
+    @idPerfil INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP 1
+        p.id_perfil,
+        p.nombre,
+        p.descripcion,
+        p.alcance_global,
+        CAST(p.alcance_global AS BIT) AS es_administrador
+    FROM dbo.PERFIL AS p
+    WHERE p.id_perfil = @idPerfil
+      AND p.eliminado_en IS NULL;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_ListarFuncionalidades
+    @idPerfil INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @alcanceGlobal BIT = 0;
+
+    SELECT
+        @alcanceGlobal = p.alcance_global
+    FROM dbo.PERFIL AS p
+    WHERE p.id_perfil = @idPerfil
+      AND p.eliminado_en IS NULL;
+
+
+    SELECT
+        f.id_funcionalidad,
+        f.codigo,
+        f.nombre,
+        f.descripcion,
+
+        CAST(
+            CASE
+                WHEN @alcanceGlobal = 1 THEN 1
+                WHEN pf.id_funcionalidad IS NOT NULL THEN 1
+                ELSE 0
+            END
+            AS BIT
+        ) AS asignada,
+
+        CAST(
+            CASE
+                WHEN @alcanceGlobal = 1 THEN 1
+                WHEN f.codigo = N'PERMISOS_GESTIONAR' THEN 1
+                ELSE 0
+            END
+            AS BIT
+        ) AS bloqueada
+
+    FROM dbo.FUNCIONALIDAD AS f
+    LEFT JOIN dbo.PERFIL_FUNCIONALIDAD AS pf
+        ON pf.id_funcionalidad = f.id_funcionalidad
+       AND pf.id_perfil = @idPerfil
+    WHERE f.eliminado_en IS NULL
+    ORDER BY f.codigo;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Alta
+    @nombre NVARCHAR(50),
+    @descripcion NVARCHAR(200) = NULL,
+
+    @IdGenerado INT OUTPUT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @IdGenerado = 0;
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+        SET @descripcion = NULLIF(LTRIM(RTRIM(@descripcion)), N'');
+
+
+        IF @nombre = N''
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado =
+                N'El nombre del tipo de usuario es obligatorio.';
+            RETURN;
+        END;
+
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.PERFIL
+            WHERE UPPER(nombre) = UPPER(@nombre)
+        )
+        BEGIN
+            SET @CodigoResultado = 2;
+            SET @MensajeResultado =
+                N'Ya existe un tipo de usuario con ese nombre.';
+            RETURN;
+        END;
+
+
+        INSERT INTO dbo.PERFIL
+        (
+            nombre,
+            descripcion,
+            alcance_global
+        )
+        VALUES
+        (
+            @nombre,
+            @descripcion,
+            0
+        );
+
+
+        SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado =
+            N'Tipo de usuario registrado correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        SET @IdGenerado = 0;
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+
+    END CATCH;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Modificar
+    @idPerfil INT,
+    @nombre NVARCHAR(50),
+    @descripcion NVARCHAR(200) = NULL,
+
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        DECLARE @alcanceGlobal BIT;
+
+
+        SELECT
+            @alcanceGlobal = p.alcance_global
+        FROM dbo.PERFIL AS p
+        WHERE p.id_perfil = @idPerfil
+          AND p.eliminado_en IS NULL;
+
+
+        IF @alcanceGlobal IS NULL
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'El tipo de usuario no existe o fue dado de baja.';
+            RETURN;
+        END;
+
+
+        IF @alcanceGlobal = 1
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'El perfil global del sistema no puede modificarse.';
+            RETURN;
+        END;
+
+
+        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+        SET @descripcion = NULLIF(LTRIM(RTRIM(@descripcion)), N'');
+
+
+        IF @nombre = N''
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado =
+                N'El nombre del tipo de usuario es obligatorio.';
+            RETURN;
+        END;
+
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.PERFIL
+            WHERE UPPER(nombre) = UPPER(@nombre)
+              AND id_perfil <> @idPerfil
+        )
+        BEGIN
+            SET @CodigoResultado = 2;
+            SET @MensajeResultado =
+                N'Ya existe otro tipo de usuario con ese nombre.';
+            RETURN;
+        END;
+
+
+        UPDATE dbo.PERFIL
+        SET
+            nombre = @nombre,
+            descripcion = @descripcion
+        WHERE id_perfil = @idPerfil
+          AND eliminado_en IS NULL;
+
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado =
+            N'Tipo de usuario modificado correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+
+    END CATCH;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_AsignarFuncionalidad
+    @idPerfil INT,
+    @idFuncionalidad INT,
+
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        DECLARE @alcanceGlobal BIT;
+        DECLARE @codigoFuncionalidad NVARCHAR(50);
+
+
+        SELECT
+            @alcanceGlobal = p.alcance_global
+        FROM dbo.PERFIL AS p
+        WHERE p.id_perfil = @idPerfil
+          AND p.eliminado_en IS NULL;
+
+
+        IF @alcanceGlobal IS NULL
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'El tipo de usuario no existe o está inactivo.';
+            RETURN;
+        END;
+
+
+        SELECT
+            @codigoFuncionalidad = f.codigo
+        FROM dbo.FUNCIONALIDAD AS f
+        WHERE f.id_funcionalidad = @idFuncionalidad
+          AND f.eliminado_en IS NULL;
+
+
+        IF @codigoFuncionalidad IS NULL
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'La funcionalidad indicada no existe o está inactiva.';
+            RETURN;
+        END;
+
+
+        IF @codigoFuncionalidad = N'PERMISOS_GESTIONAR'
+           AND @alcanceGlobal = 0
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'La administración de permisos es exclusiva del perfil global.';
+            RETURN;
+        END;
+
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.PERFIL_FUNCIONALIDAD
+            WHERE id_perfil = @idPerfil
+              AND id_funcionalidad = @idFuncionalidad
+        )
+        BEGIN
+            INSERT INTO dbo.PERFIL_FUNCIONALIDAD
+            (
+                id_perfil,
+                id_funcionalidad
+            )
+            VALUES
+            (
+                @idPerfil,
+                @idFuncionalidad
+            );
+        END;
+
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado =
+            N'Permiso asignado correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+
+    END CATCH;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_QuitarFuncionalidad
+    @idPerfil INT,
+    @idFuncionalidad INT,
+
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        DECLARE @alcanceGlobal BIT;
+
+
+        SELECT
+            @alcanceGlobal = p.alcance_global
+        FROM dbo.PERFIL AS p
+        WHERE p.id_perfil = @idPerfil
+          AND p.eliminado_en IS NULL;
+
+
+        IF @alcanceGlobal IS NULL
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'El tipo de usuario no existe o está inactivo.';
+            RETURN;
+        END;
+
+
+        IF @alcanceGlobal = 1
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'Los permisos del perfil global son obligatorios y no pueden quitarse.';
+            RETURN;
+        END;
+
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.FUNCIONALIDAD
+            WHERE id_funcionalidad = @idFuncionalidad
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'La funcionalidad indicada no existe o está inactiva.';
+            RETURN;
+        END;
+
+
+        DELETE FROM dbo.PERFIL_FUNCIONALIDAD
+        WHERE id_perfil = @idPerfil
+          AND id_funcionalidad = @idFuncionalidad;
+
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado =
+            N'Permiso quitado correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+
+    END CATCH;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_GuardarFuncionalidades
+    @idPerfil INT,
+    @idsFuncionalidades NVARCHAR(MAX),
+
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        DECLARE @alcanceGlobal BIT;
+
+        DECLARE @Seleccion TABLE
+        (
+            id_funcionalidad INT NOT NULL PRIMARY KEY
+        );
+
+
+        SELECT
+            @alcanceGlobal = p.alcance_global
+        FROM dbo.PERFIL AS p
+        WHERE p.id_perfil = @idPerfil
+          AND p.eliminado_en IS NULL;
+
+
+        IF @alcanceGlobal IS NULL
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'El tipo de usuario no existe o está inactivo.';
+            RETURN;
+        END;
+
+
+        IF @alcanceGlobal = 1
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'Los permisos del perfil global no pueden modificarse manualmente.';
+            RETURN;
+        END;
+
+
+        SET @idsFuncionalidades =
+            LTRIM(RTRIM(ISNULL(@idsFuncionalidades, N'')));
+
+
+        IF @idsFuncionalidades <> N''
+        BEGIN
+
+            IF EXISTS
+            (
+                SELECT 1
+                FROM STRING_SPLIT(@idsFuncionalidades, N',')
+                WHERE TRY_CONVERT(INT, LTRIM(RTRIM(value))) IS NULL
+                   OR TRY_CONVERT(INT, LTRIM(RTRIM(value))) <= 0
+            )
+            BEGIN
+                SET @CodigoResultado = 3;
+                SET @MensajeResultado =
+                    N'La lista de funcionalidades contiene valores no válidos.';
+                RETURN;
+            END;
+
+
+            INSERT INTO @Seleccion
+            (
+                id_funcionalidad
+            )
+            SELECT DISTINCT
+                TRY_CONVERT(
+                    INT,
+                    LTRIM(RTRIM(value))
+                )
+            FROM STRING_SPLIT(
+                @idsFuncionalidades,
+                N','
+            );
+
+        END;
+
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM @Seleccion AS seleccion
+            LEFT JOIN dbo.FUNCIONALIDAD AS f
+                ON f.id_funcionalidad =
+                    seleccion.id_funcionalidad
+               AND f.eliminado_en IS NULL
+            WHERE f.id_funcionalidad IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado =
+                N'Se seleccionó una funcionalidad inexistente o inactiva.';
+            RETURN;
+        END;
+
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM @Seleccion AS seleccion
+            INNER JOIN dbo.FUNCIONALIDAD AS f
+                ON f.id_funcionalidad =
+                    seleccion.id_funcionalidad
+            WHERE f.codigo = N'PERMISOS_GESTIONAR'
+              AND f.eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'La administración de permisos es exclusiva del perfil global.';
+            RETURN;
+        END;
+
+
+        BEGIN TRANSACTION;
+
+
+        DELETE FROM dbo.PERFIL_FUNCIONALIDAD
+        WHERE id_perfil = @idPerfil;
+
+
+        INSERT INTO dbo.PERFIL_FUNCIONALIDAD
+        (
+            id_perfil,
+            id_funcionalidad
+        )
+        SELECT
+            @idPerfil,
+            seleccion.id_funcionalidad
+        FROM @Seleccion AS seleccion;
+
+
+        COMMIT TRANSACTION;
+
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado =
+            N'Permisos actualizados correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado =
+            LEFT(ERROR_MESSAGE(), 250);
+
+    END CATCH;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Baja
+    @idPerfil INT,
+
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        DECLARE @alcanceGlobal BIT;
+
+
+        SELECT
+            @alcanceGlobal = p.alcance_global
+        FROM dbo.PERFIL AS p
+        WHERE p.id_perfil = @idPerfil
+          AND p.eliminado_en IS NULL;
+
+
+        IF @alcanceGlobal IS NULL
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado =
+                N'El tipo de usuario no existe o ya fue dado de baja.';
+            RETURN;
+        END;
+
+
+        IF @alcanceGlobal = 1
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'El perfil global del sistema no puede darse de baja.';
+            RETURN;
+        END;
+
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.USUARIO AS u
+            WHERE u.id_perfil = @idPerfil
+              AND u.eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado =
+                N'No se puede dar de baja este tipo de usuario porque tiene usuarios activos asignados.';
+            RETURN;
+        END;
+
+
+        UPDATE dbo.PERFIL
+        SET eliminado_en = SYSDATETIME()
+        WHERE id_perfil = @idPerfil
+          AND eliminado_en IS NULL;
+
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado =
+            N'Tipo de usuario dado de baja correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+
+    END CATCH;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_SincronizarAdministrador
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        DECLARE @idPerfilGlobal INT;
+
+
+        IF (
+            SELECT COUNT(*)
+            FROM dbo.PERFIL
+            WHERE alcance_global = 1
+              AND eliminado_en IS NULL
+        ) <> 1
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado =
+                N'Debe existir exactamente un perfil global activo.';
+            RETURN;
+        END;
+
+
+        SELECT
+            @idPerfilGlobal = p.id_perfil
+        FROM dbo.PERFIL AS p
+        WHERE p.alcance_global = 1
+          AND p.eliminado_en IS NULL;
+
+
+        INSERT INTO dbo.PERFIL_FUNCIONALIDAD
+        (
+            id_perfil,
+            id_funcionalidad
+        )
+        SELECT
+            @idPerfilGlobal,
+            f.id_funcionalidad
+        FROM dbo.FUNCIONALIDAD AS f
+        WHERE f.eliminado_en IS NULL
+          AND NOT EXISTS
+          (
+              SELECT 1
+              FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+              WHERE pf.id_perfil = @idPerfilGlobal
+                AND pf.id_funcionalidad = f.id_funcionalidad
+          );
+
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado =
+            N'Perfil global sincronizado con todas las funcionalidades.';
+
+    END TRY
+    BEGIN CATCH
+
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+
+    END CATCH;
+END;
+GO
+
+
 -- ============================================================
 -- UBICACIONES (PROVINCIA / LOCALIDAD / DIRECCION)
 --
@@ -990,7 +1679,6 @@ END;
 GO
 
 
->>>>>>> josi-dev
 -- ============================================================
 -- CLIENTES
 -- ============================================================
@@ -2891,7 +3579,64 @@ END;
 GO
 
 
+
+-- ============================================================
+-- SINCRONIZACIÓN AUTOMÁTICA DEL PERFIL GLOBAL
+--
+-- Si se agrega o reactiva una funcionalidad, el perfil global
+-- recibe automáticamente ese permiso.
+-- ============================================================
+
+CREATE OR ALTER TRIGGER dbo.trg_Funcionalidad_SincronizarPerfilGlobal
+ON dbo.FUNCIONALIDAD
+AFTER INSERT, UPDATE
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO dbo.PERFIL_FUNCIONALIDAD
+    (
+        id_perfil,
+        id_funcionalidad
+    )
+    SELECT
+        p.id_perfil,
+        i.id_funcionalidad
+    FROM inserted AS i
+    CROSS JOIN dbo.PERFIL AS p
+    WHERE i.eliminado_en IS NULL
+      AND p.alcance_global = 1
+      AND p.eliminado_en IS NULL
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+          WHERE pf.id_perfil = p.id_perfil
+            AND pf.id_funcionalidad = i.id_funcionalidad
+      );
+END;
+GO
+
+
+-- ============================================================
+-- SINCRONIZACIÓN INICIAL DEL PERFIL GLOBAL
+-- ============================================================
+
+DECLARE @CodigoResultadoSincronizacion INT;
+DECLARE @MensajeResultadoSincronizacion NVARCHAR(250);
+
+EXEC dbo.sp_Perfil_SincronizarAdministrador
+    @CodigoResultado =
+        @CodigoResultadoSincronizacion OUTPUT,
+    @MensajeResultado =
+        @MensajeResultadoSincronizacion OUTPUT;
+
+SELECT
+    @CodigoResultadoSincronizacion AS CodigoResultado,
+    @MensajeResultadoSincronizacion AS MensajeResultado;
+GO
+
+
 -- ============================================================
 -- FIN DEL SCRIPT
 -- ============================================================
->>>>>>> josi-dev

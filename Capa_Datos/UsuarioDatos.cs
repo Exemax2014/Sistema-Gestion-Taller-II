@@ -65,6 +65,8 @@ namespace Capa_Datos
 
         public string Perfil { get; set; } = string.Empty;
         public string Sucursal { get; set; } = string.Empty;
+
+        public bool Activo { get; set; }
     }
 
 
@@ -473,7 +475,12 @@ namespace Capa_Datos
 
                 Sucursal =
                     lector["sucursal"].ToString()
-                    ?? string.Empty
+                    ?? string.Empty,
+
+                Activo =
+                    Convert.ToBoolean(
+                        lector["activo"]
+                    )
             };
         }
 
@@ -732,6 +739,74 @@ namespace Capa_Datos
             conexion.Open();
 
             comando.ExecuteNonQuery();
+
+            return new ResultadoUsuarioDatos
+            {
+                Codigo =
+                    codigoResultado.Value == DBNull.Value
+                        ? 500
+                        : Convert.ToInt32(
+                            codigoResultado.Value
+                        ),
+
+                Mensaje =
+                    mensajeResultado.Value?.ToString()
+                    ?? string.Empty
+            };
+        }
+
+
+        // ========================================================
+        // REACTIVAR USUARIO
+        // ========================================================
+
+        public ResultadoUsuarioDatos Reactivar(
+            int idUsuario)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Usuario_Reactivar",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            comando.Parameters.Add(
+                "@idUsuario",
+                SqlDbType.Int
+            ).Value =
+                idUsuario;
+
+
+            SqlParameter codigoResultado =
+                comando.Parameters.Add(
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+            codigoResultado.Direction =
+                ParameterDirection.Output;
+
+
+            SqlParameter mensajeResultado =
+                comando.Parameters.Add(
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
+            mensajeResultado.Direction =
+                ParameterDirection.Output;
+
+
+            conexion.Open();
+
+            comando.ExecuteNonQuery();
+
 
             return new ResultadoUsuarioDatos
             {

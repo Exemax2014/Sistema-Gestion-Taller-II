@@ -44,6 +44,7 @@ namespace Capa_Vistas
             pnlSucursal = new Panel();
             lblSucursalTitulo = new Label();
             lblSucursalActual = new Label();
+            cmbSucursalOperativa = new ComboBox();
             btnInicio = new Button();
             btnVentas = new Button();
             btnClientes = new Button();
@@ -229,9 +230,10 @@ namespace Capa_Vistas
             pnlSucursal.BackColor = Color.FromArgb(17, 21, 26);
             pnlSucursal.Controls.Add(lblSucursalTitulo);
             pnlSucursal.Controls.Add(lblSucursalActual);
+            pnlSucursal.Controls.Add(cmbSucursalOperativa);
             pnlSucursal.Location = new Point(0, 0);
             pnlSucursal.Name = "pnlSucursal";
-            pnlSucursal.Size = new Size(165, 72);
+            pnlSucursal.Size = new Size(165, 105);
             pnlSucursal.TabIndex = 0;
             // 
             // lblSucursalTitulo
@@ -248,11 +250,25 @@ namespace Capa_Vistas
             // 
             lblSucursalActual.Font = new Font("Segoe UI", 8.5F);
             lblSucursalActual.ForeColor = Color.FromArgb(215, 218, 222);
-            lblSucursalActual.Location = new Point(14, 33);
+            lblSucursalActual.Location = new Point(14, 34);
             lblSucursalActual.Name = "lblSucursalActual";
-            lblSucursalActual.Size = new Size(137, 25);
+            lblSucursalActual.Size = new Size(137, 48);
             lblSucursalActual.TabIndex = 1;
             lblSucursalActual.Text = "Todas las sucursales";
+            // 
+            // cmbSucursalOperativa
+            // 
+            cmbSucursalOperativa.BackColor = Color.FromArgb(28, 32, 37);
+            cmbSucursalOperativa.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbSucursalOperativa.FlatStyle = FlatStyle.Flat;
+            cmbSucursalOperativa.Font = new Font("Segoe UI", 8F);
+            cmbSucursalOperativa.ForeColor = Color.White;
+            cmbSucursalOperativa.FormattingEnabled = true;
+            cmbSucursalOperativa.Location = new Point(14, 37);
+            cmbSucursalOperativa.Name = "cmbSucursalOperativa";
+            cmbSucursalOperativa.Size = new Size(137, 25);
+            cmbSucursalOperativa.TabIndex = 2;
+            cmbSucursalOperativa.Visible = false;
             // 
             // btnInicio
             // 
@@ -265,7 +281,7 @@ namespace Capa_Vistas
             btnInicio.ForeColor = Color.White;
             btnInicio.Image = Properties.Resource.IconoInicio;
             btnInicio.ImageAlign = ContentAlignment.TopCenter;
-            btnInicio.Location = new Point(0, 76);
+            btnInicio.Location = new Point(0, 109);
             btnInicio.Name = "btnInicio";
             btnInicio.Padding = new Padding(0, 4, 0, 5);
             btnInicio.Size = new Size(165, 92);
@@ -285,7 +301,7 @@ namespace Capa_Vistas
             btnVentas.ForeColor = Color.White;
             btnVentas.Image = Properties.Resource.IconoVentas;
             btnVentas.ImageAlign = ContentAlignment.TopCenter;
-            btnVentas.Location = new Point(0, 168);
+            btnVentas.Location = new Point(0, 201);
             btnVentas.Name = "btnVentas";
             btnVentas.Padding = new Padding(0, 4, 0, 5);
             btnVentas.Size = new Size(165, 92);
@@ -306,7 +322,7 @@ namespace Capa_Vistas
             btnClientes.ForeColor = Color.White;
             btnClientes.Image = Properties.Resource.IconoClientes;
             btnClientes.ImageAlign = ContentAlignment.TopCenter;
-            btnClientes.Location = new Point(0, 260);
+            btnClientes.Location = new Point(0, 293);
             btnClientes.Name = "btnClientes";
             btnClientes.Padding = new Padding(0, 4, 0, 5);
             btnClientes.Size = new Size(165, 92);
@@ -327,7 +343,7 @@ namespace Capa_Vistas
             btnProductos.ForeColor = Color.White;
             btnProductos.Image = Properties.Resource.IconoProductos;
             btnProductos.ImageAlign = ContentAlignment.TopCenter;
-            btnProductos.Location = new Point(0, 352);
+            btnProductos.Location = new Point(0, 385);
             btnProductos.Name = "btnProductos";
             btnProductos.Padding = new Padding(0, 4, 0, 5);
             btnProductos.Size = new Size(165, 92);
@@ -348,7 +364,7 @@ namespace Capa_Vistas
             btnUsuarios.ForeColor = Color.White;
             btnUsuarios.Image = Properties.Resource.IconoUsuarios;
             btnUsuarios.ImageAlign = ContentAlignment.TopCenter;
-            btnUsuarios.Location = new Point(0, 444);
+            btnUsuarios.Location = new Point(0, 477);
             btnUsuarios.Name = "btnUsuarios";
             btnUsuarios.Padding = new Padding(0, 4, 0, 5);
             btnUsuarios.Size = new Size(165, 92);
@@ -369,7 +385,7 @@ namespace Capa_Vistas
             btnReportes.ForeColor = Color.White;
             btnReportes.Image = Properties.Resource.IconoReportes;
             btnReportes.ImageAlign = ContentAlignment.TopCenter;
-            btnReportes.Location = new Point(0, 536);
+            btnReportes.Location = new Point(0, 569);
             btnReportes.Name = "btnReportes";
             btnReportes.Padding = new Padding(0, 4, 0, 5);
             btnReportes.Size = new Size(165, 92);
@@ -504,6 +520,8 @@ namespace Capa_Vistas
         private Label lblSucursalTitulo;
 
         private Label lblSucursalActual;
+
+        private ComboBox cmbSucursalOperativa;
 
         private Button btnInicio;
 
