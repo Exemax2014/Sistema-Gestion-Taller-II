@@ -9,6 +9,7 @@
    - Adaptar PRODUCTO si la base ya existía.
    - Agregar MARCA.
    - Mantener el stock por PRODUCTO + SUCURSAL mediante INVENTARIO.
+   - Preparar los tipos de tabla usados para registrar ventas con múltiples ítems y pagos.
    - Evitar errores al ejecutar este script más de una vez.
    ========================================================= */
 
@@ -584,6 +585,50 @@ END;
 GO
 
 
+/* =========================================================
+   TIPOS DE TABLA PARA REGISTRO DE VENTAS
+   =========================================================
+   Permiten enviar desde Capa_Datos todos los productos y pagos
+   de una venta en una sola llamada a sp_Venta_Registrar.
+
+   La Vista no envía precios ni subtotales de productos:
+   SQL Server volverá a obtener el precio vigente de PRODUCTO.
+   ========================================================= */
+
+IF TYPE_ID(N'dbo.VentaItemTipo') IS NULL
+BEGIN
+    EXEC
+    (
+        N'
+        CREATE TYPE dbo.VentaItemTipo AS TABLE
+        (
+            id_producto INT NOT NULL PRIMARY KEY,
+            cantidad INT NOT NULL
+                CHECK (cantidad > 0)
+        );
+        '
+    );
+END;
+GO
+
+
+IF TYPE_ID(N'dbo.VentaPagoTipo') IS NULL
+BEGIN
+    EXEC
+    (
+        N'
+        CREATE TYPE dbo.VentaPagoTipo AS TABLE
+        (
+            id_metodo_pago INT NOT NULL PRIMARY KEY,
+            monto DECIMAL(18,2) NOT NULL
+                CHECK (monto > 0)
+        );
+        '
+    );
+END;
+GO
+
+
 /* ========================
    VENTA
    ======================== */
@@ -601,7 +646,9 @@ BEGIN
         fecha_hora DATETIME2 NOT NULL
             CONSTRAINT DF_VENTA_fecha_hora DEFAULT SYSDATETIME(),
 
-        tipo_factura NVARCHAR(20) NOT NULL,
+        /* La facturación real todavía no está definida.
+           Se permite NULL hasta implementar los tipos de comprobante. */
+        tipo_factura NVARCHAR(20) NULL,
 
         subtotal DECIMAL(18,2) NOT NULL,
 
@@ -633,6 +680,23 @@ BEGIN
         CONSTRAINT CK_VENTA_total
             CHECK (total >= 0)
     );
+END;
+GO
+
+
+/* =========================================================
+   ADAPTACIÓN VENTA - TIPO DE FACTURA OPCIONAL
+   =========================================================
+   La política de comprobantes todavía no está definida.
+   Se mantiene la columna para una futura implementación,
+   pero por ahora no forma parte del flujo de registro.
+   ========================================================= */
+
+IF OBJECT_ID('dbo.VENTA', 'U') IS NOT NULL
+   AND COL_LENGTH('dbo.VENTA', 'tipo_factura') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.VENTA
+    ALTER COLUMN tipo_factura NVARCHAR(20) NULL;
 END;
 GO
 

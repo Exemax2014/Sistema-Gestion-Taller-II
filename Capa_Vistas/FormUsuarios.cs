@@ -1,23 +1,35 @@
-﻿namespace Capa_Vistas
+﻿using Capa_Logica;
+
+namespace Capa_Vistas
 {
     // ============================================================
     // Formulario: FormUsuarios
     //
-    // Vista de listado de usuarios.
+    // Vista de listado y búsqueda de usuarios.
     //
-    // El Designer maneja solamente el diseño.
-    // Las columnas, eventos y comportamiento viven acá.
+    // El Designer contiene únicamente estructura y diseño visual.
+    // Las columnas, eventos, filtros y carga dinámica viven acá.
     // ============================================================
 
     public partial class FormUsuarios : Form
     {
+        private readonly UsuarioLogica usuarioLogica;
+
+
         public FormUsuarios()
         {
             InitializeComponent();
 
+            usuarioLogica =
+                new UsuarioLogica();
+
             ConfigurarGrilla();
             ConfigurarEventos();
-            PrepararVistaInicial();
+            ConfigurarPermisos();
+
+            CargarPerfiles();
+            CargarEstados();
+            CargarUsuarios();
         }
 
 
@@ -33,128 +45,100 @@
             dgvUsuarios.Columns.Clear();
 
 
-            // ID
             DataGridViewTextBoxColumn colIdUsuario =
-                new DataGridViewTextBoxColumn();
-
-            colIdUsuario.Name =
-                "colIdUsuario";
-
-            colIdUsuario.HeaderText =
-                "ID";
-
-            colIdUsuario.Visible =
-                false;
+                new DataGridViewTextBoxColumn
+                {
+                    Name = "colIdUsuario",
+                    DataPropertyName = "IdUsuario",
+                    HeaderText = "ID",
+                    Visible = false
+                };
 
 
-            // USUARIO
             DataGridViewTextBoxColumn colUsuario =
-                new DataGridViewTextBoxColumn();
-
-            colUsuario.Name =
-                "colUsuario";
-
-            colUsuario.HeaderText =
-                "Usuario";
-
-            colUsuario.Width =
-                150;
+                new DataGridViewTextBoxColumn
+                {
+                    Name = "colUsuario",
+                    DataPropertyName = "NombreUsuario",
+                    HeaderText = "Usuario",
+                    Width = 140
+                };
 
 
-            // NOMBRE
             DataGridViewTextBoxColumn colNombre =
-                new DataGridViewTextBoxColumn();
-
-            colNombre.Name =
-                "colNombre";
-
-            colNombre.HeaderText =
-                "Nombre";
-
-            colNombre.Width =
-                160;
+                new DataGridViewTextBoxColumn
+                {
+                    Name = "colNombre",
+                    DataPropertyName = "Nombre",
+                    HeaderText = "Nombre",
+                    Width = 145
+                };
 
 
-            // APELLIDO
             DataGridViewTextBoxColumn colApellido =
-                new DataGridViewTextBoxColumn();
-
-            colApellido.Name =
-                "colApellido";
-
-            colApellido.HeaderText =
-                "Apellido";
-
-            colApellido.Width =
-                160;
+                new DataGridViewTextBoxColumn
+                {
+                    Name = "colApellido",
+                    DataPropertyName = "Apellido",
+                    HeaderText = "Apellido",
+                    Width = 145
+                };
 
 
-            // PERFIL
             DataGridViewTextBoxColumn colPerfil =
-                new DataGridViewTextBoxColumn();
-
-            colPerfil.Name =
-                "colPerfil";
-
-            colPerfil.HeaderText =
-                "Perfil";
-
-            colPerfil.Width =
-                140;
+                new DataGridViewTextBoxColumn
+                {
+                    Name = "colPerfil",
+                    DataPropertyName = "Perfil",
+                    HeaderText = "Perfil",
+                    Width = 120
+                };
 
 
-            // SUCURSAL
             DataGridViewTextBoxColumn colSucursal =
-                new DataGridViewTextBoxColumn();
-
-            colSucursal.Name =
-                "colSucursal";
-
-            colSucursal.HeaderText =
-                "Sucursal";
-
-            colSucursal.AutoSizeMode =
-                DataGridViewAutoSizeColumnMode.Fill;
-
-            colSucursal.MinimumWidth =
-                170;
+                new DataGridViewTextBoxColumn
+                {
+                    Name = "colSucursal",
+                    DataPropertyName = "Sucursal",
+                    HeaderText = "Sucursal",
+                    AutoSizeMode =
+                        DataGridViewAutoSizeColumnMode.Fill,
+                    MinimumWidth = 150
+                };
 
 
-            // ESTADO
             DataGridViewTextBoxColumn colEstado =
-                new DataGridViewTextBoxColumn();
-
-            colEstado.Name =
-                "colEstado";
-
-            colEstado.HeaderText =
-                "Estado";
-
-            colEstado.Width =
-                110;
+                new DataGridViewTextBoxColumn
+                {
+                    Name = "colEstado",
+                    DataPropertyName = "Estado",
+                    HeaderText = "Estado",
+                    Width = 95
+                };
 
 
-            // DETALLE
             DataGridViewButtonColumn colDetalle =
-                new DataGridViewButtonColumn();
+                new DataGridViewButtonColumn
+                {
+                    Name = "colDetalle",
+                    HeaderText = "",
+                    Text = "Ver detalle",
+                    UseColumnTextForButtonValue = true,
+                    FlatStyle = FlatStyle.Flat,
+                    Width = 105
+                };
 
-            colDetalle.Name =
-                "colDetalle";
 
-            colDetalle.HeaderText =
-                "";
-
-            colDetalle.Text =
-                "Ver detalle";
-
-            colDetalle.UseColumnTextForButtonValue =
-                true;
-
-            colDetalle.FlatStyle =
-                FlatStyle.Flat;
-
-            colDetalle.Width =
-                120;
+            DataGridViewButtonColumn colVentas =
+                new DataGridViewButtonColumn
+                {
+                    Name = "colVentas",
+                    HeaderText = "",
+                    Text = "Ventas",
+                    UseColumnTextForButtonValue = true,
+                    FlatStyle = FlatStyle.Flat,
+                    Width = 90
+                };
 
 
             dgvUsuarios.Columns.AddRange(
@@ -165,7 +149,8 @@
                 colPerfil,
                 colSucursal,
                 colEstado,
-                colDetalle
+                colDetalle,
+                colVentas
             );
         }
 
@@ -188,59 +173,202 @@
             txtBuscar.KeyDown +=
                 TxtBuscar_KeyDown;
 
+            cmbPerfil.SelectedIndexChanged +=
+                CmbFiltro_SelectedIndexChanged;
+
+            cmbEstado.SelectedIndexChanged +=
+                CmbFiltro_SelectedIndexChanged;
+
             dgvUsuarios.CellContentClick +=
                 DgvUsuarios_CellContentClick;
         }
 
 
         // ========================================================
-        // VISTA INICIAL
+        // PERMISOS
         // ========================================================
 
-        private void PrepararVistaInicial()
+        private void ConfigurarPermisos()
         {
-            cmbPerfil.Items.Clear();
+            btnNuevoUsuario.Visible =
+                usuarioLogica.PuedeCrearUsuario();
 
-            cmbPerfil.Items.Add(
-                "Todos"
+            btnBuscar.Enabled =
+                usuarioLogica.PuedeVerUsuarios();
+
+            btnLimpiarFiltros.Enabled =
+                usuarioLogica.PuedeVerUsuarios();
+
+            txtBuscar.Enabled =
+                usuarioLogica.PuedeVerUsuarios();
+
+            cmbPerfil.Enabled =
+                usuarioLogica.PuedeVerUsuarios();
+
+            cmbEstado.Enabled =
+                usuarioLogica.PuedeVerUsuarios();
+
+            dgvUsuarios.Enabled =
+                usuarioLogica.PuedeVerUsuarios();
+        }
+
+
+        // ========================================================
+        // PERFILES
+        // ========================================================
+
+        private void CargarPerfiles()
+        {
+            List<OpcionPerfil> opciones =
+                new List<OpcionPerfil>
+                {
+                    new OpcionPerfil
+                    {
+                        IdPerfil = null,
+                        Nombre = "Todos"
+                    }
+                };
+
+
+            List<PerfilUsuarioModelo> perfiles =
+                usuarioLogica.ObtenerPerfiles();
+
+
+            opciones.AddRange(
+                perfiles.Select(
+                    perfil =>
+                        new OpcionPerfil
+                        {
+                            IdPerfil =
+                                perfil.IdPerfil,
+
+                            Nombre =
+                                perfil.Nombre
+                        }
+                )
             );
 
-            cmbPerfil.Items.Add(
-                "Administrador"
-            );
 
-            cmbPerfil.Items.Add(
-                "Gerente"
-            );
+            cmbPerfil.DataSource =
+                opciones;
 
-            cmbPerfil.Items.Add(
-                "Vendedor"
-            );
+            cmbPerfil.DisplayMember =
+                nameof(OpcionPerfil.Nombre);
+
+            cmbPerfil.ValueMember =
+                nameof(OpcionPerfil.IdPerfil);
 
             cmbPerfil.SelectedIndex =
                 0;
+        }
 
 
-            cmbEstado.Items.Clear();
+        // ========================================================
+        // ESTADOS
+        // ========================================================
 
-            cmbEstado.Items.Add(
-                "Todos"
-            );
+        private void CargarEstados()
+        {
+            cmbEstado.DataSource =
+                new List<OpcionEstado>
+                {
+                    new OpcionEstado
+                    {
+                        Estado =
+                            EstadoUsuarioFiltro.Todos,
 
-            cmbEstado.Items.Add(
-                "Activos"
-            );
+                        Nombre =
+                            "Todos"
+                    },
 
-            cmbEstado.Items.Add(
-                "Inactivos"
-            );
+                    new OpcionEstado
+                    {
+                        Estado =
+                            EstadoUsuarioFiltro.Activos,
+
+                        Nombre =
+                            "Activos"
+                    },
+
+                    new OpcionEstado
+                    {
+                        Estado =
+                            EstadoUsuarioFiltro.Inactivos,
+
+                        Nombre =
+                            "Inactivos"
+                    }
+                };
+
+
+            cmbEstado.DisplayMember =
+                nameof(OpcionEstado.Nombre);
+
+            cmbEstado.ValueMember =
+                nameof(OpcionEstado.Estado);
 
             cmbEstado.SelectedIndex =
                 0;
+        }
 
 
-            lblCantidad.Text =
-                "0 usuario(s)";
+        // ========================================================
+        // CARGA DE USUARIOS
+        // ========================================================
+
+        private void CargarUsuarios()
+        {
+            if (!usuarioLogica.PuedeVerUsuarios())
+            {
+                dgvUsuarios.DataSource =
+                    null;
+
+                lblCantidad.Text =
+                    "0 usuario(s)";
+
+                return;
+            }
+
+
+            try
+            {
+                int? idPerfil =
+                    ObtenerPerfilSeleccionado();
+
+
+                EstadoUsuarioFiltro estado =
+                    ObtenerEstadoSeleccionado();
+
+
+                List<UsuarioListadoModelo> usuarios =
+                    usuarioLogica.Listar(
+                        txtBuscar.Text,
+                        idPerfil,
+                        estado
+                    );
+
+
+                dgvUsuarios.DataSource =
+                    usuarios;
+
+
+                lblCantidad.Text =
+                    $"{usuarios.Count} usuario(s)";
+            }
+            catch (Exception ex)
+            {
+                dgvUsuarios.DataSource =
+                    null;
+
+                lblCantidad.Text =
+                    "0 usuario(s)";
+
+
+                MostrarMensaje(
+                    "No se pudieron cargar los usuarios",
+                    ex.Message
+                );
+            }
         }
 
 
@@ -252,7 +380,7 @@
             object? sender,
             EventArgs e)
         {
-            ActualizarCantidad();
+            CargarUsuarios();
         }
 
 
@@ -266,15 +394,29 @@
             }
 
 
-            ActualizarCantidad();
+            CargarUsuarios();
 
             e.SuppressKeyPress =
                 true;
         }
 
 
+        private void CmbFiltro_SelectedIndexChanged(
+            object? sender,
+            EventArgs e)
+        {
+            if (!IsHandleCreated)
+            {
+                return;
+            }
+
+
+            CargarUsuarios();
+        }
+
+
         // ========================================================
-        // LIMPIAR
+        // LIMPIAR FILTROS
         // ========================================================
 
         private void BtnLimpiarFiltros_Click(
@@ -298,7 +440,7 @@
             }
 
 
-            ActualizarCantidad();
+            CargarUsuarios();
         }
 
 
@@ -310,13 +452,33 @@
             object? sender,
             EventArgs e)
         {
-            // Se conectará posteriormente
-            // con la vista de detalle.
+            if (!usuarioLogica.PuedeCrearUsuario())
+            {
+                MostrarMensaje(
+                    "Acceso no permitido",
+                    "No tiene permiso para registrar usuarios."
+                );
+
+                return;
+            }
+
+
+            using FormUsuarioDetalle detalle =
+                new FormUsuarioDetalle();
+
+
+            if (
+                detalle.ShowDialog(this)
+                ==
+                DialogResult.OK)
+            {
+                CargarUsuarios();
+            }
         }
 
 
         // ========================================================
-        // DETALLE
+        // ACCIONES DE LA GRILLA
         // ========================================================
 
         private void DgvUsuarios_CellContentClick(
@@ -334,27 +496,168 @@
 
             if (
                 dgvUsuarios
-                    .Columns[e.ColumnIndex]
-                    .Name
-                != "colDetalle")
+                    .Rows[e.RowIndex]
+                    .DataBoundItem
+                is not UsuarioListadoModelo usuario)
             {
                 return;
             }
 
 
-            // Se conectará posteriormente
-            // con FormUsuarioDetalle.
+            string nombreColumna =
+                dgvUsuarios
+                    .Columns[e.ColumnIndex]
+                    .Name;
+
+
+            if (nombreColumna == "colDetalle")
+            {
+                AbrirDetalleUsuario(
+                    usuario
+                );
+
+                return;
+            }
+
+
+            if (nombreColumna == "colVentas")
+            {
+                AbrirHistorialVentas(
+                    usuario
+                );
+            }
         }
 
 
         // ========================================================
-        // CANTIDAD
+        // DETALLE / EDICIÓN
         // ========================================================
 
-        private void ActualizarCantidad()
+        private void AbrirDetalleUsuario(
+            UsuarioListadoModelo usuario)
         {
-            lblCantidad.Text =
-                $"{dgvUsuarios.Rows.Count} usuario(s)";
+            using FormUsuarioDetalle detalle =
+                new FormUsuarioDetalle(
+                    usuario.IdUsuario
+                );
+
+
+            if (
+                detalle.ShowDialog(this)
+                ==
+                DialogResult.OK)
+            {
+                CargarUsuarios();
+            }
+        }
+
+
+        // ========================================================
+        // HISTORIAL DE VENTAS
+        //
+        // FormListadoVentas y VentaLogica vuelven a validar
+        // permisos. La Vista no decide qué ventas puede consultar.
+        // ========================================================
+
+        private void AbrirHistorialVentas(
+            UsuarioListadoModelo usuario)
+        {
+            string nombreCompleto =
+                $"{usuario.Nombre} {usuario.Apellido}"
+                    .Trim();
+
+
+            using FormListadoVentas historial =
+                new FormListadoVentas(
+                    TipoHistorialVentas.Vendedor,
+                    usuario.IdUsuario,
+                    nombreCompleto
+                );
+
+
+            historial.ShowDialog(
+                this
+            );
+        }
+
+
+        // ========================================================
+        // FILTROS
+        // ========================================================
+
+        private int? ObtenerPerfilSeleccionado()
+        {
+            if (
+                cmbPerfil.SelectedItem
+                is not OpcionPerfil opcion)
+            {
+                return null;
+            }
+
+
+            return opcion.IdPerfil;
+        }
+
+
+        private EstadoUsuarioFiltro ObtenerEstadoSeleccionado()
+        {
+            if (
+                cmbEstado.SelectedItem
+                is not OpcionEstado opcion)
+            {
+                return EstadoUsuarioFiltro.Todos;
+            }
+
+
+            return opcion.Estado;
+        }
+
+
+        // ========================================================
+        // MENSAJES
+        // ========================================================
+
+        private void MostrarMensaje(
+            string titulo,
+            string mensaje)
+        {
+            using FormMensaje formMensaje =
+                new FormMensaje(
+                    titulo,
+                    mensaje
+                );
+
+
+            formMensaje.ShowDialog(
+                this
+            );
+        }
+
+
+        // ========================================================
+        // OPCIONES VISUALES DE FILTRO
+        // ========================================================
+
+        private class OpcionPerfil
+        {
+            public int? IdPerfil { get; set; }
+
+            public string Nombre { get; set; } =
+                string.Empty;
+        }
+
+
+        private class OpcionEstado
+        {
+            public EstadoUsuarioFiltro Estado { get; set; }
+
+            public string Nombre { get; set; } =
+                string.Empty;
+        }
+
+        private void pnlCabecera_Paint(object sender, PaintEventArgs e)
+        {
+
         }
     }
 }
