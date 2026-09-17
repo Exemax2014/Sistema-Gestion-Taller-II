@@ -1046,7 +1046,6 @@ namespace Capa_Vistas
                 btnProductos
             );
 
-            AbrirFormularioEnPanel(new FormProductos(), btnProductos);
 
         }
 

@@ -36,10 +36,11 @@ namespace Capa_Vistas
         private readonly ProductoLogica productoLogica;
 
         // Cliente actualmente seleccionado en el buscador.
-        private ClienteInfo? clienteSeleccionado;
+        private ClienteListaModelo? clienteSeleccionado;
 
         // Producto actualmente seleccionado en el buscador
         // (todavía no agregado a la grilla).
+
         private ProductoInfo? productoSeleccionado;
 
         // Ítems ya agregados a la venta. BindingList permite que
@@ -114,7 +115,7 @@ namespace Capa_Vistas
                 return;
             }
 
-            cmbClienteResultados.DisplayMember = nameof(ClienteInfo.Nombre);
+            cmbClienteResultados.DisplayMember = nameof(ClienteListaModelo.Nombre);
             cmbClienteResultados.DataSource = resultados;
         }
 
@@ -123,7 +124,7 @@ namespace Capa_Vistas
             EventArgs e)
         {
             clienteSeleccionado =
-                cmbClienteResultados.SelectedItem as ClienteInfo;
+                cmbClienteResultados.SelectedItem as ClienteListaModelo;
         }
 
         // ========================================================
