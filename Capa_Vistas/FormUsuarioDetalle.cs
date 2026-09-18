@@ -1150,7 +1150,7 @@ namespace Capa_Vistas
 
             if (!Regex.IsMatch(
                 txtNombre.Text.Trim(),
-                @"^[\p{L}\s'-]+$"))
+                @"^[\p{L} '-]+$"))
             {
                 return ErrorCampo(
                     txtNombre,
@@ -1171,7 +1171,7 @@ namespace Capa_Vistas
 
             if (!Regex.IsMatch(
                 txtApellido.Text.Trim(),
-                @"^[\p{L}\s'-]+$"))
+                @"^[\p{L} '-]+$"))
             {
                 return ErrorCampo(
                     txtApellido,
@@ -1207,13 +1207,14 @@ namespace Capa_Vistas
                 !string.IsNullOrWhiteSpace(
                     txtTelefono.Text)
                 &&
-                !Regex.IsMatch(
+                (!txtTelefono.Text.Any(char.IsDigit)
+                 || !Regex.IsMatch(
                     txtTelefono.Text.Trim(),
-                    @"^[0-9+\-\s()]+$"))
+                    @"^[0-9+\-\s()]+$")))
             {
                 return ErrorCampo(
                     txtTelefono,
-                    "El teléfono contiene caracteres no válidos."
+                    "El teléfono debe contener al menos un número y caracteres válidos."
                 );
             }
 
@@ -1449,11 +1450,17 @@ namespace Capa_Vistas
         }
 
 
+        // Exige una estructura mínima antes de validar el correo con MailAddress.
         private static bool EsCorreoValido(
             string correo)
         {
             try
             {
+                if (!Regex.IsMatch(correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                {
+                    return false;
+                }
+
                 MailAddress direccion =
                     new MailAddress(
                         correo

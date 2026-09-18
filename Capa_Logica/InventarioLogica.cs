@@ -9,9 +9,8 @@ namespace Capa_Logica
     //
     // Reglas:
     // - Todos los perfiles pueden consultar el stock.
-    // - Administrador puede modificar cualquier sucursal.
-    // - Gerente puede modificar únicamente su sucursal.
-    // - Vendedor solamente puede consultar.
+    // - La modificación exige la funcionalidad de productos correspondiente.
+    // - El alcance de sucursal se resuelve desde la sesión actual.
     // ============================================================
 
     public class InventarioLogica
@@ -163,42 +162,34 @@ namespace Capa_Logica
         // ========================================================
         // REGLA DE MODIFICACIÓN POR SUCURSAL
         //
-        // Esta regla pertenece a Capa_Logica.
-        // La Vista no necesita saber qué perfil está conectado.
+        // Esta regla pertenece a Capa_Logica y combina la funcionalidad
+        // existente de productos con el alcance dinámico de la sesión.
         // ========================================================
 
         private bool PuedeModificarSucursal(
             int idSucursal)
         {
-            // ADMINISTRADOR
             if (
-                SesionActual.Perfil.Equals(
-                    "Administrador",
-                    StringComparison.OrdinalIgnoreCase
+                idSucursal <= 0
+                ||
+                !SesionActual.TienePermiso(
+                    "PRODUCTOS_MODIFICAR"
                 ))
             {
-                return true;
+                return false;
             }
 
 
-            // GERENTE
-            if (
-                SesionActual.Perfil.Equals(
-                    "Gerente",
-                    StringComparison.OrdinalIgnoreCase
-                )
-                &&
-                SesionActual.IdSucursal.HasValue
-                &&
-                SesionActual.IdSucursal.Value
-                    == idSucursal)
+            // Un perfil global no tiene sucursal fija y conserva el acceso
+            // a cualquier sucursal para la que posee la funcionalidad.
+            if (!SesionActual.IdSucursal.HasValue)
             {
                 return true;
             }
 
 
-            // VENDEDOR
-            return false;
+            // Un perfil con alcance fijo solo puede modificar su sucursal asignada.
+            return SesionActual.IdSucursal.Value == idSucursal;
         }
     }
 }

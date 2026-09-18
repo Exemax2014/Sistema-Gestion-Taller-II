@@ -182,6 +182,8 @@ namespace Capa_Logica
 
     public class VentaLogica
     {
+        private const decimal MontoMaximo = 9999999999999999.99m;
+
         private readonly VentaDatos ventaDatos;
 
 
@@ -597,6 +599,7 @@ namespace Capa_Logica
         }
 
 
+        // Valida los pagos de forma autoritativa antes de formar el TVP para SQL Server.
         private static ResultadoVenta ValidarPagos(
             List<VentaPagoGuardarModelo>? pagos)
         {
@@ -623,11 +626,13 @@ namespace Capa_Logica
                 }
 
 
-                if (pago.Monto <= 0)
+                string? errorMonto = ValidarMontoPago(pago.Monto);
+
+                if (errorMonto != null)
                 {
                     return ErrorRegistro(
                         3,
-                        "El monto de cada pago debe ser mayor que cero."
+                        errorMonto
                     );
                 }
             }
@@ -655,6 +660,31 @@ namespace Capa_Logica
 
 
             return ResultadoCorrecto();
+        }
+
+
+        // Comprueba el rango y la escala compatibles con PAGO.monto DECIMAL(18,2).
+        public static string? ValidarMontoPago(decimal monto)
+        {
+            if (monto <= 0)
+            {
+                return "El monto de cada pago debe ser mayor que cero.";
+            }
+
+            if (monto > MontoMaximo || !TieneHastaDosDecimales(monto))
+            {
+                return "El monto de pago debe tener hasta 2 decimales y estar dentro del rango permitido.";
+            }
+
+            return null;
+        }
+
+
+        // Obtiene la escala real del decimal para no aceptar valores que SQL redondearía.
+        private static bool TieneHastaDosDecimales(decimal valor)
+        {
+            int escala = (decimal.GetBits(valor)[3] >> 16) & 0x7F;
+            return escala <= 2;
         }
 
 

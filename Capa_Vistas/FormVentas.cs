@@ -51,6 +51,7 @@ namespace Capa_Vistas
 
             ConfigurarGrillas();
             ConfigurarEventos();
+            ConfigurarValidacionesVisuales();
             ConfigurarContexto();
             ConfigurarPermisos();
 
@@ -479,6 +480,13 @@ namespace Capa_Vistas
         }
 
 
+        // Configura límites preventivos para el importe sin reemplazar la validación de VentaLogica.
+        private void ConfigurarValidacionesVisuales()
+        {
+            txtMontoPago.MaxLength = 19;
+        }
+
+
         // ========================================================
         // PRODUCTOS
         // ========================================================
@@ -770,6 +778,7 @@ namespace Capa_Vistas
         }
 
 
+        // Permite solo enteros durante la edición; la cantidad positiva se confirma al validar la celda.
         private void Cantidad_KeyPress(
             object? sender,
             KeyPressEventArgs e)
@@ -792,6 +801,7 @@ namespace Capa_Vistas
         }
 
 
+        // Mantiene el valor editado y muestra el motivo para que no se reemplace silenciosamente.
         private void DgvProductos_CellValidating(
             object? sender,
             DataGridViewCellValidatingEventArgs e)
@@ -830,16 +840,14 @@ namespace Capa_Vistas
                 ||
                 cantidad > producto.Stock)
             {
-                dgvProductos
-                    .Rows[e.RowIndex]
-                    .Cells["colCantidadAgregar"]
-                    .Value =
-                        producto.Stock > 0
-                            ? 1
-                            : 0;
+                string mensaje = producto.Stock <= 0
+                    ? "El producto no tiene stock disponible."
+                    : cantidad <= 0
+                        ? "Ingresá una cantidad entera mayor que cero."
+                        : $"La cantidad no puede superar el stock disponible ({producto.Stock}).";
 
-                e.Cancel =
-                    false;
+                MostrarMensaje("Cantidad inválida", mensaje);
+                e.Cancel = true;
             }
         }
 
@@ -1109,39 +1117,33 @@ namespace Capa_Vistas
         }
 
 
+        // Restringe el importe a dígitos y un único separador decimal con hasta dos decimales.
         private void TxtMontoPago_KeyPress(
             object? sender,
             KeyPressEventArgs e)
         {
-            if (
-                char.IsControl(
-                    e.KeyChar
-                )
-                ||
-                char.IsDigit(
-                    e.KeyChar
-                ))
+            if (char.IsControl(e.KeyChar))
             {
                 return;
             }
 
+            TextBox caja = (TextBox)sender!;
+            int indiceSeparador = caja.Text.IndexOfAny([',', '.']);
 
-            if (
-                e.KeyChar == ','
-                ||
-                e.KeyChar == '.')
+            if (char.IsDigit(e.KeyChar))
             {
-                TextBox caja =
-                    (TextBox)sender!;
-
-
-                if (
-                    !caja.Text.Contains(',')
-                    &&
-                    !caja.Text.Contains('.'))
+                if (indiceSeparador >= 0 && caja.SelectionStart > indiceSeparador &&
+                    caja.SelectionLength == 0 && caja.Text.Length - indiceSeparador - 1 >= 2)
                 {
-                    return;
+                    e.Handled = true;
                 }
+
+                return;
+            }
+
+            if ((e.KeyChar == ',' || e.KeyChar == '.') && indiceSeparador < 0)
+            {
+                return;
             }
 
 
@@ -1185,16 +1187,11 @@ namespace Capa_Vistas
             }
 
 
-            if (
-                !TryObtenerMonto(
-                    txtMontoPago.Text,
-                    out decimal monto)
-                ||
-                monto <= 0)
+            if (!TryObtenerMonto(txtMontoPago.Text, out decimal monto, out string errorMonto))
             {
                 MostrarMensaje(
                     "Monto inválido",
-                    "Ingrese un monto mayor que cero."
+                    errorMonto
                 );
 
                 return;
@@ -1239,6 +1236,14 @@ namespace Capa_Vistas
 
             if (existente != null)
             {
+                string? errorMontoAcumulado = VentaLogica.ValidarMontoPago(existente.Monto + monto);
+
+                if (errorMontoAcumulado != null)
+                {
+                    MostrarMensaje("Monto inválido", errorMontoAcumulado);
+                    return;
+                }
+
                 existente.Monto +=
                     monto;
 
@@ -1723,31 +1728,40 @@ namespace Capa_Vistas
         // HELPERS
         // ========================================================
 
+        // Acepta coma o punto según la cultura y rechaza importes que SQL redondearía o desbordaría.
         private static bool TryObtenerMonto(
             string texto,
-            out decimal monto)
+            out decimal monto,
+            out string error)
         {
-            texto =
-                texto.Trim();
+            texto = texto.Trim();
+            monto = 0;
+            error = "Ingresá un monto positivo válido.";
 
-
-            if (
-                decimal.TryParse(
-                    texto,
-                    NumberStyles.Number,
-                    CultureInfo.CurrentCulture,
-                    out monto))
-            {
-                return true;
-            }
-
-
-            return decimal.TryParse(
-                texto.Replace(',', '.'),
-                NumberStyles.Number,
-                CultureInfo.InvariantCulture,
+            bool convertido = decimal.TryParse(
+                texto,
+                NumberStyles.AllowDecimalPoint,
+                CultureInfo.CurrentCulture,
                 out monto
             );
+
+            if (!convertido)
+            {
+                convertido = decimal.TryParse(
+                    texto.Replace(',', '.'),
+                    NumberStyles.AllowDecimalPoint,
+                    CultureInfo.InvariantCulture,
+                    out monto
+                );
+            }
+
+            if (!convertido)
+            {
+                return false;
+            }
+
+            error = VentaLogica.ValidarMontoPago(monto) ?? string.Empty;
+            return string.IsNullOrEmpty(error);
         }
 
 

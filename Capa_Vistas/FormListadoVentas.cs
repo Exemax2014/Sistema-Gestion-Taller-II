@@ -340,8 +340,14 @@ namespace Capa_Vistas
         // CARGA
         // ========================================================
 
+        // Valida el rango en la Vista antes de delegar la consulta autoritativa a VentaLogica.
         private void CargarVentas()
         {
+            if (!ValidarRangoFechas())
+            {
+                return;
+            }
+
             ResultadoConsultaVentas resultado;
 
 
@@ -389,6 +395,23 @@ namespace Capa_Vistas
 
             lblCantidad.Text =
                 $"{resultado.Ventas.Count} venta(s)";
+        }
+
+
+        // Evita consultas con un rango invertido y da feedback inmediato al usuario.
+        private bool ValidarRangoFechas()
+        {
+            if (dtpDesde.Value.Date <= dtpHasta.Value.Date)
+            {
+                return true;
+            }
+
+            MostrarMensaje(
+                "Rango de fechas inválido",
+                "La fecha Desde no puede ser posterior a la fecha Hasta."
+            );
+
+            return false;
         }
 
 

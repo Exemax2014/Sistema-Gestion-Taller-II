@@ -988,12 +988,14 @@ namespace Capa_Logica
                 (
                     usuario.Telefono.Length > 30
                     ||
+                    !usuario.Telefono.Any(char.IsDigit)
+                    ||
                     !EsTelefonoValido(
                         usuario.Telefono)
                 ))
             {
                 return ResultadoInvalido(
-                    "El teléfono contiene caracteres no válidos o supera los 30 caracteres."
+                    "El teléfono debe contener al menos un número, caracteres válidos y hasta 30 caracteres."
                 );
             }
 
@@ -1208,16 +1210,19 @@ namespace Capa_Logica
         // VALIDADORES AUXILIARES
         // ========================================================
 
+        // Permite nombres Unicode habituales y rechaza controles que puedan llegar por texto pegado.
         private static bool EsNombreValido(
             string valor)
         {
-            return Regex.IsMatch(
-                valor,
-                @"^[\p{L}\s'-]+$"
-            );
+            return !valor.Any(char.IsControl)
+                && Regex.IsMatch(
+                    valor,
+                    @"^[\p{L} '-]+$"
+                );
         }
 
 
+        // Acepta solo el formato de teléfono admitido por la Vista.
         private static bool EsTelefonoValido(
             string telefono)
         {
@@ -1228,11 +1233,17 @@ namespace Capa_Logica
         }
 
 
+        // Requiere una estructura mínima de correo antes de delegar el análisis a MailAddress.
         private static bool EsCorreoValido(
             string correo)
         {
             try
             {
+                if (!Regex.IsMatch(correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                {
+                    return false;
+                }
+
                 MailAddress direccion =
                     new MailAddress(
                         correo

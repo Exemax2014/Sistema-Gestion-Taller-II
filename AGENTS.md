@@ -136,15 +136,16 @@ Sí realizar cambios pequeños, reutilizar código, obtener datos dinámicos des
 - Usuarios: listado, filtros, alta, modificación, baja/reactivación y carga dinámica de perfiles/sucursales. `sp_Usuario_ObtenerPorId` devuelve `activo` y admite usuarios inactivos; detalle y mensajes corregidos.
 - Perfiles y permisos: gestión desde SQL y validaciones reforzadas de nombre/descripción, sin cambiar perfiles globales ni la regla de `PERMISOS_GESTIONAR`.
 - Ventas: selección de cliente/productos, carrito, pagos, registro transaccional, actualización de stock, detalle/listado y aviso preventivo si falta sucursal operativa.
+- Auditoría de validaciones cerrada en Clientes, Productos, Ventas, Usuarios, Inventario y Perfiles/permisos: Vista, Lógica y SQL cubren los flujos actuales según corresponda.
 - Grillas de Usuarios, Clientes y Productos con estados, acciones, alineación y presentación visual unificadas.
 - Reportes: formularios General, Gerente y Vendedor, con procedimientos de recaudación, productos más vendidos y ventas por vendedor.
 
 ## 14. Pendiente y decisiones abiertas
 
-- Validaciones restantes de Ventas y refuerzo de validaciones de Usuarios.
-- Inventario: prevención de entrada para stock/stock mínimo y reemplazar `InventarioLogica.PuedeModificarSucursal` para decidir por permisos y datos de `SesionActual`, no por nombre de perfil.
-- Ejecutar en la instancia SQL Server los procedimientos/scripts actualizados cuando corresponda.
-- Pruebas funcionales finales e integrales de módulos, restricciones y permisos; backup, despliegue SQL Server central, TCP/IP/firewall, cuenta SQL específica y pruebas multisucursal.
+- Inventario: `sp_Inventario_EstablecerStock` no replica autorización por usuario/sucursal; actualmente se aplica en Capa_Logica.
+- Perfiles: alta/modificación y actualización de funcionalidades no forman una única operación transaccional de extremo a extremo.
+- Despliegue: ejecutar en la instancia SQL Server real los scripts y procedimientos actualizados antes de cerrar las pruebas funcionales.
+- Pruebas funcionales finales posteriores al despliegue SQL, incluidas restricciones, permisos y escenarios multisucursal; backup, SQL Server central, TCP/IP/firewall y cuenta SQL específica.
 
 No asumir sin consultar: si Administrador puede realizar ventas; alcance final del Vendedor; contenido exacto de reportes; tipos de factura; reglas finales de descuento; política de cambio/restablecimiento de contraseñas; cuenta SQL definitiva; datos finales de producción.
 

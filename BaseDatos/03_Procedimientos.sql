@@ -212,6 +212,13 @@ BEGIN
 
     BEGIN TRY
 
+        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+        SET @apellido = LTRIM(RTRIM(ISNULL(@apellido, N'')));
+        SET @dni = LTRIM(RTRIM(ISNULL(@dni, N'')));
+        SET @telefono = NULLIF(LTRIM(RTRIM(@telefono)), N'');
+        SET @nombreUsuario = LTRIM(RTRIM(ISNULL(@nombreUsuario, N'')));
+        SET @correo = NULLIF(LTRIM(RTRIM(@correo)), N'');
+
         /* -----------------------------------------------------
            Validar perfil
            ----------------------------------------------------- */
@@ -284,17 +291,42 @@ BEGIN
            Validar campos obligatorios
            ----------------------------------------------------- */
 
-        IF LTRIM(RTRIM(ISNULL(@nombre, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@apellido, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@dni, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@nombreUsuario, N''))) = N''
+        IF @nombre = N''
+           OR @apellido = N''
+           OR @dni = N''
+           OR @nombreUsuario = N''
            OR LTRIM(RTRIM(ISNULL(@contrasenaHash, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@correo, N''))) = N''
+           OR @correo IS NULL
         BEGIN
             SET @CodigoResultado = 3;
             SET @MensajeResultado =
                 N'Faltan datos obligatorios del usuario.';
 
+            RETURN;
+        END;
+
+        IF @dni LIKE N'%[^0-9]%'
+           OR @nombre LIKE N'%[0-9]%'
+           OR @apellido LIKE N'%[0-9]%'
+           OR @nombre LIKE N'%' + CHAR(9) + N'%'
+           OR @nombre LIKE N'%' + CHAR(10) + N'%'
+           OR @nombre LIKE N'%' + CHAR(13) + N'%'
+           OR @apellido LIKE N'%' + CHAR(9) + N'%'
+           OR @apellido LIKE N'%' + CHAR(10) + N'%'
+           OR @apellido LIKE N'%' + CHAR(13) + N'%'
+           OR (@telefono IS NOT NULL AND
+               (@telefono NOT LIKE N'%[0-9]%' OR @telefono LIKE N'%[^0-9+() -]%'))
+           OR @nombreUsuario LIKE N'%[^A-Za-z0-9._-]%'
+           OR @correo NOT LIKE N'%_@_%._%'
+           OR @correo LIKE N'%@%@%'
+           OR @correo LIKE N'% %'
+           OR @correo LIKE N'%' + CHAR(9) + N'%'
+           OR @correo LIKE N'%' + CHAR(10) + N'%'
+           OR @correo LIKE N'%' + CHAR(13) + N'%'
+           OR (@fechaNacimiento IS NOT NULL AND @fechaNacimiento > CAST(GETDATE() AS DATE))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'Los datos del usuario tienen un formato inválido.';
             RETURN;
         END;
 
@@ -375,14 +407,14 @@ BEGIN
             @idPerfil,
             @idSucursal,
 
-            LTRIM(RTRIM(@nombre)),
-            LTRIM(RTRIM(@apellido)),
-            LTRIM(RTRIM(@dni)),
-            NULLIF(LTRIM(RTRIM(@telefono)), N''),
+            @nombre,
+            @apellido,
+            @dni,
+            @telefono,
 
-            LTRIM(RTRIM(@nombreUsuario)),
+            @nombreUsuario,
             @contrasenaHash,
-            LTRIM(RTRIM(@correo)),
+            @correo,
 
             NULLIF(LTRIM(RTRIM(@sexo)), N''),
             @fechaNacimiento,
@@ -455,6 +487,13 @@ BEGIN
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+
+        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+        SET @apellido = LTRIM(RTRIM(ISNULL(@apellido, N'')));
+        SET @dni = LTRIM(RTRIM(ISNULL(@dni, N'')));
+        SET @telefono = NULLIF(LTRIM(RTRIM(@telefono)), N'');
+        SET @nombreUsuario = LTRIM(RTRIM(ISNULL(@nombreUsuario, N'')));
+        SET @correo = NULLIF(LTRIM(RTRIM(@correo)), N'');
 
         /* -----------------------------------------------------
            Validar existencia del usuario
@@ -540,16 +579,41 @@ BEGIN
            Validar campos obligatorios
            ----------------------------------------------------- */
 
-        IF LTRIM(RTRIM(ISNULL(@nombre, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@apellido, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@dni, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@nombreUsuario, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@correo, N''))) = N''
+        IF @nombre = N''
+           OR @apellido = N''
+           OR @dni = N''
+           OR @nombreUsuario = N''
+           OR @correo IS NULL
         BEGIN
             SET @CodigoResultado = 3;
             SET @MensajeResultado =
                 N'Faltan datos obligatorios del usuario.';
 
+            RETURN;
+        END;
+
+        IF @dni LIKE N'%[^0-9]%'
+           OR @nombre LIKE N'%[0-9]%'
+           OR @apellido LIKE N'%[0-9]%'
+           OR @nombre LIKE N'%' + CHAR(9) + N'%'
+           OR @nombre LIKE N'%' + CHAR(10) + N'%'
+           OR @nombre LIKE N'%' + CHAR(13) + N'%'
+           OR @apellido LIKE N'%' + CHAR(9) + N'%'
+           OR @apellido LIKE N'%' + CHAR(10) + N'%'
+           OR @apellido LIKE N'%' + CHAR(13) + N'%'
+           OR (@telefono IS NOT NULL AND
+               (@telefono NOT LIKE N'%[0-9]%' OR @telefono LIKE N'%[^0-9+() -]%'))
+           OR @nombreUsuario LIKE N'%[^A-Za-z0-9._-]%'
+           OR @correo NOT LIKE N'%_@_%._%'
+           OR @correo LIKE N'%@%@%'
+           OR @correo LIKE N'% %'
+           OR @correo LIKE N'%' + CHAR(9) + N'%'
+           OR @correo LIKE N'%' + CHAR(10) + N'%'
+           OR @correo LIKE N'%' + CHAR(13) + N'%'
+           OR (@fechaNacimiento IS NOT NULL AND @fechaNacimiento > CAST(GETDATE() AS DATE))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'Los datos del usuario tienen un formato inválido.';
             RETURN;
         END;
 
@@ -614,12 +678,12 @@ BEGIN
         SET
             id_perfil = @idPerfil,
             id_sucursal = @idSucursal,
-            nombre = LTRIM(RTRIM(@nombre)),
-            apellido = LTRIM(RTRIM(@apellido)),
-            dni = LTRIM(RTRIM(@dni)),
-            telefono = NULLIF(LTRIM(RTRIM(@telefono)), N''),
-            nombre_usuario = LTRIM(RTRIM(@nombreUsuario)),
-            correo = LTRIM(RTRIM(@correo)),
+            nombre = @nombre,
+            apellido = @apellido,
+            dni = @dni,
+            telefono = @telefono,
+            nombre_usuario = @nombreUsuario,
+            correo = @correo,
             sexo = NULLIF(LTRIM(RTRIM(@sexo)), N''),
             fecha_nacimiento = @fechaNacimiento,
             id_direccion = @idDireccion
