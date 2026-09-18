@@ -56,6 +56,14 @@ namespace Capa_Vistas
 
             CargarMetodosPago();
             ReiniciarVenta();
+
+            if (
+                ventaLogica.PuedeRealizarVentas()
+                &&
+                !SesionActual.IdSucursalOperativa.HasValue)
+            {
+                MostrarAvisoSucursalOperativa();
+            }
         }
 
 
@@ -475,18 +483,15 @@ namespace Capa_Vistas
         // PRODUCTOS
         // ========================================================
 
+        // Carga productos de la sucursal operativa y evita iniciar la venta
+        // en un contexto global que no permite descontar stock.
         private void CargarProductos(
             string texto)
         {
-            if (!SesionActual.IdSucursalOperativa.HasValue)
+            if (!ValidarSucursalOperativa())
             {
                 dgvProductos.DataSource =
                     null;
-
-                MostrarMensaje(
-                    "Sucursal requerida",
-                    "Debe seleccionar una sucursal específica para buscar productos."
-                );
 
                 return;
             }
@@ -613,10 +618,18 @@ namespace Capa_Vistas
         }
 
 
+        // Agrega productos al carrito solo cuando existe una sucursal concreta
+        // que permite validar stock y registrar la futura venta.
         private void AgregarProducto(
             ProductoVentaModelo producto,
             DataGridViewRow fila)
         {
+            if (!ValidarSucursalOperativa())
+            {
+                return;
+            }
+
+
             if (producto.Stock <= 0)
             {
                 MostrarMensaje(
@@ -873,10 +886,18 @@ namespace Capa_Vistas
         }
 
 
+        // Impide avanzar al paso de cliente y pagos si la venta no tiene
+        // una sucursal operativa específica asociada.
         private void BtnContinuar_Click(
             object? sender,
             EventArgs e)
         {
+            if (!ValidarSucursalOperativa())
+            {
+                return;
+            }
+
+
             if (itemsVenta.Count == 0)
             {
                 MostrarMensaje(
@@ -1363,7 +1384,9 @@ namespace Capa_Vistas
 
 
             btnContinuar.Enabled =
-                itemsVenta.Count > 0;
+                itemsVenta.Count > 0
+                &&
+                SesionActual.IdSucursalOperativa.HasValue;
 
             btnConfirmarVenta.Enabled =
                 clienteSeleccionado != null
@@ -1371,8 +1394,8 @@ namespace Capa_Vistas
                 itemsVenta.Count > 0
                 &&
                 pagosVenta.Count > 0
-                &&
-                saldo == 0;
+                && saldo == 0
+                && SesionActual.IdSucursalOperativa.HasValue;
         }
 
 
@@ -1380,10 +1403,18 @@ namespace Capa_Vistas
         // CONFIRMAR VENTA
         // ========================================================
 
+        // Da feedback inmediato antes de confirmar y mantiene en Lógica
+        // la validación autoritativa de la sucursal y la venta completa.
         private void BtnConfirmarVenta_Click(
             object? sender,
             EventArgs e)
         {
+            if (!ValidarSucursalOperativa())
+            {
+                return;
+            }
+
+
             if (clienteSeleccionado == null)
             {
                 MostrarMensaje(
@@ -1720,6 +1751,35 @@ namespace Capa_Vistas
         }
 
 
+        // Verifica el requisito operativo antes de acciones de venta y evita
+        // que la Vista avance cuando la sesión representa todas las sucursales.
+        private bool ValidarSucursalOperativa()
+        {
+            if (SesionActual.IdSucursalOperativa.HasValue)
+            {
+                return true;
+            }
+
+
+            MostrarAvisoSucursalOperativa();
+
+            return false;
+        }
+
+
+        // Muestra un único aviso claro para orientar la selección previa
+        // de sucursal sin exponer el detalle técnico de la validación lógica.
+        private void MostrarAvisoSucursalOperativa()
+        {
+            MostrarMensaje(
+                "Sucursal requerida",
+                "Para realizar una venta primero seleccioná una sucursal operativa."
+            );
+        }
+
+
+        // Muestra los mensajes de Ventas con FormPrincipal como propietario
+        // para centrarlos sobre el contenido principal de la aplicación.
         private void MostrarMensaje(
             string titulo,
             string mensaje)
@@ -1731,8 +1791,16 @@ namespace Capa_Vistas
                 );
 
 
+            formMensaje.StartPosition =
+                FormStartPosition.CenterParent;
+
+            IWin32Window propietario =
+                formPrincipal != null
+                    ? formPrincipal
+                    : this;
+
             formMensaje.ShowDialog(
-                this
+                propietario
             );
         }
     }

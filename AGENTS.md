@@ -1,7 +1,7 @@
 # AGENTS.md — Sistema Hierro y Forja / Taller de Programación II
 
 Documento operativo del proyecto para integrantes del equipo y agentes de IA.
-Última actualización: 2026-09-17.
+Última actualización: 2026-09-18.
 
 ## 1. Contexto
 
@@ -131,16 +131,20 @@ Sí realizar cambios pequeños, reutilizar código, obtener datos dinámicos des
 - Solución de tres capas, configuración externa, conexión SQL, autenticación PBKDF2 + SHA-256, SesionActual y permisos obtenidos desde SQL.
 - Base `SistemaGestion` con 18 tablas, scripts de estructura/datos/pruebas y catálogo inicial; MARCA e inventario por producto+sucursal.
 - FormPrincipal, FormInicio, navegación dentro de `pnlContenido`, cierre de sesión y menú visible condicionado por permisos.
-- Productos e Inventario: lógica, permisos, formularios y detalle de productos.
-- Clientes: listado/búsqueda dinámica por estado, alta, modificación, baja lógica, reactivación, dirección, provincias/localidades dinámicas, validaciones, detalle e historial de compras.
-- Usuarios: listado, filtros, alta, modificación, baja/reactivación, carga dinámica de perfiles y sucursales y validaciones de vista/lógica.
-- Perfiles y permisos: gestión de perfiles y funcionalidades desde SQL, sin decidir accesos por nombre de perfil en la vista.
-- Ventas: selección de cliente/productos, carrito, pagos, registro transaccional, actualización de stock, detalle y listado de ventas.
+- Clientes: listado/búsqueda por estado, alta, modificación, baja lógica, reactivación, historial de compras, dirección y provincias/localidades dinámicas; validaciones reforzadas en Vista, Lógica y SQL.
+- Productos: alta/modificación con validación autoritativa unificada; límites y prevención de formato para nombre, código, costo, ganancia, stock y stock mínimo.
+- Usuarios: listado, filtros, alta, modificación, baja/reactivación y carga dinámica de perfiles/sucursales. `sp_Usuario_ObtenerPorId` devuelve `activo` y admite usuarios inactivos; detalle y mensajes corregidos.
+- Perfiles y permisos: gestión desde SQL y validaciones reforzadas de nombre/descripción, sin cambiar perfiles globales ni la regla de `PERMISOS_GESTIONAR`.
+- Ventas: selección de cliente/productos, carrito, pagos, registro transaccional, actualización de stock, detalle/listado y aviso preventivo si falta sucursal operativa.
+- Grillas de Usuarios, Clientes y Productos con estados, acciones, alineación y presentación visual unificadas.
 - Reportes: formularios General, Gerente y Vendedor, con procedimientos de recaudación, productos más vendidos y ventas por vendedor.
 
 ## 14. Pendiente y decisiones abiertas
 
-Completar pruebas integrales de módulos, restricciones y permisos; revisar valores temporales/hardcodeados que aún puedan existir en vistas; y completar backup, despliegue SQL Server central, TCP/IP/firewall, cuenta SQL específica y pruebas multisucursal.
+- Validaciones restantes de Ventas y refuerzo de validaciones de Usuarios.
+- Inventario: prevención de entrada para stock/stock mínimo y reemplazar `InventarioLogica.PuedeModificarSucursal` para decidir por permisos y datos de `SesionActual`, no por nombre de perfil.
+- Ejecutar en la instancia SQL Server los procedimientos/scripts actualizados cuando corresponda.
+- Pruebas funcionales finales e integrales de módulos, restricciones y permisos; backup, despliegue SQL Server central, TCP/IP/firewall, cuenta SQL específica y pruebas multisucursal.
 
 No asumir sin consultar: si Administrador puede realizar ventas; alcance final del Vendedor; contenido exacto de reportes; tipos de factura; reglas finales de descuento; política de cambio/restablecimiento de contraseñas; cuenta SQL definitiva; datos finales de producción.
 

@@ -1,5 +1,8 @@
 ﻿using Capa_Logica;
 
+using System.Net.Mail;
+using System.Text.RegularExpressions;
+
 namespace Capa_Vistas
 {
     public partial class FormClienteDetalle : Form
@@ -331,7 +334,24 @@ namespace Capa_Vistas
             txtTelefono.MaxLength = 30;
             txtEmail.MaxLength = 150;
             txtDireccion.MaxLength = 150;
+            cmbLocalidad.MaxLength = 100;
             txtDni.KeyPress += SoloNumeros_KeyPress;
+            txtNombre.KeyPress += SoloLetras_KeyPress;
+            txtApellido.KeyPress += SoloLetras_KeyPress;
+            txtTelefono.KeyPress += Telefono_KeyPress;
+        }
+
+        // Impide caracteres ajenos a los nombres sin reemplazar la validación
+        // final ante texto pegado o llamadas externas.
+        private static void SoloLetras_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar) || char.IsLetter(e.KeyChar) ||
+                char.IsWhiteSpace(e.KeyChar) || e.KeyChar == '\'' || e.KeyChar == '-')
+            {
+                return;
+            }
+
+            e.Handled = true;
         }
 
         private void ConfigurarModoEdicion()
@@ -360,6 +380,20 @@ namespace Capa_Vistas
             {
                 e.Handled = true;
             }
+        }
+
+        // Restringe el teléfono a caracteres admitidos mientras se escribe;
+        // la presencia de un dígito se comprueba al guardar.
+        private static void Telefono_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar) || char.IsDigit(e.KeyChar) ||
+                char.IsWhiteSpace(e.KeyChar) || e.KeyChar == '+' || e.KeyChar == '-' ||
+                e.KeyChar == '(' || e.KeyChar == ')')
+            {
+                return;
+            }
+
+            e.Handled = true;
         }
 
 
@@ -425,13 +459,14 @@ namespace Capa_Vistas
 
             if (idProvincia == 0) idProvincia = null;
 
-            if (!idProvincia.HasValue)
+            if (!ValidarVista(idProvincia))
             {
-                MostrarMensaje("Cliente", "Seleccioná una provincia.");
                 return;
             }
 
-            if (!IntentarResolverLocalidad(idProvincia.Value, out int idLocalidad))
+            int provinciaSeleccionada = idProvincia.GetValueOrDefault();
+
+            if (!IntentarResolverLocalidad(provinciaSeleccionada, out int idLocalidad))
             {
                 return;
             }
@@ -442,6 +477,7 @@ namespace Capa_Vistas
                     txtApellido.Text,
                     txtDni.Text,
                     txtEmail.Text,
+                    txtTelefono.Text,
                     idProvincia,
                     idLocalidad,
                     txtDireccion.Text
@@ -468,6 +504,7 @@ namespace Capa_Vistas
                         txtDni.Text,
                         txtEmail.Text,
                         txtTelefono.Text,
+                        idProvincia,
                         idLocalidad,
                         txtDireccion.Text,
                         null // no hay campo de altura separado
@@ -484,6 +521,7 @@ namespace Capa_Vistas
                         txtDni.Text,
                         txtEmail.Text,
                         txtTelefono.Text,
+                        idProvincia,
                         idLocalidad,
                         txtDireccion.Text,
                         null
@@ -508,6 +546,94 @@ namespace Capa_Vistas
             mensaje.ShowDialog(this);
 
             VolverAClientes();
+        }
+
+        // Repite formato y obligatoriedad en la Vista para cubrir texto pegado;
+        // ClienteLogica vuelve a verificar las mismas reglas de negocio.
+        private bool ValidarVista(int? idProvincia)
+        {
+            if (string.IsNullOrWhiteSpace(txtNombre.Text) ||
+                !Regex.IsMatch(txtNombre.Text.Trim(), @"^[\p{L}\s'-]+$"))
+            {
+                return ErrorCampo(txtNombre, "Ingresá un nombre válido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(txtApellido.Text) ||
+                !Regex.IsMatch(txtApellido.Text.Trim(), @"^[\p{L}\s'-]+$"))
+            {
+                return ErrorCampo(txtApellido, "Ingresá un apellido válido.");
+            }
+
+            string documento = txtDni.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(documento) || !documento.All(char.IsDigit))
+            {
+                return ErrorCampo(txtDni, "El documento es obligatorio y debe contener solo números.");
+            }
+
+            string telefono = txtTelefono.Text.Trim();
+
+            if (!string.IsNullOrWhiteSpace(telefono) &&
+                (!telefono.Any(char.IsDigit) || !Regex.IsMatch(telefono, @"^[0-9+\-\s()]+$")))
+            {
+                return ErrorCampo(txtTelefono, "El teléfono debe contener al menos un dígito y solo caracteres válidos.");
+            }
+
+            string correo = txtEmail.Text.Trim();
+
+            if (!string.IsNullOrWhiteSpace(correo) && !EsCorreoValido(correo))
+            {
+                return ErrorCampo(txtEmail, "El correo ingresado no es válido.");
+            }
+
+            if (!idProvincia.HasValue || idProvincia.Value <= 0)
+            {
+                return ErrorCampo(cmbProvincia, "Seleccioná una provincia.");
+            }
+
+            if (string.IsNullOrWhiteSpace(cmbLocalidad.Text))
+            {
+                return ErrorCampo(cmbLocalidad, "Seleccioná o ingresá una localidad.");
+            }
+
+            if (string.IsNullOrWhiteSpace(txtDireccion.Text))
+            {
+                return ErrorCampo(txtDireccion, "Ingresá la calle de la dirección.");
+            }
+
+            return true;
+        }
+
+        // Valida el correo opcional sin aceptar direcciones incompletas.
+        private static bool EsCorreoValido(string correo)
+        {
+            try
+            {
+                if (!Regex.IsMatch(correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                {
+                    return false;
+                }
+
+                MailAddress direccion = new MailAddress(correo);
+                return string.Equals(direccion.Address, correo, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // Muestra el error del control y devuelve false para detener el guardado.
+        private bool ErrorCampo(Control control, string mensaje)
+        {
+            MostrarMensaje("Cliente", mensaje);
+
+            if (control.CanFocus)
+            {
+                control.Focus();
+            }
+
+            return false;
         }
 
         // Reutiliza una localidad existente o pide confirmación antes de crearla;

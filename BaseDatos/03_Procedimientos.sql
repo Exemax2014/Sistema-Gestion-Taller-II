@@ -849,6 +849,22 @@ BEGIN
         SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
         SET @descripcion = NULLIF(LTRIM(RTRIM(@descripcion)), N'');
 
+        WHILE CHARINDEX(N'  ', @nombre) > 0
+            SET @nombre = REPLACE(@nombre, N'  ', N' ');
+
+        IF @nombre LIKE N'%' + CHAR(9) + N'%'
+           OR @nombre LIKE N'%' + CHAR(10) + N'%'
+           OR @nombre LIKE N'%' + CHAR(13) + N'%'
+           OR (@descripcion IS NOT NULL AND
+               (@descripcion LIKE N'%' + CHAR(9) + N'%'
+                OR @descripcion LIKE N'%' + CHAR(10) + N'%'
+                OR @descripcion LIKE N'%' + CHAR(13) + N'%'))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El nombre y la descripción no pueden contener caracteres de control.';
+            RETURN;
+        END;
+
 
         IF @nombre = N''
         BEGIN
@@ -950,6 +966,22 @@ BEGIN
 
         SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
         SET @descripcion = NULLIF(LTRIM(RTRIM(@descripcion)), N'');
+
+        WHILE CHARINDEX(N'  ', @nombre) > 0
+            SET @nombre = REPLACE(@nombre, N'  ', N' ');
+
+        IF @nombre LIKE N'%' + CHAR(9) + N'%'
+           OR @nombre LIKE N'%' + CHAR(10) + N'%'
+           OR @nombre LIKE N'%' + CHAR(13) + N'%'
+           OR (@descripcion IS NOT NULL AND
+               (@descripcion LIKE N'%' + CHAR(9) + N'%'
+                OR @descripcion LIKE N'%' + CHAR(10) + N'%'
+                OR @descripcion LIKE N'%' + CHAR(13) + N'%'))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El nombre y la descripción no pueden contener caracteres de control.';
+            RETURN;
+        END;
 
 
         IF @nombre = N''
@@ -1584,6 +1616,13 @@ BEGIN
             RETURN;
         END;
 
+        IF LEN(@nombre) > 100
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El nombre de la localidad supera el máximo de 100 caracteres.';
+            RETURN;
+        END;
+
         SELECT TOP 1 @IdGenerado = id_localidad
         FROM dbo.LOCALIDAD
         WHERE id_provincia = @idProvincia
@@ -1880,14 +1919,52 @@ BEGIN
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
+    SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+    SET @apellido = LTRIM(RTRIM(ISNULL(@apellido, N'')));
+    SET @documento = LTRIM(RTRIM(ISNULL(@documento, N'')));
+    SET @correo = NULLIF(LTRIM(RTRIM(@correo)), N'');
+    SET @telefono = NULLIF(LTRIM(RTRIM(@telefono)), N'');
+
     BEGIN TRY
 
-        IF LTRIM(RTRIM(ISNULL(@nombre, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@apellido, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@documento, N''))) = N''
+        IF @nombre = N''
+           OR @apellido = N''
+           OR @documento = N''
+           OR @idDireccion IS NULL
         BEGIN
             SET @CodigoResultado = 3;
-            SET @MensajeResultado = N'Nombre, apellido y documento son obligatorios.';
+            SET @MensajeResultado = N'Nombre, apellido, documento y dirección son obligatorios.';
+            RETURN;
+        END;
+
+        IF @nombre LIKE N'%[0-9]%'
+           OR @apellido LIKE N'%[0-9]%'
+           OR @documento LIKE N'%[^0-9]%'
+           OR (@telefono IS NOT NULL AND
+               (@telefono NOT LIKE N'%[0-9]%' OR @telefono LIKE N'%[^0-9+() -]%'))
+           OR (@correo IS NOT NULL AND
+               (@correo NOT LIKE N'%_@_%._%' OR @correo LIKE N'% %'))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'Los datos del cliente tienen un formato inválido.';
+            RETURN;
+        END;
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.DIRECCION AS d
+            INNER JOIN dbo.LOCALIDAD AS l
+                ON l.id_localidad = d.id_localidad
+               AND l.eliminado_en IS NULL
+            INNER JOIN dbo.PROVINCIA AS p
+                ON p.id_provincia = l.id_provincia
+               AND p.eliminado_en IS NULL
+            WHERE d.id_direccion = @idDireccion
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La dirección indicada no existe o no está activa.';
             RETURN;
         END;
 
@@ -1914,11 +1991,11 @@ BEGIN
         )
         VALUES
         (
-            LTRIM(RTRIM(@nombre)),
-            LTRIM(RTRIM(@apellido)),
-            LTRIM(RTRIM(@documento)),
-            NULLIF(LTRIM(RTRIM(@correo)), N''),
-            NULLIF(LTRIM(RTRIM(@telefono)), N''),
+            @nombre,
+            @apellido,
+            @documento,
+            @correo,
+            @telefono,
             @idDireccion
         );
 
@@ -1953,6 +2030,12 @@ BEGIN
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
+    SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+    SET @apellido = LTRIM(RTRIM(ISNULL(@apellido, N'')));
+    SET @documento = LTRIM(RTRIM(ISNULL(@documento, N'')));
+    SET @correo = NULLIF(LTRIM(RTRIM(@correo)), N'');
+    SET @telefono = NULLIF(LTRIM(RTRIM(@telefono)), N'');
+
     BEGIN TRY
 
         IF NOT EXISTS
@@ -1968,12 +2051,44 @@ BEGIN
             RETURN;
         END;
 
-        IF LTRIM(RTRIM(ISNULL(@nombre, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@apellido, N''))) = N''
-           OR LTRIM(RTRIM(ISNULL(@documento, N''))) = N''
+        IF @nombre = N''
+           OR @apellido = N''
+           OR @documento = N''
+           OR @idDireccion IS NULL
         BEGIN
             SET @CodigoResultado = 3;
-            SET @MensajeResultado = N'Nombre, apellido y documento son obligatorios.';
+            SET @MensajeResultado = N'Nombre, apellido, documento y dirección son obligatorios.';
+            RETURN;
+        END;
+
+        IF @nombre LIKE N'%[0-9]%'
+           OR @apellido LIKE N'%[0-9]%'
+           OR @documento LIKE N'%[^0-9]%'
+           OR (@telefono IS NOT NULL AND
+               (@telefono NOT LIKE N'%[0-9]%' OR @telefono LIKE N'%[^0-9+() -]%'))
+           OR (@correo IS NOT NULL AND
+               (@correo NOT LIKE N'%_@_%._%' OR @correo LIKE N'% %'))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'Los datos del cliente tienen un formato inválido.';
+            RETURN;
+        END;
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.DIRECCION AS d
+            INNER JOIN dbo.LOCALIDAD AS l
+                ON l.id_localidad = d.id_localidad
+               AND l.eliminado_en IS NULL
+            INNER JOIN dbo.PROVINCIA AS p
+                ON p.id_provincia = l.id_provincia
+               AND p.eliminado_en IS NULL
+            WHERE d.id_direccion = @idDireccion
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La dirección indicada no existe o no está activa.';
             RETURN;
         END;
 
@@ -1992,11 +2107,11 @@ BEGIN
 
         UPDATE dbo.CLIENTE
         SET
-            nombre = LTRIM(RTRIM(@nombre)),
-            apellido = LTRIM(RTRIM(@apellido)),
-            documento = LTRIM(RTRIM(@documento)),
-            correo = NULLIF(LTRIM(RTRIM(@correo)), N''),
-            telefono = NULLIF(LTRIM(RTRIM(@telefono)), N''),
+            nombre = @nombre,
+            apellido = @apellido,
+            documento = @documento,
+            correo = @correo,
+            telefono = @telefono,
             id_direccion = @idDireccion
         WHERE id_cliente = @idCliente
           AND eliminado_en IS NULL;
@@ -2322,6 +2437,7 @@ BEGIN
     BEGIN TRY
 
         SET @codigoBarra = NULLIF(LTRIM(RTRIM(@codigoBarra)), N'');
+        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
 
         IF NOT EXISTS
         (
@@ -2350,9 +2466,11 @@ BEGIN
             RETURN;
         END;
 
-        IF LTRIM(RTRIM(ISNULL(@nombre, N''))) = N''
+        IF @nombre = N''
            OR @precioCosto < 0
            OR @porcentajeGanancia < 0
+           OR @porcentajeGanancia > 999.99
+           OR @precioCosto * (1 + @porcentajeGanancia / 100.0) > 9999999999999999.99
         BEGIN
             SET @CodigoResultado = 3;
             SET @MensajeResultado = N'Los datos del producto no son válidos.';
@@ -2388,7 +2506,7 @@ BEGIN
             @idCategoria,
             @idMarca,
             @codigoBarra,
-            LTRIM(RTRIM(@nombre)),
+            @nombre,
             NULLIF(LTRIM(RTRIM(@descripcion)), N''),
             @precioCosto,
             @porcentajeGanancia,
@@ -2431,6 +2549,7 @@ BEGIN
     BEGIN TRY
 
         SET @codigoBarra = NULLIF(LTRIM(RTRIM(@codigoBarra)), N'');
+        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
 
         IF NOT EXISTS
         (
@@ -2472,9 +2591,11 @@ BEGIN
             RETURN;
         END;
 
-        IF LTRIM(RTRIM(ISNULL(@nombre, N''))) = N''
+        IF @nombre = N''
            OR @precioCosto < 0
            OR @porcentajeGanancia < 0
+           OR @porcentajeGanancia > 999.99
+           OR @precioCosto * (1 + @porcentajeGanancia / 100.0) > 9999999999999999.99
         BEGIN
             SET @CodigoResultado = 3;
             SET @MensajeResultado = N'Los datos del producto no son válidos.';
@@ -2500,7 +2621,7 @@ BEGIN
             id_categoria = @idCategoria,
             id_marca = @idMarca,
             codigo_barra = @codigoBarra,
-            nombre = LTRIM(RTRIM(@nombre)),
+            nombre = @nombre,
             descripcion = NULLIF(LTRIM(RTRIM(@descripcion)), N''),
             precio_costo = @precioCosto,
             porcentaje_ganancia = @porcentajeGanancia,

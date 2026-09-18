@@ -1,5 +1,8 @@
 using Capa_Datos;
 
+using System.Net.Mail;
+using System.Text.RegularExpressions;
+
 namespace Capa_Logica
 {
     // ============================================================
@@ -262,94 +265,59 @@ namespace Capa_Logica
         // ========================================================
 
         public string? ValidarCliente(
-            string nombre, string apellido, string documento, string? correo,
+            string nombre, string apellido, string documento, string? correo, string? telefono,
             int? idProvincia, int? idLocalidad, string? calle)
         {
-            string? errorBasico = ValidarDatosBasicos(nombre, apellido, documento, correo, null);
+            string? errorBasico = ValidarDatosBasicos(nombre, apellido, documento, correo, telefono);
 
             if (errorBasico != null)
             {
                 return errorBasico;
             }
 
-            if (!idProvincia.HasValue || idProvincia.Value <= 0)
-            {
-                return "Seleccioná una provincia.";
-            }
-
-            if (!idLocalidad.HasValue || idLocalidad.Value <= 0)
-            {
-                return "Seleccioná o ingresá una localidad.";
-            }
-
-            bool cargoAlgoDeDireccion =
-                idProvincia.HasValue || idLocalidad.HasValue || !string.IsNullOrWhiteSpace(calle);
-
-            if (cargoAlgoDeDireccion)
-            {
-                if (!idProvincia.HasValue || idProvincia.Value <= 0)
-                    return "Elegí una provincia para la dirección.";
-
-                if (!idLocalidad.HasValue || idLocalidad.Value <= 0)
-                    return "Elegí una localidad para la dirección.";
-
-                if (string.IsNullOrWhiteSpace(calle))
-                    return "Ingresá la calle de la dirección.";
-            }
-
-            return null;
+            return ValidarDireccionObligatoria(idProvincia, idLocalidad, calle);
         }
 
         // ========================================================
         // ALTA
         // ========================================================
 
+        // Registra un cliente solo después de validar datos y dirección completa.
         public ResultadoCliente Alta(
             string nombre, string apellido, string documento, string? correo, string? telefono,
-            int? idLocalidad, string? calle, string? altura)
+            int? idProvincia, int? idLocalidad, string? calle, string? altura)
         {
             if (!PuedeCrearCliente())
             {
                 return new ResultadoCliente { Codigo = 5, Mensaje = "No tenés permiso para registrar clientes." };
             }
 
-            string? error = ValidarDatosBasicos(nombre, apellido, documento, correo, telefono);
+            string? error = ValidarCliente(nombre, apellido, documento, correo, telefono,
+                idProvincia, idLocalidad, calle);
             if (error != null)
             {
                 return new ResultadoCliente { Codigo = 3, Mensaje = error };
             }
 
-            if (!DireccionEsConsistente(idLocalidad, calle))
+            ResultadoDireccionDatos direccion = direccionDatos.Alta(idLocalidad!.Value, calle!, altura);
+
+            if (!direccion.Exitoso)
             {
-                return new ResultadoCliente { Codigo = 3, Mensaje = "Completá localidad y calle para registrar la dirección." };
-            }
-
-            int? idDireccion = null;
-            bool cargoDireccion = idLocalidad.HasValue && idLocalidad.Value > 0 && !string.IsNullOrWhiteSpace(calle);
-
-            if (cargoDireccion)
-            {
-                ResultadoDireccionDatos direccion = direccionDatos.Alta(idLocalidad!.Value, calle!, altura);
-
-                if (!direccion.Exitoso)
-                {
-                    return new ResultadoCliente { Codigo = direccion.Codigo, Mensaje = direccion.Mensaje };
-                }
-
-                idDireccion = direccion.IdGenerado;
+                return new ResultadoCliente { Codigo = direccion.Codigo, Mensaje = direccion.Mensaje };
             }
 
             return ConvertirResultado(
-                clienteDatos.Alta(nombre, apellido, documento, correo, telefono, idDireccion));
+                clienteDatos.Alta(nombre, apellido, documento, correo, telefono, direccion.IdGenerado));
         }
 
         // ========================================================
         // MODIFICAR
         // ========================================================
 
+        // Modifica datos y dirección mediante las mismas reglas autoritativas del alta.
         public ResultadoCliente Modificar(
             int idCliente, int? idDireccionActual, string nombre, string apellido, string documento,
-            string? correo, string? telefono, int? idLocalidad, string? calle, string? altura)
+            string? correo, string? telefono, int? idProvincia, int? idLocalidad, string? calle, string? altura)
         {
             if (!PuedeModificarCliente())
             {
@@ -361,48 +329,35 @@ namespace Capa_Logica
                 return new ResultadoCliente { Codigo = 3, Mensaje = "El cliente indicado no es válido." };
             }
 
-            string? error = ValidarDatosBasicos(nombre, apellido, documento, correo, telefono);
+            string? error = ValidarCliente(nombre, apellido, documento, correo, telefono,
+                idProvincia, idLocalidad, calle);
             if (error != null)
             {
                 return new ResultadoCliente { Codigo = 3, Mensaje = error };
             }
 
-            if (!DireccionEsConsistente(idLocalidad, calle))
-            {
-                return new ResultadoCliente { Codigo = 3, Mensaje = "Completá localidad y calle para registrar la dirección." };
-            }
-
-            bool cargoDireccion = idLocalidad.HasValue && idLocalidad.Value > 0 && !string.IsNullOrWhiteSpace(calle);
             int? idDireccion = idDireccionActual;
 
-            if (cargoDireccion)
+            if (idDireccionActual.HasValue)
             {
-                if (idDireccionActual.HasValue)
+                ResultadoDireccionDatos direccion =
+                    direccionDatos.Modificar(idDireccionActual.Value, idLocalidad!.Value, calle!, altura);
+
+                if (!direccion.Exitoso)
                 {
-                    ResultadoDireccionDatos direccion =
-                        direccionDatos.Modificar(idDireccionActual.Value, idLocalidad!.Value, calle!, altura);
-
-                    if (!direccion.Exitoso)
-                    {
-                        return new ResultadoCliente { Codigo = direccion.Codigo, Mensaje = direccion.Mensaje };
-                    }
-                }
-                else
-                {
-                    ResultadoDireccionDatos direccion =
-                        direccionDatos.Alta(idLocalidad!.Value, calle!, altura);
-
-                    if (!direccion.Exitoso)
-                    {
-                        return new ResultadoCliente { Codigo = direccion.Codigo, Mensaje = direccion.Mensaje };
-                    }
-
-                    idDireccion = direccion.IdGenerado;
+                    return new ResultadoCliente { Codigo = direccion.Codigo, Mensaje = direccion.Mensaje };
                 }
             }
             else
             {
-                idDireccion = null;
+                ResultadoDireccionDatos direccion = direccionDatos.Alta(idLocalidad!.Value, calle!, altura);
+
+                if (!direccion.Exitoso)
+                {
+                    return new ResultadoCliente { Codigo = direccion.Codigo, Mensaje = direccion.Mensaje };
+                }
+
+                idDireccion = direccion.IdGenerado;
             }
 
             return ConvertirResultado(
@@ -497,31 +452,96 @@ namespace Capa_Logica
                     .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         }
 
-        // Evita persistir direcciones parciales: localidad y calle se informan juntas.
-        private static bool DireccionEsConsistente(int? idLocalidad, string? calle)
+        // Exige una dirección completa y comprueba que la localidad pertenezca
+        // a la provincia seleccionada antes de crear o modificar el cliente.
+        private string? ValidarDireccionObligatoria(
+            int? idProvincia,
+            int? idLocalidad,
+            string? calle)
         {
-            return (idLocalidad.HasValue && idLocalidad.Value > 0) ==
-                !string.IsNullOrWhiteSpace(calle);
+            if (!idProvincia.HasValue || idProvincia.Value <= 0 ||
+                !ObtenerProvincias().Any(provincia => provincia.Id == idProvincia.Value))
+            {
+                return "Seleccioná una provincia válida.";
+            }
+
+            if (!idLocalidad.HasValue || idLocalidad.Value <= 0 ||
+                !ObtenerLocalidades(idProvincia.Value).Any(localidad => localidad.Id == idLocalidad.Value))
+            {
+                return "Seleccioná o ingresá una localidad válida para la provincia.";
+            }
+
+            if (string.IsNullOrWhiteSpace(calle))
+            {
+                return "Ingresá la calle de la dirección.";
+            }
+
+            if (calle.Trim().Length > 150)
+            {
+                return "La calle supera el máximo de 150 caracteres.";
+            }
+
+            return null;
         }
 
-        // Centraliza las validaciones reutilizadas por alta y modificación antes de Datos.
+        // Centraliza las reglas reutilizadas por alta y modificación antes de Datos.
         private static string? ValidarDatosBasicos(
             string nombre, string apellido, string documento, string? correo, string? telefono)
         {
+            nombre = (nombre ?? string.Empty).Trim();
+            apellido = (apellido ?? string.Empty).Trim();
+            documento = (documento ?? string.Empty).Trim();
+            correo = (correo ?? string.Empty).Trim();
+            telefono = (telefono ?? string.Empty).Trim();
+
             if (string.IsNullOrWhiteSpace(nombre)) return "El nombre es obligatorio.";
-            if (nombre.Trim().Length > 100) return "El nombre supera el máximo de 100 caracteres.";
+            if (nombre.Length > 100) return "El nombre supera el máximo de 100 caracteres.";
+            if (!EsNombreValido(nombre)) return "El nombre contiene caracteres no válidos.";
             if (string.IsNullOrWhiteSpace(apellido)) return "El apellido es obligatorio.";
-            if (apellido.Trim().Length > 100) return "El apellido supera el máximo de 100 caracteres.";
+            if (apellido.Length > 100) return "El apellido supera el máximo de 100 caracteres.";
+            if (!EsNombreValido(apellido)) return "El apellido contiene caracteres no válidos.";
             if (string.IsNullOrWhiteSpace(documento)) return "El documento es obligatorio.";
-            if (documento.Trim().Length > 20 || !documento.Trim().All(char.IsDigit))
+            if (documento.Length > 20 || !documento.All(char.IsDigit))
                 return "El documento debe contener solo números y hasta 20 caracteres.";
             if (!string.IsNullOrWhiteSpace(correo) &&
-                (correo.Trim().Length > 150 || !correo.Contains('@')))
+                (correo.Length > 150 || !EsCorreoValido(correo)))
                 return "El correo ingresado no es válido.";
-            if (!string.IsNullOrWhiteSpace(telefono) && telefono.Trim().Length > 30)
-                return "El teléfono supera el máximo de 30 caracteres.";
+            if (!string.IsNullOrWhiteSpace(telefono) &&
+                (telefono.Length > 30 || !telefono.Any(char.IsDigit) || !EsTelefonoValido(telefono)))
+                return "El teléfono debe contener al menos un dígito y solo caracteres válidos.";
 
             return null;
+        }
+
+        // Permite letras Unicode, espacios, apóstrofes y guiones en nombres.
+        private static bool EsNombreValido(string valor)
+        {
+            return Regex.IsMatch(valor, @"^[\p{L}\s'-]+$");
+        }
+
+        // Restringe el teléfono a los caracteres admitidos por el formulario.
+        private static bool EsTelefonoValido(string telefono)
+        {
+            return Regex.IsMatch(telefono, @"^[0-9+\-\s()]+$");
+        }
+
+        // Verifica el formato del correo opcional sin aceptar valores incompletos.
+        private static bool EsCorreoValido(string correo)
+        {
+            try
+            {
+                if (!Regex.IsMatch(correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                {
+                    return false;
+                }
+
+                MailAddress direccion = new MailAddress(correo);
+                return string.Equals(direccion.Address, correo, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
         }
     }
 }

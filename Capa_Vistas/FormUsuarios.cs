@@ -284,6 +284,12 @@ namespace Capa_Vistas
 
             btnEliminarPerfil.Click +=
                 BtnEliminarPerfil_Click;
+
+            txtNombrePerfil.KeyPress +=
+                NombrePerfil_KeyPress;
+
+            txtDescripcionPerfil.KeyPress +=
+                DescripcionPerfil_KeyPress;
         }
 
 
@@ -803,7 +809,7 @@ namespace Capa_Vistas
             txtNombrePerfil.Focus();
         }
 
-
+        // Valida y normaliza el perfil antes de conservar sus permisos ya seleccionados.
         private void BtnGuardarPerfil_Click(
             object? sender,
             EventArgs e)
@@ -818,6 +824,10 @@ namespace Capa_Vistas
                 return;
             }
 
+            if (!ValidarPerfilEnVista())
+            {
+                return;
+            }
 
             try
             {
@@ -936,6 +946,60 @@ namespace Capa_Vistas
                     ex.Message
                 );
             }
+        }
+
+
+        // Previene caracteres ajenos al nombre sin sustituir la validación autoritativa de Lógica.
+        private static void NombrePerfil_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == '\b' || char.IsLetterOrDigit(e.KeyChar) ||
+                e.KeyChar == ' ' || e.KeyChar == '-' || e.KeyChar == '\'')
+            {
+                return;
+            }
+
+            e.Handled = true;
+        }
+
+
+        // Evita saltos de línea y otros controles en una descripción que se guarda como texto simple.
+        private static void DescripcionPerfil_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar != '\b' && char.IsControl(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+
+
+        // Repite en la Vista las reglas de formato y normaliza el texto antes de solicitar el guardado.
+        private bool ValidarPerfilEnVista()
+        {
+            string nombreOriginal = txtNombrePerfil.Text;
+            string descripcionOriginal = txtDescripcionPerfil.Text;
+            string? error = perfilLogica.ValidarDatosPerfil(nombreOriginal, descripcionOriginal);
+
+            if (error != null)
+            {
+                MostrarMensaje("Perfil", error);
+                return false;
+            }
+
+            txtNombrePerfil.Text = NormalizarNombrePerfil(nombreOriginal);
+            txtDescripcionPerfil.Text = descripcionOriginal.Trim();
+            return true;
+        }
+
+
+        // Reduce espacios repetidos para que la Vista presente el mismo valor que guardará la Lógica.
+        private static string NormalizarNombrePerfil(string? valor)
+        {
+            return string.Join(
+                ' ',
+                (valor ?? string.Empty)
+                    .Trim()
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            );
         }
 
 

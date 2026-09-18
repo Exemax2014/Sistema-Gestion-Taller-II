@@ -256,6 +256,7 @@ namespace Capa_Logica
         // ALTA
         // ========================================================
 
+        // Crea un perfil con datos normalizados y validados antes de llegar a Datos.
         public ResultadoPerfil Crear(
             string nombre,
             string descripcion)
@@ -268,39 +269,15 @@ namespace Capa_Logica
             }
 
 
-            nombre =
-                (nombre ?? string.Empty)
-                .Trim();
+            string? error = ValidarDatosPerfil(nombre, descripcion);
 
-            descripcion =
-                (descripcion ?? string.Empty)
-                .Trim();
-
-
-            if (string.IsNullOrWhiteSpace(
-                nombre))
+            if (error != null)
             {
-                return ResultadoInvalido(
-                    "El nombre del tipo de usuario es obligatorio."
-                );
+                return ResultadoInvalido(error);
             }
 
-
-            if (nombre.Length > 50)
-            {
-                return ResultadoInvalido(
-                    "El nombre del tipo de usuario no puede superar los 50 caracteres."
-                );
-            }
-
-
-            if (descripcion.Length > 200)
-            {
-                return ResultadoInvalido(
-                    "La descripción no puede superar los 200 caracteres."
-                );
-            }
-
+            nombre = NormalizarNombre(nombre);
+            descripcion = NormalizarDescripcion(descripcion);
 
             ResultadoPerfilDatos resultado =
                 perfilDatos.Alta(
@@ -319,6 +296,7 @@ namespace Capa_Logica
         // MODIFICACIÓN
         // ========================================================
 
+        // Modifica un perfil no global con las mismas reglas autoritativas del alta.
         public ResultadoPerfil Modificar(
             int idPerfil,
             string nombre,
@@ -354,15 +332,6 @@ namespace Capa_Logica
             }
 
 
-            nombre =
-                (nombre ?? string.Empty)
-                .Trim();
-
-            descripcion =
-                (descripcion ?? string.Empty)
-                .Trim();
-
-
             if (perfilActual.AlcanceGlobal)
             {
                 return ResultadoNoPermitido(
@@ -371,30 +340,15 @@ namespace Capa_Logica
             }
 
 
-            if (string.IsNullOrWhiteSpace(
-                nombre))
+            string? error = ValidarDatosPerfil(nombre, descripcion);
+
+            if (error != null)
             {
-                return ResultadoInvalido(
-                    "El nombre del tipo de usuario es obligatorio."
-                );
+                return ResultadoInvalido(error);
             }
 
-
-            if (nombre.Length > 50)
-            {
-                return ResultadoInvalido(
-                    "El nombre del tipo de usuario no puede superar los 50 caracteres."
-                );
-            }
-
-
-            if (descripcion.Length > 200)
-            {
-                return ResultadoInvalido(
-                    "La descripción no puede superar los 200 caracteres."
-                );
-            }
-
+            nombre = NormalizarNombre(nombre);
+            descripcion = NormalizarDescripcion(descripcion);
 
             ResultadoPerfilDatos resultado =
                 perfilDatos.Modificar(
@@ -643,6 +597,64 @@ namespace Capa_Logica
                 IdGenerado =
                     resultado.IdGenerado
             };
+        }
+
+
+        // Valida los campos editables del perfil sin decidir sus permisos ni funcionalidades.
+        public string? ValidarDatosPerfil(string? nombre, string? descripcion)
+        {
+            string nombreOriginal = nombre ?? string.Empty;
+            string descripcionOriginal = descripcion ?? string.Empty;
+            string nombreNormalizado = NormalizarNombre(nombreOriginal);
+            string descripcionNormalizada = NormalizarDescripcion(descripcionOriginal);
+
+            if (string.IsNullOrWhiteSpace(nombreNormalizado))
+            {
+                return "El nombre del tipo de usuario es obligatorio.";
+            }
+
+            if (nombreOriginal.Any(char.IsControl) ||
+                !nombreNormalizado.All(caracter => char.IsLetterOrDigit(caracter) ||
+                    caracter == ' ' || caracter == '-' || caracter == '\''))
+            {
+                return "El nombre solo puede incluir letras, números, espacios, guiones y apóstrofes.";
+            }
+
+            if (nombreNormalizado.Length > 50)
+            {
+                return "El nombre del tipo de usuario no puede superar los 50 caracteres.";
+            }
+
+            if (descripcionOriginal.Any(char.IsControl))
+            {
+                return "La descripción no puede contener caracteres de control.";
+            }
+
+            if (descripcionNormalizada.Length > 200)
+            {
+                return "La descripción no puede superar los 200 caracteres.";
+            }
+
+            return null;
+        }
+
+
+        // Reduce espacios consecutivos del nombre para mantener la comparación y el guardado consistentes.
+        private static string NormalizarNombre(string? valor)
+        {
+            return string.Join(
+                ' ',
+                (valor ?? string.Empty)
+                    .Trim()
+                    .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+            );
+        }
+
+
+        // Conserva el texto opcional de la descripción, eliminando solo espacios externos.
+        private static string NormalizarDescripcion(string? valor)
+        {
+            return (valor ?? string.Empty).Trim();
         }
 
 
