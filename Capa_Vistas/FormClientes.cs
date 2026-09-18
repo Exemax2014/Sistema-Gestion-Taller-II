@@ -10,7 +10,7 @@ namespace Capa_Vistas
 
         private DataGridViewButtonColumn colDetalle = null!;
         private DataGridViewButtonColumn colHistorial = null!;
-        private DataGridViewButtonColumn colEstado = null!;
+        private DataGridViewButtonColumn colCambioEstado = null!;
 
         public FormClientes(FormPrincipal formPrincipal)
         {
@@ -28,14 +28,28 @@ namespace Capa_Vistas
             btnNuevoCliente.Visible = clienteLogica.PuedeCrearCliente();
             colDetalle.Visible = clienteLogica.PuedeVerClientes();
             colHistorial.Visible = clienteLogica.PuedeVerHistorialCompras();
-            colEstado.Visible =
+            colCambioEstado.Visible =
                 clienteLogica.PuedeEliminarCliente() ||
                 clienteLogica.PuedeReactivarCliente();
         }
 
+        // Configura las columnas dinámicas y alinea estado y acciones
+        // sin alterar las operaciones disponibles para cada cliente.
         private void ConfigurarGrilla()
         {
             dgvClientes.AutoGenerateColumns = false;
+
+            dgvClientes.ColumnHeadersDefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
+
+            dgvClientes.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleLeft;
+
+            dgvClientes.DefaultCellStyle.Padding =
+                new Padding(8, 0, 8, 0);
+
+            dgvClientes.RowTemplate.Height = 40;
+
             dgvClientes.Columns.Clear();
 
             dgvClientes.Columns.AddRange(
@@ -45,14 +59,18 @@ namespace Capa_Vistas
                 CrearColumnaTexto("colTelefono", "Teléfono"),
                 CrearColumnaTexto("colEmail", "Email", 130F),
                 CrearColumnaTexto("colLocalidad", "Localidad"),
-                CrearBoton("colDetalle", "Ver detalle", 85F, Color.FromArgb(242, 243, 245), Color.FromArgb(45, 50, 55)),
+                CrearColumnaTexto("colEstado", "Estado", 90F),
+                CrearBoton("colDetalle", string.Empty, 100F, Color.FromArgb(105, 110, 116), Color.White),
                 CrearBoton("colHistorial", "Compras", 75F, Color.FromArgb(235, 241, 247), Color.FromArgb(40, 90, 130)),
-                CrearBoton("colEstado", "Dar de baja", 90F, Color.FromArgb(245, 235, 235), Color.FromArgb(150, 50, 50))
+                CrearBoton("colCambioEstado", "Dar de baja", 90F, Color.FromArgb(165, 55, 55), Color.White)
             );
 
             colDetalle = (DataGridViewButtonColumn)dgvClientes.Columns["colDetalle"]!;
             colHistorial = (DataGridViewButtonColumn)dgvClientes.Columns["colHistorial"]!;
-            colEstado = (DataGridViewButtonColumn)dgvClientes.Columns["colEstado"]!;
+            colCambioEstado = (DataGridViewButtonColumn)dgvClientes.Columns["colCambioEstado"]!;
+            colDetalle.UseColumnTextForButtonValue = false;
+            dgvClientes.Columns["colDni"]!.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
         }
 
         private static DataGridViewTextBoxColumn CrearColumnaTexto(string nombre, string titulo, float? peso = null)
@@ -66,6 +84,7 @@ namespace Capa_Vistas
             };
         }
 
+        // Crea botones de acción con una alineación común para la grilla.
         private static DataGridViewButtonColumn CrearBoton(
             string nombre, string texto, float peso, Color fondo, Color textoColor)
         {
@@ -81,7 +100,9 @@ namespace Capa_Vistas
                 DefaultCellStyle = new DataGridViewCellStyle
                 {
                     BackColor = fondo,
-                    ForeColor = textoColor
+                    ForeColor = textoColor,
+                    Alignment = DataGridViewContentAlignment.MiddleCenter,
+                    Padding = Padding.Empty
                 }
             };
         }
@@ -132,6 +153,8 @@ namespace Capa_Vistas
             lblCantidad.Text = $"{resultado.Count} clientes encontrados";
         }
 
+        // Aplica el código visual de estado y acción principal según
+        // el estado lógico del cliente, sin modificar sus permisos ni datos.
         private void DgvClientes_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
         {
             if (e.RowIndex < 0 || dgvClientes.Rows[e.RowIndex].Tag is not ClienteListaModelo cliente)
@@ -140,26 +163,70 @@ namespace Capa_Vistas
             }
 
             string columna = dgvClientes.Columns[e.ColumnIndex].Name;
-            if (columna == "colDetalle" && !cliente.Activo)
+            if (columna == "colEstado")
             {
-                e.Value = string.Empty;
+                e.Value = cliente.Activo ? "Activo" : "Inactivo";
+                AplicarEstiloEstado(e.CellStyle, cliente.Activo);
                 e.FormattingApplied = true;
                 return;
             }
 
-            if (columna != "colEstado")
+            if (columna == "colDetalle")
             {
+                e.Value = cliente.Activo ? "Ver detalle" : "Dar de alta";
+                AplicarEstiloAccionPrincipal(e.CellStyle, cliente.Activo);
+                e.FormattingApplied = true;
                 return;
             }
 
-            DataGridViewCell celda = dgvClientes.Rows[e.RowIndex].Cells[e.ColumnIndex];
-            celda.Value = cliente.Activo ? "Dar de baja" : "Dar de alta";
-            celda.Style.BackColor = cliente.Activo
-                ? Color.FromArgb(245, 235, 235)
-                : Color.FromArgb(230, 245, 230);
-            celda.Style.ForeColor = cliente.Activo
-                ? Color.FromArgb(150, 50, 50)
-                : Color.FromArgb(45, 130, 60);
+            if (columna == "colCambioEstado")
+            {
+                bool mostrarReactivacionAlternativa =
+                    !cliente.Activo && !colDetalle.Visible;
+
+                e.Value = cliente.Activo
+                    ? "Dar de baja"
+                    : mostrarReactivacionAlternativa
+                        ? "Dar de alta"
+                        : string.Empty;
+
+                if (mostrarReactivacionAlternativa)
+                {
+                    AplicarEstiloAccionPrincipal(e.CellStyle, false);
+                }
+
+                e.FormattingApplied = true;
+            }
+        }
+
+        // Usa los mismos colores de estado de Usuarios para que las grillas
+        // comuniquen de forma consistente si la entidad está disponible.
+        private static void AplicarEstiloEstado(DataGridViewCellStyle estilo, bool activo)
+        {
+            estilo.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            estilo.Padding = Padding.Empty;
+            estilo.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            estilo.ForeColor = Color.White;
+            estilo.SelectionForeColor = Color.White;
+            estilo.BackColor = activo
+                ? Color.FromArgb(46, 125, 74)
+                : Color.FromArgb(165, 55, 55);
+            estilo.SelectionBackColor = estilo.BackColor;
+        }
+
+        // Diferencia la consulta de una entidad activa de la reactivación
+        // de una entidad dada de baja mediante el color del botón principal.
+        private static void AplicarEstiloAccionPrincipal(DataGridViewCellStyle estilo, bool activo)
+        {
+            estilo.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            estilo.Padding = Padding.Empty;
+            estilo.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            estilo.ForeColor = Color.White;
+            estilo.SelectionForeColor = Color.White;
+            estilo.BackColor = activo
+                ? Color.FromArgb(105, 110, 116)
+                : Color.FromArgb(46, 125, 74);
+            estilo.SelectionBackColor = estilo.BackColor;
         }
 
         private void BtnNuevoCliente_Click(object? sender, EventArgs e)
@@ -169,6 +236,8 @@ namespace Capa_Vistas
                 formPrincipal.BotonClientes);
         }
 
+        // Dirige la acción de la fila sin perder el historial ni la baja lógica
+        // que siguen disponibles como acciones específicas del módulo.
         private void DgvClientes_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0 ||
@@ -179,16 +248,23 @@ namespace Capa_Vistas
 
             switch (dgvClientes.Columns[e.ColumnIndex].Name)
             {
-                case "colDetalle" when cliente.Activo:
-                    AbrirDetalle(cliente.IdCliente);
+                case "colDetalle":
+                    if (cliente.Activo)
+                    {
+                        AbrirDetalle(cliente.IdCliente);
+                    }
+                    else
+                    {
+                        ConfirmarCambioEstado(cliente, true);
+                    }
                     break;
                 case "colHistorial":
                     AbrirHistorial(cliente);
                     break;
-                case "colEstado" when cliente.Activo:
+                case "colCambioEstado" when cliente.Activo:
                     ConfirmarCambioEstado(cliente, false);
                     break;
-                case "colEstado":
+                case "colCambioEstado":
                     ConfirmarCambioEstado(cliente, true);
                     break;
             }

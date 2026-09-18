@@ -54,10 +54,24 @@ namespace Capa_Vistas
         // GRILLA
         // ========================================================
 
+        // Configura las columnas dinámicas y normaliza la presentación
+        // para mantener una lectura consistente de datos, estados y acciones.
         private void ConfigurarGrilla()
         {
             dgvUsuarios.AutoGenerateColumns =
                 false;
+
+            dgvUsuarios.ColumnHeadersDefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
+
+            dgvUsuarios.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleLeft;
+
+            dgvUsuarios.DefaultCellStyle.Padding =
+                new Padding(8, 0, 8, 0);
+
+            dgvUsuarios.RowTemplate.Height =
+                40;
 
             dgvUsuarios.Columns.Clear();
 
@@ -78,7 +92,13 @@ namespace Capa_Vistas
                     Name = "colUsuario",
                     DataPropertyName = "NombreUsuario",
                     HeaderText = "Usuario",
-                    Width = 140
+                    Width = 140,
+                    DefaultCellStyle =
+                        new DataGridViewCellStyle
+                        {
+                            Alignment =
+                                DataGridViewContentAlignment.MiddleCenter
+                        }
                 };
 
 
@@ -108,7 +128,13 @@ namespace Capa_Vistas
                     Name = "colPerfil",
                     DataPropertyName = "Perfil",
                     HeaderText = "Perfil",
-                    Width = 120
+                    Width = 120,
+                    DefaultCellStyle =
+                        new DataGridViewCellStyle
+                        {
+                            Alignment =
+                                DataGridViewContentAlignment.MiddleCenter
+                        }
                 };
 
 
@@ -120,7 +146,13 @@ namespace Capa_Vistas
                     HeaderText = "Sucursal",
                     AutoSizeMode =
                         DataGridViewAutoSizeColumnMode.Fill,
-                    MinimumWidth = 150
+                    MinimumWidth = 150,
+                    DefaultCellStyle =
+                        new DataGridViewCellStyle
+                        {
+                            Alignment =
+                                DataGridViewContentAlignment.MiddleCenter
+                        }
                 };
 
 
@@ -149,6 +181,9 @@ namespace Capa_Vistas
                         {
                             Alignment =
                                 DataGridViewContentAlignment.MiddleCenter,
+
+                            Padding =
+                                Padding.Empty,
 
                             Font =
                                 new Font(
@@ -180,7 +215,10 @@ namespace Capa_Vistas
                         new DataGridViewCellStyle
                         {
                             Alignment =
-                                DataGridViewContentAlignment.MiddleCenter
+                                DataGridViewContentAlignment.MiddleCenter,
+
+                            Padding =
+                                Padding.Empty
                         }
                 };
 
@@ -1195,6 +1233,8 @@ namespace Capa_Vistas
         }
 
 
+        // Conserva los colores de estado y acción, y elimina el padding general
+        // para que esas celdas queden centradas visualmente.
         private void DgvUsuarios_CellFormatting(
             object? sender,
             DataGridViewCellFormattingEventArgs e)
@@ -1233,6 +1273,9 @@ namespace Capa_Vistas
 
                 e.CellStyle.Alignment =
                     DataGridViewContentAlignment.MiddleCenter;
+
+                e.CellStyle.Padding =
+                    Padding.Empty;
 
                 e.CellStyle.Font =
                     new Font(
@@ -1279,6 +1322,9 @@ namespace Capa_Vistas
 
                 e.CellStyle.Alignment =
                     DataGridViewContentAlignment.MiddleCenter;
+
+                e.CellStyle.Padding =
+                    Padding.Empty;
 
                 e.CellStyle.Font =
                     new Font(
