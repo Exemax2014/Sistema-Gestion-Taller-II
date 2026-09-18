@@ -79,7 +79,7 @@ namespace Capa_Vistas
             pnlPrincipal.Location = new Point(0, 0);
             pnlPrincipal.Name = "pnlPrincipal";
             pnlPrincipal.Padding = new Padding(32, 18, 32, 24);
-            pnlPrincipal.Size = new Size(1180, 760);
+            pnlPrincipal.Size = new Size(1211, 815);
             pnlPrincipal.TabIndex = 0;
             // 
             // pnlDatos
@@ -113,7 +113,7 @@ namespace Capa_Vistas
             pnlDatos.Controls.Add(txtConfirmarContrasena);
             pnlDatos.Location = new Point(32, 114);
             pnlDatos.Name = "pnlDatos";
-            pnlDatos.Size = new Size(1116, 522);
+            pnlDatos.Size = new Size(1147, 522);
             pnlDatos.TabIndex = 1;
             // 
             // lblNombre
@@ -333,9 +333,9 @@ namespace Capa_Vistas
             pnlAcciones.Controls.Add(btnCancelar);
             pnlAcciones.Controls.Add(btnDarBaja);
             pnlAcciones.Controls.Add(btnGuardar);
-            pnlAcciones.Location = new Point(32, 642);
+            pnlAcciones.Location = new Point(32, 668);
             pnlAcciones.Name = "pnlAcciones";
-            pnlAcciones.Size = new Size(1116, 68);
+            pnlAcciones.Size = new Size(1147, 68);
             pnlAcciones.TabIndex = 2;
             // 
             // btnCancelar
@@ -344,7 +344,7 @@ namespace Capa_Vistas
             btnCancelar.Cursor = Cursors.Hand;
             btnCancelar.FlatAppearance.BorderColor = Color.FromArgb(160, 165, 170);
             btnCancelar.FlatStyle = FlatStyle.Flat;
-            btnCancelar.Location = new Point(0, 8);
+            btnCancelar.Location = new Point(3, 8);
             btnCancelar.Name = "btnCancelar";
             btnCancelar.Size = new Size(175, 40);
             btnCancelar.TabIndex = 0;
@@ -360,7 +360,7 @@ namespace Capa_Vistas
             btnDarBaja.FlatStyle = FlatStyle.Flat;
             btnDarBaja.Font = new Font("Segoe UI Semibold", 9F, FontStyle.Bold);
             btnDarBaja.ForeColor = Color.White;
-            btnDarBaja.Location = new Point(846, 8);
+            btnDarBaja.Location = new Point(800, 8);
             btnDarBaja.Name = "btnDarBaja";
             btnDarBaja.Size = new Size(148, 40);
             btnDarBaja.TabIndex = 1;
@@ -376,7 +376,7 @@ namespace Capa_Vistas
             btnGuardar.FlatAppearance.BorderSize = 0;
             btnGuardar.FlatStyle = FlatStyle.Flat;
             btnGuardar.ForeColor = Color.White;
-            btnGuardar.Location = new Point(1006, 8);
+            btnGuardar.Location = new Point(997, 8);
             btnGuardar.Name = "btnGuardar";
             btnGuardar.Size = new Size(110, 40);
             btnGuardar.TabIndex = 1;
@@ -391,7 +391,7 @@ namespace Capa_Vistas
             pnlCabecera.Controls.Add(pnlLineaTitulo);
             pnlCabecera.Location = new Point(32, 18);
             pnlCabecera.Name = "pnlCabecera";
-            pnlCabecera.Size = new Size(1116, 82);
+            pnlCabecera.Size = new Size(1147, 82);
             pnlCabecera.TabIndex = 0;
             // 
             // lblTitulo
@@ -428,7 +428,7 @@ namespace Capa_Vistas
             // 
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.FromArgb(245, 246, 248);
-            ClientSize = new Size(1180, 760);
+            ClientSize = new Size(1211, 815);
             Controls.Add(pnlPrincipal);
             FormBorderStyle = FormBorderStyle.None;
             Name = "FormUsuarioDetalle";

@@ -495,6 +495,61 @@ GO
 
 
 /* =========================================================
+   CATÁLOGO DE PROVINCIAS ARGENTINAS
+
+   Se mantiene idempotente para instalaciones existentes y no
+   habilita el alta de provincias desde las vistas.
+   ========================================================= */
+DECLARE @ProvinciasIniciales TABLE
+(
+    nombre NVARCHAR(100) NOT NULL PRIMARY KEY
+);
+
+INSERT INTO @ProvinciasIniciales (nombre)
+VALUES
+    (N'Buenos Aires'),
+    (N'Catamarca'),
+    (N'Chaco'),
+    (N'Chubut'),
+    (N'Ciudad Autónoma de Buenos Aires'),
+    (N'Córdoba'),
+    (N'Corrientes'),
+    (N'Entre Ríos'),
+    (N'Formosa'),
+    (N'Jujuy'),
+    (N'La Pampa'),
+    (N'La Rioja'),
+    (N'Mendoza'),
+    (N'Misiones'),
+    (N'Neuquén'),
+    (N'Río Negro'),
+    (N'Salta'),
+    (N'San Juan'),
+    (N'San Luis'),
+    (N'Santa Cruz'),
+    (N'Santa Fe'),
+    (N'Santiago del Estero'),
+    (N'Tierra del Fuego'),
+    (N'Tucumán');
+
+UPDATE p
+SET eliminado_en = NULL
+FROM dbo.PROVINCIA AS p
+INNER JOIN @ProvinciasIniciales AS pi
+    ON UPPER(LTRIM(RTRIM(p.nombre))) = UPPER(pi.nombre);
+
+INSERT INTO dbo.PROVINCIA (nombre)
+SELECT pi.nombre
+FROM @ProvinciasIniciales AS pi
+WHERE NOT EXISTS
+(
+    SELECT 1
+    FROM dbo.PROVINCIA AS p
+    WHERE UPPER(LTRIM(RTRIM(p.nombre))) = UPPER(pi.nombre)
+);
+GO
+
+/* =========================================================
    FIN DEL SCRIPT
    Puede ejecutarse nuevamente sin duplicar los datos iniciales.
    ========================================================= */

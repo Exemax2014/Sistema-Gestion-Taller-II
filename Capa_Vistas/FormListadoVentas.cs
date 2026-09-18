@@ -287,10 +287,8 @@ namespace Capa_Vistas
                     dgvVentas.Columns.Contains(
                         "colVendedor"))
                 {
-                    dgvVentas
-                        .Columns["colVendedor"]
-                        .Visible =
-                            false;
+                    dgvVentas.Columns["colVendedor"]!
+                        .Visible = false;
                 }
             }
             else
@@ -311,10 +309,8 @@ namespace Capa_Vistas
                     dgvVentas.Columns.Contains(
                         "colCliente"))
                 {
-                    dgvVentas
-                        .Columns["colCliente"]
-                        .Visible =
-                            false;
+                    dgvVentas.Columns["colCliente"]!
+                        .Visible = false;
                 }
             }
 
@@ -334,7 +330,9 @@ namespace Capa_Vistas
                 DateTime.Today;
 
             dtpDesde.Value =
-                DateTime.Today.AddMonths(-1);
+                tipoHistorial == TipoHistorialVentas.Cliente
+                    ? DateTimePicker.MinimumDateTime
+                    : DateTime.Today.AddMonths(-1);
         }
 
 

@@ -146,14 +146,20 @@ BEGIN
         u.sexo,
         u.fecha_nacimiento,
         p.nombre AS perfil,
-        ISNULL(s.nombre, N'Todas las sucursales') AS sucursal
+        ISNULL(s.nombre, N'Todas las sucursales') AS sucursal,
+        CAST(
+            CASE
+                WHEN u.eliminado_en IS NULL THEN 1
+                ELSE 0
+            END
+            AS BIT
+        ) AS activo
     FROM dbo.USUARIO AS u
     INNER JOIN dbo.PERFIL AS p
         ON p.id_perfil = u.id_perfil
     LEFT JOIN dbo.SUCURSAL AS s
         ON s.id_sucursal = u.id_sucursal
-    WHERE u.id_usuario = @idUsuario
-      AND u.eliminado_en IS NULL;
+    WHERE u.id_usuario = @idUsuario;
 END;
 GO
 
@@ -1535,6 +1541,78 @@ GO
    500 = Error interno de base de datos
    ============================================================ */
 
+/* ============================================================
+   Obtiene una localidad activa por provincia y nombre o la crea.
+   La comparación normaliza espacios y no distingue mayúsculas.
+   ============================================================ */
+CREATE OR ALTER PROCEDURE dbo.sp_Localidad_ObtenerOCrear
+    @idProvincia INT,
+    @nombre NVARCHAR(100),
+    @IdGenerado INT OUTPUT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET @IdGenerado = 0;
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+    SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+    SET @nombre = REPLACE(@nombre, CHAR(9), N' ');
+
+    WHILE CHARINDEX(N'  ', @nombre) > 0
+        SET @nombre = REPLACE(@nombre, N'  ', N' ');
+
+    BEGIN TRY
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.PROVINCIA
+            WHERE id_provincia = @idProvincia
+              AND eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'La provincia indicada no existe o está inactiva.';
+            RETURN;
+        END;
+
+        IF @nombre = N''
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El nombre de la localidad es obligatorio.';
+            RETURN;
+        END;
+
+        SELECT TOP 1 @IdGenerado = id_localidad
+        FROM dbo.LOCALIDAD
+        WHERE id_provincia = @idProvincia
+          AND UPPER(LTRIM(RTRIM(nombre))) = UPPER(@nombre);
+
+        IF @IdGenerado > 0
+        BEGIN
+            UPDATE dbo.LOCALIDAD
+            SET nombre = @nombre,
+                eliminado_en = NULL
+            WHERE id_localidad = @IdGenerado;
+
+            SET @MensajeResultado = N'Localidad existente seleccionada correctamente.';
+            RETURN;
+        END;
+
+        INSERT INTO dbo.LOCALIDAD (id_provincia, nombre)
+        VALUES (@idProvincia, @nombre);
+
+        SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
+        SET @MensajeResultado = N'Localidad creada correctamente.';
+    END TRY
+    BEGIN CATCH
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+    END CATCH;
+END;
+GO
+
 CREATE OR ALTER PROCEDURE dbo.sp_Direccion_Alta
     @idLocalidad INT,
     @calle NVARCHAR(150),
@@ -1981,6 +2059,100 @@ GO
 -- ============================================================
 -- CATEGORÍAS
 -- ============================================================
+
+/* ============================================================
+   CLIENTES - versión vigente con filtro de estado y reactivación
+   ============================================================ */
+
+CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Buscar
+    @texto NVARCHAR(100),
+    @estado NVARCHAR(10) = N'ACTIVOS'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET @texto = LTRIM(RTRIM(ISNULL(@texto, N'')));
+    SET @estado = UPPER(LTRIM(RTRIM(ISNULL(@estado, N'ACTIVOS'))));
+
+    SELECT TOP 50
+        c.id_cliente, c.nombre, c.apellido, c.documento, c.correo, c.telefono,
+        l.nombre AS localidad, p.nombre AS provincia, d.calle, d.altura,
+        CAST(CASE WHEN c.eliminado_en IS NULL THEN 1 ELSE 0 END AS BIT) AS activo
+    FROM dbo.CLIENTE AS c
+    LEFT JOIN dbo.DIRECCION AS d ON d.id_direccion = c.id_direccion AND d.eliminado_en IS NULL
+    LEFT JOIN dbo.LOCALIDAD AS l ON l.id_localidad = d.id_localidad AND l.eliminado_en IS NULL
+    LEFT JOIN dbo.PROVINCIA AS p ON p.id_provincia = l.id_provincia AND p.eliminado_en IS NULL
+    WHERE (@estado = N'TODOS'
+           OR (@estado = N'ACTIVOS' AND c.eliminado_en IS NULL)
+           OR (@estado = N'BAJA' AND c.eliminado_en IS NOT NULL))
+      AND (@texto = N'' OR c.nombre LIKE N'%' + @texto + N'%'
+           OR c.apellido LIKE N'%' + @texto + N'%'
+           OR c.documento LIKE N'%' + @texto + N'%'
+           OR ISNULL(c.correo, N'') LIKE N'%' + @texto + N'%'
+           OR ISNULL(c.telefono, N'') LIKE N'%' + @texto + N'%')
+    ORDER BY c.apellido, c.nombre;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Listar
+    @estado NVARCHAR(10) = N'ACTIVOS'
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET @estado = UPPER(LTRIM(RTRIM(ISNULL(@estado, N'ACTIVOS'))));
+
+    SELECT
+        c.id_cliente, c.nombre, c.apellido, c.documento, c.correo, c.telefono,
+        c.id_direccion, l.nombre AS localidad, p.nombre AS provincia, d.calle, d.altura,
+        CAST(CASE WHEN c.eliminado_en IS NULL THEN 1 ELSE 0 END AS BIT) AS activo
+    FROM dbo.CLIENTE AS c
+    LEFT JOIN dbo.DIRECCION AS d ON d.id_direccion = c.id_direccion AND d.eliminado_en IS NULL
+    LEFT JOIN dbo.LOCALIDAD AS l ON l.id_localidad = d.id_localidad AND l.eliminado_en IS NULL
+    LEFT JOIN dbo.PROVINCIA AS p ON p.id_provincia = l.id_provincia AND p.eliminado_en IS NULL
+    WHERE @estado = N'TODOS'
+       OR (@estado = N'ACTIVOS' AND c.eliminado_en IS NULL)
+       OR (@estado = N'BAJA' AND c.eliminado_en IS NOT NULL)
+    ORDER BY c.apellido, c.nombre;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Reactivar
+    @id_cliente INT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.CLIENTE WHERE id_cliente = @id_cliente)
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'El cliente indicado no existe.';
+            RETURN;
+        END;
+
+        IF EXISTS (SELECT 1 FROM dbo.CLIENTE WHERE id_cliente = @id_cliente AND eliminado_en IS NULL)
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El cliente ya se encuentra activo.';
+            RETURN;
+        END;
+
+        UPDATE dbo.CLIENTE
+        SET eliminado_en = NULL
+        WHERE id_cliente = @id_cliente
+          AND eliminado_en IS NOT NULL;
+
+        SET @MensajeResultado = N'Cliente dado de alta correctamente.';
+    END TRY
+    BEGIN CATCH
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+    END CATCH;
+END;
+GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Categoria_Listar
 AS

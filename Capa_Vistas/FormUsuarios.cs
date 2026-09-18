@@ -1561,9 +1561,33 @@ namespace Capa_Vistas
         // DETALLE / EDICIÓN
         // ========================================================
 
+        // Comprueba la disponibilidad del usuario antes de reemplazar el listado
+        // por el detalle, evitando una vista vacía si la carga no es posible.
         private void AbrirDetalleUsuario(
             UsuarioListadoModelo usuario)
         {
+            try
+            {
+                if (usuarioLogica.ObtenerPorId(usuario.IdUsuario) == null)
+                {
+                    MostrarMensaje(
+                        "No se pudo cargar el usuario",
+                        "El usuario seleccionado ya no está disponible."
+                    );
+
+                    return;
+                }
+            }
+            catch
+            {
+                MostrarMensaje(
+                    "No se pudo cargar el usuario",
+                    "Ocurrió un problema al obtener los datos del usuario. Intentá nuevamente."
+                );
+
+                return;
+            }
+
             formPrincipal.AbrirFormularioEnPanel(
                 new FormUsuarioDetalle(
                     formPrincipal,

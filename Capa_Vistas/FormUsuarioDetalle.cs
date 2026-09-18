@@ -20,6 +20,7 @@ namespace Capa_Vistas
         private readonly FormPrincipal formPrincipal;
 
         private readonly int? idUsuario;
+        private bool debeVolverAUsuarios;
 
         private List<PerfilUsuarioModelo> perfiles =
             new List<PerfilUsuarioModelo>();
@@ -116,6 +117,21 @@ namespace Capa_Vistas
 
             Resize +=
                 FormUsuarioDetalle_Resize;
+
+            Load +=
+                FormUsuarioDetalle_Load;
+        }
+
+        // Si la carga falló por una condición excepcional entre la validación
+        // previa y la navegación, vuelve al listado sin dejar un detalle vacío.
+        private void FormUsuarioDetalle_Load(
+            object? sender,
+            EventArgs e)
+        {
+            if (debeVolverAUsuarios)
+            {
+                VolverAUsuarios();
+            }
         }
 
 
@@ -286,7 +302,11 @@ namespace Capa_Vistas
                     false;
 
 
-                CargarUsuario();
+                if (!CargarUsuario())
+                {
+                    debeVolverAUsuarios = true;
+                    return;
+                }
             }
             else
             {
@@ -810,11 +830,13 @@ namespace Capa_Vistas
         // CARGAR USUARIO
         // ========================================================
 
-        private void CargarUsuario()
+        // Carga los datos de edición y traduce fallos técnicos a un mensaje
+        // entendible; el llamador decide volver al listado si no hay datos.
+        private bool CargarUsuario()
         {
             if (!idUsuario.HasValue)
             {
-                return;
+                return false;
             }
 
 
@@ -829,11 +851,11 @@ namespace Capa_Vistas
                 if (usuario == null)
                 {
                     MostrarMensaje(
-                        "Usuario no encontrado",
-                        "No se pudo encontrar el usuario seleccionado."
+                        "No se pudo cargar el usuario",
+                        "El usuario seleccionado no está disponible."
                     );
 
-                    return;
+                    return false;
                 }
 
 
@@ -890,13 +912,17 @@ namespace Capa_Vistas
                         usuario.IdSucursal.Value
                     );
                 }
+
+                return true;
             }
-            catch (Exception ex)
+            catch
             {
                 MostrarMensaje(
                     "No se pudo cargar el usuario",
-                    ex.Message
+                    "Ocurrió un problema al cargar los datos. Intentá nuevamente."
                 );
+
+                return false;
             }
         }
 
@@ -1447,6 +1473,8 @@ namespace Capa_Vistas
         }
 
 
+        // Muestra mensajes del detalle con FormPrincipal como owner para
+        // conservar el centrado dentro de la navegación embebida.
         private void MostrarMensaje(
             string titulo,
             string mensaje)
@@ -1457,9 +1485,11 @@ namespace Capa_Vistas
                     mensaje
                 );
 
+            formMensaje.StartPosition =
+                FormStartPosition.CenterParent;
 
             formMensaje.ShowDialog(
-                this
+                formPrincipal
             );
         }
     }
