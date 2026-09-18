@@ -854,26 +854,17 @@ namespace Capa_Vistas
                 }
 
 
-                ResultadoPerfil resultado;
+                List<int> permisosSeleccionados =
+                    ObtenerPermisosSeleccionados();
 
 
-                if (idPerfilEdicion.HasValue)
-                {
-                    resultado =
-                        perfilLogica.Modificar(
-                            idPerfilEdicion.Value,
-                            txtNombrePerfil.Text,
-                            txtDescripcionPerfil.Text
-                        );
-                }
-                else
-                {
-                    resultado =
-                        perfilLogica.Crear(
-                            txtNombrePerfil.Text,
-                            txtDescripcionPerfil.Text
-                        );
-                }
+                ResultadoPerfil resultado =
+                    perfilLogica.Guardar(
+                        idPerfilEdicion,
+                        txtNombrePerfil.Text,
+                        txtDescripcionPerfil.Text,
+                        permisosSeleccionados
+                    );
 
 
                 if (!resultado.Exitoso)
@@ -887,40 +878,7 @@ namespace Capa_Vistas
                 }
 
 
-                int idPerfil =
-                    idPerfilEdicion
-                    ??
-                    resultado.IdGenerado;
-
-
-                List<int> permisosSeleccionados =
-                    ObtenerPermisosSeleccionados();
-
-
-                ResultadoPerfil resultadoPermisos =
-                    perfilLogica.GuardarPermisos(
-                        idPerfil,
-                        permisosSeleccionados
-                    );
-
-
-                if (!resultadoPermisos.Exitoso)
-                {
-                    MostrarMensaje(
-                        "Tipo de usuario guardado",
-                        "El tipo de usuario se guardó, pero no pudieron actualizarse todos sus permisos. " +
-                        resultadoPermisos.Mensaje
-                    );
-
-
-                    CargarPerfilesGestion(
-                        idPerfil
-                    );
-
-                    CargarPerfiles();
-
-                    return;
-                }
+                int idPerfil = resultado.IdGenerado;
 
 
                 idPerfilEdicion =

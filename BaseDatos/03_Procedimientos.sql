@@ -893,6 +893,7 @@ END;
 GO
 
 
+-- Compatibilidad histórica: la aplicación guarda perfiles y permisos con sp_Perfil_Guardar.
 CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Alta
     @nombre NVARCHAR(50),
     @descripcion NVARCHAR(200) = NULL,
@@ -984,6 +985,7 @@ END;
 GO
 
 
+-- Compatibilidad histórica: la aplicación guarda perfiles y permisos con sp_Perfil_Guardar.
 CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Modificar
     @idPerfil INT,
     @nombre NVARCHAR(50),
@@ -1270,6 +1272,7 @@ END;
 GO
 
 
+-- Compatibilidad histórica: la aplicación guarda perfiles y permisos con sp_Perfil_Guardar.
 CREATE OR ALTER PROCEDURE dbo.sp_Perfil_GuardarFuncionalidades
     @idPerfil INT,
     @idsFuncionalidades NVARCHAR(MAX),
@@ -1431,6 +1434,252 @@ BEGIN
         SET @CodigoResultado = 500;
         SET @MensajeResultado =
             LEFT(ERROR_MESSAGE(), 250);
+
+    END CATCH;
+END;
+GO
+
+
+/* ============================================================
+   Procedimiento: sp_Perfil_Guardar
+
+   Guarda un perfil no global y su conjunto completo de
+   funcionalidades en una única transacción. @idPerfil NULL crea
+   un perfil; un ID existente lo modifica.
+   ============================================================ */
+CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Guardar
+    @idPerfil INT = NULL,
+    @nombre NVARCHAR(50),
+    @descripcion NVARCHAR(200) = NULL,
+    @idsFuncionalidades NVARCHAR(MAX) = N'',
+
+    @IdGenerado INT OUTPUT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    SET @IdGenerado = 0;
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        DECLARE @alcanceGlobal BIT;
+        DECLARE @esAlta BIT = CASE WHEN @idPerfil IS NULL THEN 1 ELSE 0 END;
+
+        DECLARE @SeleccionEntrada TABLE
+        (
+            id_funcionalidad INT NULL
+        );
+
+        DECLARE @Seleccion TABLE
+        (
+            id_funcionalidad INT NOT NULL PRIMARY KEY
+        );
+
+        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+        SET @descripcion = NULLIF(LTRIM(RTRIM(@descripcion)), N'');
+        SET @idsFuncionalidades = LTRIM(RTRIM(ISNULL(@idsFuncionalidades, N'')));
+
+        WHILE CHARINDEX(N'  ', @nombre) > 0
+            SET @nombre = REPLACE(@nombre, N'  ', N' ');
+
+        IF @nombre LIKE N'%' + CHAR(9) + N'%'
+           OR @nombre LIKE N'%' + CHAR(10) + N'%'
+           OR @nombre LIKE N'%' + CHAR(13) + N'%'
+           OR (@descripcion IS NOT NULL AND
+               (@descripcion LIKE N'%' + CHAR(9) + N'%'
+                OR @descripcion LIKE N'%' + CHAR(10) + N'%'
+                OR @descripcion LIKE N'%' + CHAR(13) + N'%'))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El nombre y la descripción no pueden contener caracteres de control.';
+            RETURN;
+        END;
+
+        IF @nombre = N''
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El nombre del tipo de usuario es obligatorio.';
+            RETURN;
+        END;
+
+        IF @esAlta = 0 AND @idPerfil <= 0
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El tipo de usuario indicado no es válido.';
+            RETURN;
+        END;
+
+        IF @esAlta = 0
+        BEGIN
+            SELECT @alcanceGlobal = p.alcance_global
+            FROM dbo.PERFIL AS p
+            WHERE p.id_perfil = @idPerfil
+              AND p.eliminado_en IS NULL;
+
+            IF @alcanceGlobal IS NULL
+            BEGIN
+                SET @CodigoResultado = 1;
+                SET @MensajeResultado = N'El tipo de usuario no existe o fue dado de baja.';
+                RETURN;
+            END;
+
+            IF @alcanceGlobal = 1
+            BEGIN
+                SET @CodigoResultado = 5;
+                SET @MensajeResultado = N'El perfil global del sistema no puede modificarse.';
+                RETURN;
+            END;
+        END;
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.PERFIL AS p
+            WHERE UPPER(p.nombre) = UPPER(@nombre)
+              AND (@esAlta = 1 OR p.id_perfil <> @idPerfil)
+        )
+        BEGIN
+            SET @CodigoResultado = 2;
+            SET @MensajeResultado = N'Ya existe un tipo de usuario con ese nombre.';
+            RETURN;
+        END;
+
+        IF @idsFuncionalidades LIKE N',%'
+           OR @idsFuncionalidades LIKE N'%,'
+           OR @idsFuncionalidades LIKE N'%,,%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La lista de funcionalidades contiene valores no válidos.';
+            RETURN;
+        END;
+
+        IF @idsFuncionalidades <> N''
+        BEGIN
+            INSERT INTO @SeleccionEntrada (id_funcionalidad)
+            SELECT TRY_CONVERT(INT, LTRIM(RTRIM(value)))
+            FROM STRING_SPLIT(@idsFuncionalidades, N',');
+
+            IF EXISTS
+            (
+                SELECT 1
+                FROM @SeleccionEntrada
+                WHERE id_funcionalidad IS NULL
+                   OR id_funcionalidad <= 0
+            )
+            BEGIN
+                SET @CodigoResultado = 3;
+                SET @MensajeResultado = N'La lista de funcionalidades contiene valores no válidos.';
+                RETURN;
+            END;
+
+            IF (SELECT COUNT(*) FROM @SeleccionEntrada)
+               <>
+               (SELECT COUNT(DISTINCT id_funcionalidad) FROM @SeleccionEntrada)
+            BEGIN
+                SET @CodigoResultado = 3;
+                SET @MensajeResultado = N'La lista de funcionalidades contiene valores duplicados.';
+                RETURN;
+            END;
+
+            INSERT INTO @Seleccion (id_funcionalidad)
+            SELECT id_funcionalidad
+            FROM @SeleccionEntrada;
+        END;
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM @Seleccion AS seleccion
+            LEFT JOIN dbo.FUNCIONALIDAD AS f
+                ON f.id_funcionalidad = seleccion.id_funcionalidad
+               AND f.eliminado_en IS NULL
+            WHERE f.id_funcionalidad IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'Se seleccionó una funcionalidad inexistente o inactiva.';
+            RETURN;
+        END;
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM @Seleccion AS seleccion
+            INNER JOIN dbo.FUNCIONALIDAD AS f
+                ON f.id_funcionalidad = seleccion.id_funcionalidad
+            WHERE f.codigo = N'PERMISOS_GESTIONAR'
+              AND f.eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado = N'La administración de permisos es exclusiva del perfil global.';
+            RETURN;
+        END;
+
+        BEGIN TRANSACTION;
+
+        IF @esAlta = 1
+        BEGIN
+            INSERT INTO dbo.PERFIL
+            (
+                nombre,
+                descripcion,
+                alcance_global
+            )
+            VALUES
+            (
+                @nombre,
+                @descripcion,
+                0
+            );
+
+            SET @idPerfil = CAST(SCOPE_IDENTITY() AS INT);
+        END;
+        ELSE
+        BEGIN
+            UPDATE dbo.PERFIL
+            SET
+                nombre = @nombre,
+                descripcion = @descripcion
+            WHERE id_perfil = @idPerfil
+              AND eliminado_en IS NULL;
+        END;
+
+        DELETE FROM dbo.PERFIL_FUNCIONALIDAD
+        WHERE id_perfil = @idPerfil;
+
+        INSERT INTO dbo.PERFIL_FUNCIONALIDAD
+        (
+            id_perfil,
+            id_funcionalidad
+        )
+        SELECT
+            @idPerfil,
+            seleccion.id_funcionalidad
+        FROM @Seleccion AS seleccion;
+
+        COMMIT TRANSACTION;
+
+        SET @IdGenerado = @idPerfil;
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado = N'El tipo de usuario y sus permisos se guardaron correctamente.';
+
+    END TRY
+    BEGIN CATCH
+
+        IF @@TRANCOUNT > 0
+        BEGIN
+            ROLLBACK TRANSACTION;
+        END;
+
+        SET @IdGenerado = 0;
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = LEFT(ERROR_MESSAGE(), 250);
 
     END CATCH;
 END;
@@ -2805,6 +3054,7 @@ GO
 
 
 CREATE OR ALTER PROCEDURE dbo.sp_Inventario_EstablecerStock
+    @idUsuario INT,
     @idProducto INT,
     @idSucursal INT,
     @stock INT,
@@ -2821,16 +3071,67 @@ BEGIN
 
     BEGIN TRY
 
+        /* ----------------------------------------------------
+           Usuario y perfil activos
+           ---------------------------------------------------- */
+
+        IF @idUsuario IS NULL OR @idUsuario <= 0
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El usuario es obligatorio para actualizar el stock.';
+            RETURN;
+        END;
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.USUARIO AS u
+            INNER JOIN dbo.PERFIL AS p
+                ON p.id_perfil = u.id_perfil
+               AND p.eliminado_en IS NULL
+            WHERE u.id_usuario = @idUsuario
+              AND u.eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'El usuario o su perfil no existen o están inactivos.';
+            RETURN;
+        END;
+
+        /* ----------------------------------------------------
+           Permiso de modificación de productos
+           ---------------------------------------------------- */
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.USUARIO AS u
+            INNER JOIN dbo.PERFIL_FUNCIONALIDAD AS pf
+                ON pf.id_perfil = u.id_perfil
+            INNER JOIN dbo.FUNCIONALIDAD AS f
+                ON f.id_funcionalidad = pf.id_funcionalidad
+            WHERE u.id_usuario = @idUsuario
+              AND u.eliminado_en IS NULL
+              AND f.codigo = N'PRODUCTOS_MODIFICAR'
+              AND f.eliminado_en IS NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado = N'El usuario no tiene permiso para modificar stock.';
+            RETURN;
+        END;
+
         IF NOT EXISTS
         (
             SELECT 1
             FROM dbo.PRODUCTO
             WHERE id_producto = @idProducto
               AND eliminado_en IS NULL
+              AND activo = 1
         )
         BEGIN
             SET @CodigoResultado = 1;
-            SET @MensajeResultado = N'El producto indicado no existe o fue dado de baja.';
+            SET @MensajeResultado = N'El producto indicado no existe, está inactivo o fue dado de baja.';
             RETURN;
         END;
 
@@ -2844,6 +3145,35 @@ BEGIN
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado = N'La sucursal indicada no existe o está inactiva.';
+            RETURN;
+        END;
+
+        /* ----------------------------------------------------
+           Alcance del perfil
+
+           Un perfil no global solo puede operar sobre la
+           sucursal asignada al usuario.
+           ---------------------------------------------------- */
+
+        IF EXISTS
+        (
+            SELECT 1
+            FROM dbo.USUARIO AS u
+            INNER JOIN dbo.PERFIL AS p
+                ON p.id_perfil = u.id_perfil
+               AND p.eliminado_en IS NULL
+            WHERE u.id_usuario = @idUsuario
+              AND u.eliminado_en IS NULL
+              AND p.alcance_global = 0
+              AND
+              (
+                  u.id_sucursal IS NULL
+                  OR u.id_sucursal <> @idSucursal
+              )
+        )
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado = N'El usuario no puede modificar stock en la sucursal indicada.';
             RETURN;
         END;
 
@@ -3932,6 +4262,231 @@ BEGIN
     FROM dbo.METODO_PAGO
     WHERE eliminado_en IS NULL
     ORDER BY nombre;
+END;
+GO
+
+
+-- ============================================================
+-- DASHBOARD
+-- Consultas compactas para Inicio. @idSucursal NULL representa
+-- el alcance global seleccionado en la sesión.
+-- ============================================================
+
+CREATE OR ALTER PROCEDURE dbo.sp_Dashboard_ObtenerResumen
+    @idSucursal INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT
+        (SELECT COUNT(*) FROM dbo.VENTA AS v
+         WHERE v.eliminado_en IS NULL
+           AND CAST(v.fecha_hora AS DATE) = CAST(GETDATE() AS DATE)
+           AND (@idSucursal IS NULL OR v.id_sucursal = @idSucursal)) AS ventas_hoy,
+        CAST((SELECT ISNULL(SUM(v.total), 0) FROM dbo.VENTA AS v
+              WHERE v.eliminado_en IS NULL
+                AND CAST(v.fecha_hora AS DATE) = CAST(GETDATE() AS DATE)
+                AND (@idSucursal IS NULL OR v.id_sucursal = @idSucursal)) AS DECIMAL(18,2)) AS ingresos_hoy,
+        (SELECT COUNT(*) FROM dbo.INVENTARIO AS i
+         INNER JOIN dbo.PRODUCTO AS p ON p.id_producto = i.id_producto
+         WHERE i.eliminado_en IS NULL AND p.eliminado_en IS NULL AND p.activo = 1
+           AND i.stock <= i.stock_minimo
+           AND (@idSucursal IS NULL OR i.id_sucursal = @idSucursal)) AS stock_bajo,
+        (SELECT COUNT(*) FROM dbo.PRODUCTO AS p
+         WHERE p.eliminado_en IS NULL AND p.activo = 1) AS productos_activos;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Dashboard_VentasUltimos7Dias
+    @idSucursal INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    ;WITH Dias AS
+    (
+        SELECT CAST(DATEADD(DAY, -6, CAST(GETDATE() AS DATE)) AS DATE) AS fecha
+        UNION ALL SELECT DATEADD(DAY, 1, fecha) FROM Dias WHERE fecha < CAST(GETDATE() AS DATE)
+    )
+    SELECT d.fecha,
+           COUNT(v.id_venta) AS ventas,
+           CAST(ISNULL(SUM(v.total), 0) AS DECIMAL(18,2)) AS ingresos
+    FROM Dias AS d
+    LEFT JOIN dbo.VENTA AS v
+      ON v.eliminado_en IS NULL
+     AND CAST(v.fecha_hora AS DATE) = d.fecha
+     AND (@idSucursal IS NULL OR v.id_sucursal = @idSucursal)
+    GROUP BY d.fecha
+    ORDER BY d.fecha
+    OPTION (MAXRECURSION 7);
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Dashboard_ProductosMasVendidos
+    @idSucursal INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP (5)
+        p.nombre AS producto,
+        SUM(dv.cantidad) AS unidades_vendidas
+    FROM dbo.DETALLE_VENTA AS dv
+    INNER JOIN dbo.VENTA AS v ON v.id_venta = dv.id_venta
+    INNER JOIN dbo.PRODUCTO AS p ON p.id_producto = dv.id_producto
+    WHERE v.eliminado_en IS NULL
+      AND dv.eliminado_en IS NULL
+      AND v.fecha_hora >= DATEADD(DAY, -6, CAST(GETDATE() AS DATE))
+      AND (@idSucursal IS NULL OR v.id_sucursal = @idSucursal)
+    GROUP BY p.id_producto, p.nombre
+    ORDER BY SUM(dv.cantidad) DESC, p.nombre;
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Dashboard_ActividadReciente
+    @idSucursal INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT TOP (5)
+        v.fecha_hora,
+        CONCAT(c.nombre, N' ', c.apellido) AS cliente,
+        CONCAT(u.nombre, N' ', u.apellido) AS vendedor,
+        v.total
+    FROM dbo.VENTA AS v
+    INNER JOIN dbo.CLIENTE AS c ON c.id_cliente = v.id_cliente
+    INNER JOIN dbo.USUARIO AS u ON u.id_usuario = v.id_usuario
+    WHERE v.eliminado_en IS NULL
+      AND (@idSucursal IS NULL OR v.id_sucursal = @idSucursal)
+    ORDER BY v.fecha_hora DESC;
+END;
+GO
+
+
+-- ============================================================
+-- AVISOS INTERNOS
+-- El destino se basa en funcionalidades para no depender de
+-- nombres de perfiles ni de identificadores fijos.
+-- ============================================================
+
+CREATE OR ALTER PROCEDURE dbo.sp_Aviso_ListarDestinos
+    @idUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @AlcanceGlobal BIT;
+
+    SELECT @AlcanceGlobal = p.alcance_global
+    FROM dbo.USUARIO AS u
+    INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil
+    WHERE u.id_usuario = @idUsuario
+      AND u.eliminado_en IS NULL
+      AND p.eliminado_en IS NULL
+      AND EXISTS
+      (
+          SELECT 1 FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+          INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+          WHERE pf.id_perfil = p.id_perfil AND f.codigo = N'AVISOS_PUBLICAR'
+            AND f.eliminado_en IS NULL
+      );
+
+    IF @AlcanceGlobal IS NULL RETURN;
+
+    SELECT f.id_funcionalidad, f.nombre
+    FROM dbo.FUNCIONALIDAD AS f
+    WHERE f.eliminado_en IS NULL
+      AND ((@AlcanceGlobal = 1 AND f.codigo = N'REPORTES_GERENTE')
+        OR (@AlcanceGlobal = 0 AND f.codigo = N'REPORTES_VENDEDOR'));
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Aviso_Publicar
+    @idUsuario INT,
+    @idFuncionalidadDestino INT,
+    @titulo NVARCHAR(100),
+    @mensaje NVARCHAR(500)
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @AlcanceGlobal BIT, @IdSucursal INT, @CodigoDestino NVARCHAR(50);
+
+    SELECT @AlcanceGlobal = p.alcance_global, @IdSucursal = u.id_sucursal
+    FROM dbo.USUARIO AS u
+    INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil
+    WHERE u.id_usuario = @idUsuario AND u.eliminado_en IS NULL AND p.eliminado_en IS NULL;
+
+    IF @AlcanceGlobal IS NULL
+        THROW 51000, 'El autor del aviso no está activo.', 1;
+
+    IF NOT EXISTS
+    (
+        SELECT 1 FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+        INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+        WHERE pf.id_perfil = (SELECT id_perfil FROM dbo.USUARIO WHERE id_usuario = @idUsuario)
+          AND f.codigo = N'AVISOS_PUBLICAR' AND f.eliminado_en IS NULL
+    )
+        THROW 51000, 'No tiene permiso para publicar avisos.', 1;
+
+    SELECT @CodigoDestino = codigo FROM dbo.FUNCIONALIDAD
+    WHERE id_funcionalidad = @idFuncionalidadDestino AND eliminado_en IS NULL;
+
+    IF (@AlcanceGlobal = 1 AND @CodigoDestino <> N'REPORTES_GERENTE')
+       OR (@AlcanceGlobal = 0 AND
+           (
+               @CodigoDestino <> N'REPORTES_VENDEDOR'
+               OR @IdSucursal IS NULL
+               OR NOT EXISTS
+                  (
+                      SELECT 1
+                      FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+                      INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+                      WHERE pf.id_perfil = (SELECT id_perfil FROM dbo.USUARIO WHERE id_usuario = @idUsuario)
+                        AND f.codigo = N'REPORTES_GERENTE'
+                        AND f.eliminado_en IS NULL
+                  )
+           ))
+        THROW 51000, 'El destino del aviso no corresponde al alcance del autor.', 1;
+
+    IF LEN(LTRIM(RTRIM(ISNULL(@titulo, N'')))) = 0
+       OR LEN(LTRIM(RTRIM(ISNULL(@mensaje, N'')))) = 0
+        THROW 51000, 'El título y el mensaje del aviso son obligatorios.', 1;
+
+    INSERT INTO dbo.AVISO(titulo, mensaje, id_usuario_autor, id_sucursal, id_funcionalidad_destino)
+    VALUES (LTRIM(RTRIM(@titulo)), LTRIM(RTRIM(@mensaje)), @idUsuario,
+            CASE WHEN @AlcanceGlobal = 1 THEN NULL ELSE @IdSucursal END,
+            @idFuncionalidadDestino);
+END;
+GO
+
+
+CREATE OR ALTER PROCEDURE dbo.sp_Aviso_ListarParaUsuario
+    @idUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT a.id_aviso, a.titulo, a.mensaje, a.fecha_creacion,
+           CONCAT(autor.nombre, N' ', autor.apellido) AS autor,
+           destino.nombre AS destino
+    FROM dbo.AVISO AS a
+    INNER JOIN dbo.USUARIO AS u ON u.id_usuario = @idUsuario
+    INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil
+    INNER JOIN dbo.PERFIL_FUNCIONALIDAD AS pf
+        ON pf.id_perfil = p.id_perfil AND pf.id_funcionalidad = a.id_funcionalidad_destino
+    INNER JOIN dbo.FUNCIONALIDAD AS destino ON destino.id_funcionalidad = a.id_funcionalidad_destino
+    INNER JOIN dbo.USUARIO AS autor ON autor.id_usuario = a.id_usuario_autor
+    WHERE u.eliminado_en IS NULL AND p.eliminado_en IS NULL
+      AND p.alcance_global = 0
+      AND a.activo = 1 AND a.eliminado_en IS NULL
+      AND (a.id_sucursal IS NULL OR a.id_sucursal = u.id_sucursal)
+    ORDER BY a.fecha_creacion DESC;
 END;
 GO
 

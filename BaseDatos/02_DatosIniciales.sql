@@ -99,7 +99,8 @@ INNER JOIN
 
         (N'REPORTES_ADMINISTRADOR',  N'Reportes de administrador',       N'Permite acceder a los reportes del administrador'),
         (N'REPORTES_GERENTE',        N'Reportes de gerente',             N'Permite acceder a los reportes del gerente'),
-        (N'REPORTES_VENDEDOR',       N'Reportes de vendedor',            N'Permite acceder a los reportes del vendedor')
+        (N'REPORTES_VENDEDOR',       N'Reportes de vendedor',            N'Permite acceder a los reportes del vendedor'),
+        (N'AVISOS_PUBLICAR',         N'Publicar avisos internos',        N'Permite publicar avisos según el alcance del usuario')
 ) AS v(codigo, nombre, descripcion)
     ON v.codigo = f.codigo;
 GO
@@ -141,7 +142,8 @@ FROM
 
         (N'REPORTES_ADMINISTRADOR',  N'Reportes de administrador',       N'Permite acceder a los reportes del administrador'),
         (N'REPORTES_GERENTE',        N'Reportes de gerente',             N'Permite acceder a los reportes del gerente'),
-        (N'REPORTES_VENDEDOR',       N'Reportes de vendedor',            N'Permite acceder a los reportes del vendedor')
+        (N'REPORTES_VENDEDOR',       N'Reportes de vendedor',            N'Permite acceder a los reportes del vendedor'),
+        (N'AVISOS_PUBLICAR',         N'Publicar avisos internos',        N'Permite publicar avisos según el alcance del usuario')
 ) AS v(codigo, nombre, descripcion)
 WHERE NOT EXISTS
 (
@@ -410,7 +412,8 @@ WHERE p.nombre = N'Administrador'
       N'PRODUCTOS_BAJA',
       N'PRODUCTOS_MODIFICAR',
 
-      N'REPORTES_ADMINISTRADOR'
+      N'REPORTES_ADMINISTRADOR',
+      N'AVISOS_PUBLICAR'
   )
   AND NOT EXISTS
   (
@@ -445,7 +448,8 @@ WHERE p.nombre = N'Gerente'
 
       N'PRODUCTOS_VER',
 
-      N'REPORTES_GERENTE'
+      N'REPORTES_GERENTE',
+      N'AVISOS_PUBLICAR'
   )
   AND NOT EXISTS
   (

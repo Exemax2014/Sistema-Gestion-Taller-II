@@ -256,6 +256,116 @@ namespace Capa_Logica
         // ALTA
         // ========================================================
 
+        // Guarda datos y funcionalidades en una sola llamada para no dejar perfiles parciales.
+        public ResultadoPerfil Guardar(
+            int? idPerfil,
+            string nombre,
+            string descripcion,
+            IEnumerable<int> funcionalidadesSeleccionadas)
+        {
+            if (!PuedeGestionarPermisos())
+            {
+                return ResultadoNoPermitido(
+                    "No tiene permiso para administrar tipos de usuario."
+                );
+            }
+
+            if (idPerfil.HasValue)
+            {
+                if (idPerfil.Value <= 0)
+                {
+                    return ResultadoInvalido(
+                        "El tipo de usuario indicado no es válido."
+                    );
+                }
+
+                PerfilGestionModelo? perfilActual =
+                    ObtenerPorId(idPerfil.Value);
+
+                if (perfilActual == null)
+                {
+                    return ResultadoInvalido(
+                        "El tipo de usuario no existe."
+                    );
+                }
+
+                if (perfilActual.AlcanceGlobal)
+                {
+                    return ResultadoNoPermitido(
+                        "El perfil global del sistema no puede modificarse."
+                    );
+                }
+            }
+
+            string? errorDatos = ValidarDatosPerfil(
+                nombre,
+                descripcion
+            );
+
+            if (errorDatos != null)
+            {
+                return ResultadoInvalido(errorDatos);
+            }
+
+            List<int> seleccionadas =
+                (funcionalidadesSeleccionadas
+                    ?? Enumerable.Empty<int>())
+                .ToList();
+
+            if (seleccionadas.Any(id => id <= 0))
+            {
+                return ResultadoInvalido(
+                    "La lista de funcionalidades contiene valores no válidos."
+                );
+            }
+
+            if (seleccionadas.Count != seleccionadas.Distinct().Count())
+            {
+                return ResultadoInvalido(
+                    "La lista de funcionalidades contiene valores duplicados."
+                );
+            }
+
+            List<FuncionalidadPerfilModelo> disponibles =
+                ObtenerFuncionalidadesDisponibles();
+
+            HashSet<int> idsDisponibles =
+                disponibles
+                    .Select(f => f.IdFuncionalidad)
+                    .ToHashSet();
+
+            if (seleccionadas.Any(id => !idsDisponibles.Contains(id)))
+            {
+                return ResultadoInvalido(
+                    "Se seleccionó una funcionalidad que no está disponible."
+                );
+            }
+
+            FuncionalidadPerfilModelo? permisoGestion =
+                disponibles.FirstOrDefault(
+                    f => f.Codigo == "PERMISOS_GESTIONAR"
+                );
+
+            if (
+                permisoGestion != null
+                && seleccionadas.Contains(permisoGestion.IdFuncionalidad))
+            {
+                return ResultadoNoPermitido(
+                    "La administración de permisos es exclusiva del perfil global."
+                );
+            }
+
+            ResultadoPerfilDatos resultado =
+                perfilDatos.Guardar(
+                    idPerfil,
+                    NormalizarNombre(nombre),
+                    NormalizarDescripcion(descripcion),
+                    seleccionadas
+                );
+
+            return ConvertirResultado(resultado);
+        }
+
         // Crea un perfil con datos normalizados y validados antes de llegar a Datos.
         public ResultadoPerfil Crear(
             string nombre,

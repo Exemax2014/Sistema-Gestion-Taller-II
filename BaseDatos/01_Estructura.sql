@@ -773,6 +773,61 @@ END;
 GO
 
 
+/* ========================
+   AVISO
+   ========================
+   Comunicaciones internas persistentes. El destinatario se expresa
+   mediante una funcionalidad para mantener la jerarquía desacoplada
+   de nombres concretos de perfiles. */
+IF OBJECT_ID('dbo.AVISO', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.AVISO
+    (
+        id_aviso INT IDENTITY(1,1) PRIMARY KEY,
+        titulo NVARCHAR(100) NOT NULL,
+        mensaje NVARCHAR(500) NOT NULL,
+        fecha_creacion DATETIME2 NOT NULL
+            CONSTRAINT DF_AVISO_fecha_creacion DEFAULT SYSDATETIME(),
+        id_usuario_autor INT NOT NULL,
+        id_sucursal INT NULL,
+        id_funcionalidad_destino INT NOT NULL,
+        activo BIT NOT NULL
+            CONSTRAINT DF_AVISO_activo DEFAULT (1),
+        eliminado_en DATETIME2 NULL,
+
+        CONSTRAINT FK_AVISO_USUARIO_AUTOR
+            FOREIGN KEY (id_usuario_autor)
+            REFERENCES dbo.USUARIO(id_usuario),
+        CONSTRAINT FK_AVISO_SUCURSAL
+            FOREIGN KEY (id_sucursal)
+            REFERENCES dbo.SUCURSAL(id_sucursal),
+        CONSTRAINT FK_AVISO_FUNCIONALIDAD_DESTINO
+            FOREIGN KEY (id_funcionalidad_destino)
+            REFERENCES dbo.FUNCIONALIDAD(id_funcionalidad),
+        CONSTRAINT CK_AVISO_titulo_no_vacio
+            CHECK (LEN(LTRIM(RTRIM(titulo))) > 0),
+        CONSTRAINT CK_AVISO_mensaje_no_vacio
+            CHECK (LEN(LTRIM(RTRIM(mensaje))) > 0)
+    );
+END;
+GO
+
+
+/* Acelera la consulta de avisos activos por alcance y destinatario. */
+IF OBJECT_ID('dbo.AVISO', 'U') IS NOT NULL
+   AND NOT EXISTS
+   (
+       SELECT 1 FROM sys.indexes
+       WHERE object_id = OBJECT_ID('dbo.AVISO')
+         AND name = 'IX_AVISO_DestinoActivo'
+   )
+BEGIN
+    CREATE INDEX IX_AVISO_DestinoActivo
+        ON dbo.AVISO(id_funcionalidad_destino, id_sucursal, activo, fecha_creacion DESC);
+END;
+GO
+
+
 /* =========================================================
    FIN DEL SCRIPT
    Este archivo puede volver a ejecutarse sin recrear tablas

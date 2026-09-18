@@ -31,6 +31,18 @@ namespace Capa_Vistas
         private void InitializeComponent()
         {
             pnlPrincipal = new Panel();
+            pnlAvisos = new Panel();
+            dgvAvisos = new DataGridView();
+            btnPublicarAviso = new Button();
+            cmbAvisoDestino = new ComboBox();
+            txtAvisoMensaje = new TextBox();
+            txtAvisoTitulo = new TextBox();
+            lblAvisosTitulo = new Label();
+            pnlGraficos = new Panel();
+            pnlGraficoProductos = new Panel();
+            pnlGraficoIngresos = new Panel();
+            pnlGraficoVentas = new Panel();
+            dgvActividad = new DataGridView();
             pnlActividad = new Panel();
             lblActividadTitulo = new Label();
             lblActividadDescripcion = new Label();
@@ -64,6 +76,10 @@ namespace Capa_Vistas
             lblSubtitulo = new Label();
             pnlLineaDorada = new Panel();
             pnlPrincipal.SuspendLayout();
+            pnlAvisos.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvAvisos).BeginInit();
+            pnlGraficos.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvActividad).BeginInit();
             pnlActividad.SuspendLayout();
             pnlActividadContenido.SuspendLayout();
             pnlAccesos.SuspendLayout();
@@ -78,6 +94,8 @@ namespace Capa_Vistas
             // 
             pnlPrincipal.BackColor = Color.FromArgb(245, 246, 248);
             pnlPrincipal.Controls.Add(pnlActividad);
+            pnlPrincipal.Controls.Add(pnlAvisos);
+            pnlPrincipal.Controls.Add(pnlGraficos);
             pnlPrincipal.Controls.Add(pnlAccesos);
             pnlPrincipal.Controls.Add(pnlTarjetaProductos);
             pnlPrincipal.Controls.Add(pnlTarjetaStock);
@@ -90,6 +108,116 @@ namespace Capa_Vistas
             pnlPrincipal.Padding = new Padding(32);
             pnlPrincipal.Size = new Size(1180, 760);
             pnlPrincipal.TabIndex = 0;
+            // 
+            // pnlAvisos
+            // 
+            pnlAvisos.BackColor = Color.White;
+            pnlAvisos.BorderStyle = BorderStyle.FixedSingle;
+            pnlAvisos.Controls.Add(dgvAvisos);
+            pnlAvisos.Controls.Add(btnPublicarAviso);
+            pnlAvisos.Controls.Add(cmbAvisoDestino);
+            pnlAvisos.Controls.Add(txtAvisoMensaje);
+            pnlAvisos.Controls.Add(txtAvisoTitulo);
+            pnlAvisos.Controls.Add(lblAvisosTitulo);
+            pnlAvisos.Location = new Point(32, 760);
+            pnlAvisos.Name = "pnlAvisos";
+            pnlAvisos.Size = new Size(1116, 300);
+            pnlAvisos.TabIndex = 8;
+            // 
+            // lblAvisosTitulo
+            // 
+            lblAvisosTitulo.AutoSize = true;
+            lblAvisosTitulo.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
+            lblAvisosTitulo.ForeColor = Color.FromArgb(55, 59, 64);
+            lblAvisosTitulo.Location = new Point(18, 13);
+            lblAvisosTitulo.Name = "lblAvisosTitulo";
+            lblAvisosTitulo.Text = "Avisos internos";
+            // 
+            // txtAvisoTitulo
+            // 
+            txtAvisoTitulo.Location = new Point(18, 48);
+            txtAvisoTitulo.MaxLength = 100;
+            txtAvisoTitulo.Name = "txtAvisoTitulo";
+            txtAvisoTitulo.PlaceholderText = "Título del aviso";
+            txtAvisoTitulo.Size = new Size(250, 27);
+            // 
+            // txtAvisoMensaje
+            // 
+            txtAvisoMensaje.Location = new Point(276, 48);
+            txtAvisoMensaje.MaxLength = 500;
+            txtAvisoMensaje.Name = "txtAvisoMensaje";
+            txtAvisoMensaje.PlaceholderText = "Mensaje";
+            txtAvisoMensaje.Size = new Size(350, 27);
+            // 
+            // cmbAvisoDestino
+            // 
+            cmbAvisoDestino.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbAvisoDestino.Location = new Point(634, 48);
+            cmbAvisoDestino.Name = "cmbAvisoDestino";
+            cmbAvisoDestino.Size = new Size(210, 28);
+            // 
+            // btnPublicarAviso
+            // 
+            btnPublicarAviso.BackColor = Color.FromArgb(190, 137, 45);
+            btnPublicarAviso.FlatAppearance.BorderSize = 0;
+            btnPublicarAviso.FlatStyle = FlatStyle.Flat;
+            btnPublicarAviso.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            btnPublicarAviso.ForeColor = Color.White;
+            btnPublicarAviso.Location = new Point(852, 45);
+            btnPublicarAviso.Name = "btnPublicarAviso";
+            btnPublicarAviso.Size = new Size(150, 34);
+            btnPublicarAviso.Text = "Publicar aviso";
+            btnPublicarAviso.UseVisualStyleBackColor = false;
+            // 
+            // dgvAvisos
+            // 
+            dgvAvisos.AllowUserToAddRows = false;
+            dgvAvisos.AllowUserToDeleteRows = false;
+            dgvAvisos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvAvisos.BackgroundColor = Color.FromArgb(248, 249, 250);
+            dgvAvisos.BorderStyle = BorderStyle.None;
+            dgvAvisos.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.AutoSize;
+            dgvAvisos.Location = new Point(18, 92);
+            dgvAvisos.Name = "dgvAvisos";
+            dgvAvisos.ReadOnly = true;
+            dgvAvisos.RowHeadersVisible = false;
+            dgvAvisos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dgvAvisos.Size = new Size(1078, 185);
+            // 
+            // pnlGraficos
+            // 
+            pnlGraficos.BackColor = Color.Transparent;
+            pnlGraficos.Controls.Add(pnlGraficoProductos);
+            pnlGraficos.Controls.Add(pnlGraficoIngresos);
+            pnlGraficos.Controls.Add(pnlGraficoVentas);
+            pnlGraficos.Location = new Point(32, 410);
+            pnlGraficos.Name = "pnlGraficos";
+            pnlGraficos.Size = new Size(1116, 185);
+            pnlGraficos.TabIndex = 9;
+            // 
+            // pnlGraficoVentas
+            // 
+            pnlGraficoVentas.BackColor = Color.White;
+            pnlGraficoVentas.BorderStyle = BorderStyle.FixedSingle;
+            pnlGraficoVentas.Location = new Point(0, 0);
+            pnlGraficoVentas.Name = "pnlGraficoVentas";
+            pnlGraficoVentas.Size = new Size(360, 185);
+            // 
+            // pnlGraficoIngresos
+            // 
+            pnlGraficoIngresos.BackColor = Color.White;
+            pnlGraficoIngresos.BorderStyle = BorderStyle.FixedSingle;
+            pnlGraficoIngresos.Location = new Point(378, 0);
+            pnlGraficoIngresos.Name = "pnlGraficoIngresos";
+            pnlGraficoIngresos.Size = new Size(360, 185);
+            // 
+            // pnlGraficoProductos
+            // 
+            pnlGraficoProductos.BackColor = Color.White;
+            pnlGraficoProductos.BorderStyle = BorderStyle.FixedSingle;
+            pnlGraficoProductos.Location = new Point(756, 0);
+            pnlGraficoProductos.Name = "pnlGraficoProductos";
+            pnlGraficoProductos.Size = new Size(360, 185);
             // 
             // pnlActividad
             // 
@@ -131,6 +259,7 @@ namespace Capa_Vistas
             pnlActividadContenido.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlActividadContenido.BackColor = Color.FromArgb(248, 249, 250);
             pnlActividadContenido.Controls.Add(lblActividadPlaceholder);
+            pnlActividadContenido.Controls.Add(dgvActividad);
             pnlActividadContenido.Location = new Point(18, 48);
             pnlActividadContenido.Name = "pnlActividadContenido";
             pnlActividadContenido.Size = new Size(1078, 249);
@@ -147,6 +276,18 @@ namespace Capa_Vistas
             lblActividadPlaceholder.TabIndex = 0;
             lblActividadPlaceholder.Text = "La actividad reciente se mostrará aquí al conectar la capa lógica.";
             lblActividadPlaceholder.TextAlign = ContentAlignment.MiddleCenter;
+            // 
+            // dgvActividad
+            // 
+            dgvActividad.AllowUserToAddRows = false;
+            dgvActividad.AllowUserToDeleteRows = false;
+            dgvActividad.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvActividad.BackgroundColor = Color.FromArgb(248, 249, 250);
+            dgvActividad.BorderStyle = BorderStyle.None;
+            dgvActividad.Dock = DockStyle.Fill;
+            dgvActividad.ReadOnly = true;
+            dgvActividad.RowHeadersVisible = false;
+            dgvActividad.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             // 
             // pnlAccesos
             // 
@@ -477,6 +618,11 @@ namespace Capa_Vistas
             Name = "FormInicio";
             Text = "Inicio";
             pnlPrincipal.ResumeLayout(false);
+            pnlAvisos.ResumeLayout(false);
+            pnlAvisos.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)dgvAvisos).EndInit();
+            pnlGraficos.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)dgvActividad).EndInit();
             pnlActividad.ResumeLayout(false);
             pnlActividad.PerformLayout();
             pnlActividadContenido.ResumeLayout(false);
@@ -573,5 +719,19 @@ namespace Capa_Vistas
         private Panel pnlActividadContenido;
 
         private Label lblActividadPlaceholder;
+
+        private Panel pnlGraficos;
+        private Panel pnlGraficoVentas;
+        private Panel pnlGraficoIngresos;
+        private Panel pnlGraficoProductos;
+        private DataGridView dgvActividad;
+
+        private Panel pnlAvisos;
+        private Label lblAvisosTitulo;
+        private TextBox txtAvisoTitulo;
+        private TextBox txtAvisoMensaje;
+        private ComboBox cmbAvisoDestino;
+        private Button btnPublicarAviso;
+        private DataGridView dgvAvisos;
     }
 }

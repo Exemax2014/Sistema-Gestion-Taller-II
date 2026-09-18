@@ -89,6 +89,7 @@ namespace Capa_Logica
         // ESTABLECER STOCK
         // ========================================================
 
+        // Valida el stock y el alcance de sesión antes de delegar la autorización final al procedimiento.
         public ResultadoInventario EstablecerStock(
             int idProducto,
             int idSucursal,
@@ -141,6 +142,7 @@ namespace Capa_Logica
 
             ResultadoInventarioDatos resultado =
                 inventarioDatos.EstablecerStock(
+                    SesionActual.IdUsuario,
                     idProducto,
                     idSucursal,
                     stock,

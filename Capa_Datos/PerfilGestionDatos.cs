@@ -56,6 +56,114 @@ namespace Capa_Datos
 
     public class PerfilGestionDatos
     {
+        // Guarda el perfil y sus funcionalidades mediante un único procedimiento transaccional.
+        public ResultadoPerfilDatos Guardar(
+            int? idPerfil,
+            string nombre,
+            string descripcion,
+            IEnumerable<int> idsFuncionalidades)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Perfil_Guardar",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            comando.Parameters.Add(
+                "@idPerfil",
+                SqlDbType.Int
+            ).Value =
+                idPerfil.HasValue
+                    ? idPerfil.Value
+                    : DBNull.Value;
+
+            comando.Parameters.Add(
+                "@nombre",
+                SqlDbType.NVarChar,
+                50
+            ).Value = nombre;
+
+            comando.Parameters.Add(
+                "@descripcion",
+                SqlDbType.NVarChar,
+                200
+            ).Value =
+                string.IsNullOrWhiteSpace(descripcion)
+                    ? DBNull.Value
+                    : descripcion;
+
+            comando.Parameters.Add(
+                "@idsFuncionalidades",
+                SqlDbType.NVarChar,
+                -1
+            ).Value =
+                string.Join(
+                    ",",
+                    idsFuncionalidades
+                    ?? Enumerable.Empty<int>()
+                );
+
+            SqlParameter idGenerado =
+                comando.Parameters.Add(
+                    "@IdGenerado",
+                    SqlDbType.Int
+                );
+
+            idGenerado.Direction =
+                ParameterDirection.Output;
+
+            SqlParameter codigoResultado =
+                comando.Parameters.Add(
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+            codigoResultado.Direction =
+                ParameterDirection.Output;
+
+            SqlParameter mensajeResultado =
+                comando.Parameters.Add(
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
+            mensajeResultado.Direction =
+                ParameterDirection.Output;
+
+            conexion.Open();
+
+            comando.ExecuteNonQuery();
+
+            return new ResultadoPerfilDatos
+            {
+                IdGenerado =
+                    idGenerado.Value == DBNull.Value
+                        ? 0
+                        : Convert.ToInt32(
+                            idGenerado.Value
+                        ),
+
+                Codigo =
+                    codigoResultado.Value == DBNull.Value
+                        ? 500
+                        : Convert.ToInt32(
+                            codigoResultado.Value
+                        ),
+
+                Mensaje =
+                    mensajeResultado.Value?.ToString()
+                    ?? string.Empty
+            };
+        }
+
+
         // ========================================================
         // LISTADO DE PERFILES
         // ========================================================
