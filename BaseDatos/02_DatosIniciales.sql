@@ -97,9 +97,26 @@ INNER JOIN
         (N'PRODUCTOS_BAJA',          N'Baja de productos',               N'Permite realizar la baja lógica de productos'),
         (N'PRODUCTOS_MODIFICAR',     N'Modificar productos',             N'Permite modificar productos'),
 
+        (N'SUCURSALES_VER',          N'Ver sucursales',                  N'Permite consultar sucursales y sus usuarios por perfil'),
+        (N'SUCURSALES_ALTA',         N'Alta de sucursales',              N'Permite registrar nuevas sucursales'),
+        (N'SUCURSALES_MODIFICAR',    N'Modificar sucursales',            N'Permite modificar sucursales existentes'),
+        (N'SUCURSALES_BAJA',         N'Baja de sucursales',              N'Permite dar de baja o reactivar sucursales'),
+
         (N'REPORTES_ADMINISTRADOR',  N'Reportes de administrador',       N'Permite acceder a los reportes del administrador'),
         (N'REPORTES_GERENTE',        N'Reportes de gerente',             N'Permite acceder a los reportes del gerente'),
         (N'REPORTES_VENDEDOR',       N'Reportes de vendedor',            N'Permite acceder a los reportes del vendedor'),
+        (N'REPORTES_VER',            N'Acceder a reportes',              N'Permite acceder al módulo Reportes'),
+        (N'REPORTES_VENTAS',         N'Consultar ventas',                N'Permite consultar indicadores de ventas'),
+        (N'REPORTES_RECAUDACION',    N'Consultar recaudación',           N'Permite consultar recaudación y descuentos'),
+        (N'REPORTES_PRODUCTOS',      N'Consultar productos vendidos',    N'Permite consultar rankings de productos'),
+        (N'REPORTES_STOCK',          N'Consultar stock',                 N'Permite consultar alertas de stock'),
+        (N'REPORTES_RENDIMIENTO_VENDEDORES', N'Consultar rendimiento de vendedores', N'Permite consultar rendimiento por vendedor'),
+        (N'REPORTES_DETALLE_VENTAS', N'Consultar detalle de ventas',     N'Permite consultar el listado detallado de ventas'),
+        (N'REPORTES_EXPORTAR',       N'Exportar reportes',               N'Permite exportar información de reportes'),
+        (N'REPORTES_ALCANCE_PROPIO', N'Alcance propio de reportes',      N'Restringe los reportes a las operaciones propias'),
+        (N'REPORTES_ALCANCE_SUCURSAL', N'Alcance sucursal de reportes',  N'Restringe los reportes a la sucursal asignada'),
+        (N'REPORTES_ALCANCE_GLOBAL', N'Alcance global de reportes',      N'Permite consultar todas las sucursales o una seleccionada'),
+        (N'AVISOS_VER',              N'Ver avisos internos',             N'Permite recibir y visualizar avisos internos'),
         (N'AVISOS_PUBLICAR',         N'Publicar avisos internos',        N'Permite publicar avisos según el alcance del usuario')
 ) AS v(codigo, nombre, descripcion)
     ON v.codigo = f.codigo;
@@ -140,9 +157,26 @@ FROM
         (N'PRODUCTOS_BAJA',          N'Baja de productos',               N'Permite realizar la baja lógica de productos'),
         (N'PRODUCTOS_MODIFICAR',     N'Modificar productos',             N'Permite modificar productos'),
 
+        (N'SUCURSALES_VER',          N'Ver sucursales',                  N'Permite consultar sucursales y sus usuarios por perfil'),
+        (N'SUCURSALES_ALTA',         N'Alta de sucursales',              N'Permite registrar nuevas sucursales'),
+        (N'SUCURSALES_MODIFICAR',    N'Modificar sucursales',            N'Permite modificar sucursales existentes'),
+        (N'SUCURSALES_BAJA',         N'Baja de sucursales',              N'Permite dar de baja o reactivar sucursales'),
+
         (N'REPORTES_ADMINISTRADOR',  N'Reportes de administrador',       N'Permite acceder a los reportes del administrador'),
         (N'REPORTES_GERENTE',        N'Reportes de gerente',             N'Permite acceder a los reportes del gerente'),
         (N'REPORTES_VENDEDOR',       N'Reportes de vendedor',            N'Permite acceder a los reportes del vendedor'),
+        (N'REPORTES_VER',            N'Acceder a reportes',              N'Permite acceder al módulo Reportes'),
+        (N'REPORTES_VENTAS',         N'Consultar ventas',                N'Permite consultar indicadores de ventas'),
+        (N'REPORTES_RECAUDACION',    N'Consultar recaudación',           N'Permite consultar recaudación y descuentos'),
+        (N'REPORTES_PRODUCTOS',      N'Consultar productos vendidos',    N'Permite consultar rankings de productos'),
+        (N'REPORTES_STOCK',          N'Consultar stock',                 N'Permite consultar alertas de stock'),
+        (N'REPORTES_RENDIMIENTO_VENDEDORES', N'Consultar rendimiento de vendedores', N'Permite consultar rendimiento por vendedor'),
+        (N'REPORTES_DETALLE_VENTAS', N'Consultar detalle de ventas',     N'Permite consultar el listado detallado de ventas'),
+        (N'REPORTES_EXPORTAR',       N'Exportar reportes',               N'Permite exportar información de reportes'),
+        (N'REPORTES_ALCANCE_PROPIO', N'Alcance propio de reportes',      N'Restringe los reportes a las operaciones propias'),
+        (N'REPORTES_ALCANCE_SUCURSAL', N'Alcance sucursal de reportes',  N'Restringe los reportes a la sucursal asignada'),
+        (N'REPORTES_ALCANCE_GLOBAL', N'Alcance global de reportes',      N'Permite consultar todas las sucursales o una seleccionada'),
+        (N'AVISOS_VER',              N'Ver avisos internos',             N'Permite recibir y visualizar avisos internos'),
         (N'AVISOS_PUBLICAR',         N'Publicar avisos internos',        N'Permite publicar avisos según el alcance del usuario')
 ) AS v(codigo, nombre, descripcion)
 WHERE NOT EXISTS
@@ -412,7 +446,22 @@ WHERE p.nombre = N'Administrador'
       N'PRODUCTOS_BAJA',
       N'PRODUCTOS_MODIFICAR',
 
+      N'SUCURSALES_VER',
+      N'SUCURSALES_ALTA',
+      N'SUCURSALES_MODIFICAR',
+      N'SUCURSALES_BAJA',
+
       N'REPORTES_ADMINISTRADOR',
+      N'REPORTES_VER',
+      N'REPORTES_VENTAS',
+      N'REPORTES_RECAUDACION',
+      N'REPORTES_PRODUCTOS',
+      N'REPORTES_STOCK',
+      N'REPORTES_RENDIMIENTO_VENDEDORES',
+      N'REPORTES_DETALLE_VENTAS',
+      N'REPORTES_EXPORTAR',
+      N'REPORTES_ALCANCE_GLOBAL',
+      N'AVISOS_VER',
       N'AVISOS_PUBLICAR'
   )
   AND NOT EXISTS
@@ -449,6 +498,16 @@ WHERE p.nombre = N'Gerente'
       N'PRODUCTOS_VER',
 
       N'REPORTES_GERENTE',
+      N'REPORTES_VER',
+      N'REPORTES_VENTAS',
+      N'REPORTES_RECAUDACION',
+      N'REPORTES_PRODUCTOS',
+      N'REPORTES_STOCK',
+      N'REPORTES_RENDIMIENTO_VENDEDORES',
+      N'REPORTES_DETALLE_VENTAS',
+      N'REPORTES_EXPORTAR',
+      N'REPORTES_ALCANCE_SUCURSAL',
+      N'AVISOS_VER',
       N'AVISOS_PUBLICAR'
   )
   AND NOT EXISTS
@@ -486,7 +545,14 @@ WHERE p.nombre = N'Vendedor'
 
       N'PRODUCTOS_VER',
 
-      N'REPORTES_VENDEDOR'
+      N'REPORTES_VENDEDOR',
+      N'REPORTES_VER',
+      N'REPORTES_VENTAS',
+      N'REPORTES_RECAUDACION',
+      N'REPORTES_PRODUCTOS',
+      N'REPORTES_DETALLE_VENTAS',
+      N'REPORTES_ALCANCE_PROPIO'
+      ,N'AVISOS_VER'
   )
   AND NOT EXISTS
   (
@@ -495,6 +561,90 @@ WHERE p.nombre = N'Vendedor'
       WHERE pf.id_perfil = p.id_perfil
         AND pf.id_funcionalidad = f.id_funcionalidad
   );
+GO
+
+
+/* Relaciones iniciales de avisos. El código de aplicación nunca depende de estos nombres. */
+INSERT INTO dbo.PERFIL_AVISO_DESTINO (id_perfil_emisor, id_perfil_destino)
+SELECT emisor.id_perfil, destino.id_perfil
+FROM
+(
+    VALUES (N'Administrador', N'Gerente'), (N'Gerente', N'Vendedor')
+) AS relaciones(nombre_emisor, nombre_destino)
+INNER JOIN dbo.PERFIL AS emisor
+    ON emisor.nombre = relaciones.nombre_emisor AND emisor.eliminado_en IS NULL
+INNER JOIN dbo.PERFIL AS destino
+    ON destino.nombre = relaciones.nombre_destino AND destino.eliminado_en IS NULL
+WHERE NOT EXISTS
+(
+    SELECT 1
+    FROM dbo.PERFIL_AVISO_DESTINO AS pad
+    WHERE pad.id_perfil_emisor = emisor.id_perfil
+      AND pad.id_perfil_destino = destino.id_perfil
+);
+GO
+
+
+/* =========================================================
+   USUARIO ADMINISTRADOR INICIAL
+
+   Permite ingresar por primera vez y administrar perfiles,
+   sucursales, usuarios y catálogos. El hash es PBKDF2 válido;
+   sólo se crea o reactiva por el nombre de usuario reservado.
+   ========================================================= */
+IF EXISTS
+(
+    SELECT 1
+    FROM dbo.USUARIO
+    WHERE nombre_usuario = N'admin'
+)
+BEGIN
+    UPDATE u
+    SET
+        u.id_perfil = p.id_perfil,
+        u.id_sucursal = NULL,
+        u.eliminado_en = NULL
+    FROM dbo.USUARIO AS u
+    INNER JOIN dbo.PERFIL AS p
+        ON p.nombre = N'Administrador'
+       AND p.alcance_global = 1
+       AND p.eliminado_en IS NULL
+    WHERE u.nombre_usuario = N'admin';
+END
+ELSE
+BEGIN
+    INSERT INTO dbo.USUARIO
+    (
+        id_perfil,
+        id_sucursal,
+        nombre,
+        apellido,
+        dni,
+        nombre_usuario,
+        contrasena_hash,
+        correo
+    )
+    SELECT
+        p.id_perfil,
+        NULL,
+        N'Administrador',
+        N'Inicial',
+        N'90000000',
+        N'admin',
+        N'100000.zpJ5ba3fjhu0UZQQlS0CSA==.aYlVb4EHb1iq2DDfmmZ/PYf/+s/KygiBFxj6yvyEmAI=',
+        N'admin@sistemagestion.local'
+    FROM dbo.PERFIL AS p
+    WHERE p.nombre = N'Administrador'
+      AND p.alcance_global = 1
+      AND p.eliminado_en IS NULL
+      AND NOT EXISTS
+      (
+          SELECT 1
+          FROM dbo.USUARIO AS u
+          WHERE u.dni = N'90000000'
+             OR u.correo = N'admin@sistemagestion.local'
+      );
+END;
 GO
 
 

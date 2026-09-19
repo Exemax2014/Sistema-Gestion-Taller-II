@@ -105,17 +105,17 @@ namespace Capa_Vistas
                 dgvAvisos.Rows.Add(aviso.FechaCreacion.ToString("dd/MM HH:mm"), aviso.Titulo, aviso.Mensaje, aviso.Autor, aviso.Destino);
         }
 
-        // Habilita publicación sólo cuando SQL devuelve un destinatario válido para el autor.
+        // Carga perfiles destino autorizados y permite seleccionar varios para un mismo aviso.
         private void CargarDestinosAviso()
         {
             List<AvisoDestinoModelo> destinos = dashboardLogica.ListarDestinosAviso();
-            cmbAvisoDestino.DataSource = destinos;
-            cmbAvisoDestino.DisplayMember = nameof(AvisoDestinoModelo.Nombre);
-            cmbAvisoDestino.ValueMember = nameof(AvisoDestinoModelo.IdFuncionalidad);
-            bool puedePublicar = destinos.Count > 0;
+            clbAvisoDestinos.DataSource = destinos;
+            clbAvisoDestinos.DisplayMember = nameof(AvisoDestinoModelo.Nombre);
+            clbAvisoDestinos.ValueMember = nameof(AvisoDestinoModelo.IdPerfil);
+            bool puedePublicar = SesionActual.TienePermiso("AVISOS_PUBLICAR") && destinos.Count > 0;
             txtAvisoTitulo.Visible = puedePublicar;
             txtAvisoMensaje.Visible = puedePublicar;
-            cmbAvisoDestino.Visible = puedePublicar;
+            clbAvisoDestinos.Visible = puedePublicar;
             btnPublicarAviso.Visible = puedePublicar;
         }
 
@@ -191,13 +191,16 @@ namespace Capa_Vistas
         // Navega al módulo de clientes desde el acceso rápido autorizado.
         private void BtnClientes_Click(object? sender, EventArgs e) => formPrincipal.AbrirFormularioEnPanel(new FormClientes(formPrincipal), formPrincipal.BotonClientes);
 
-        // Valida y publica mediante la lógica, dejando la autorización final en SQL.
+        // Publica para todos los perfiles seleccionados tras validar la autorización en Lógica y SQL.
         private void BtnPublicarAviso_Click(object? sender, EventArgs e)
         {
             try
             {
-                if (cmbAvisoDestino.SelectedValue is not int idDestino) throw new InvalidOperationException("Seleccione el destinatario del aviso.");
-                dashboardLogica.PublicarAviso(idDestino, txtAvisoTitulo.Text, txtAvisoMensaje.Text);
+                List<int> destinos = clbAvisoDestinos.CheckedItems
+                    .OfType<AvisoDestinoModelo>()
+                    .Select(destino => destino.IdPerfil)
+                    .ToList();
+                dashboardLogica.PublicarAviso(destinos, txtAvisoTitulo.Text, txtAvisoMensaje.Text);
                 txtAvisoTitulo.Clear(); txtAvisoMensaje.Clear(); CargarAvisos();
             }
             catch (Exception ex) { MostrarMensaje("No se pudo publicar el aviso", ex.Message); }

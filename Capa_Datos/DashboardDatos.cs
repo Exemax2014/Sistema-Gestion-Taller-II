@@ -44,7 +44,7 @@ namespace Capa_Datos
 
     public class AvisoDestinoDatos
     {
-        public int IdFuncionalidad { get; set; }
+        public int IdPerfil { get; set; }
         public string Nombre { get; set; } = string.Empty;
     }
 
@@ -116,7 +116,7 @@ namespace Capa_Datos
             });
         }
 
-        // Devuelve los destinos habilitados por SQL para el contexto del autor.
+        // Devuelve los perfiles destino habilitados por SQL para el contexto del autor.
         public List<AvisoDestinoDatos> ListarDestinosAviso(int idUsuario)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
@@ -124,17 +124,18 @@ namespace Capa_Datos
             comando.Parameters.Add("@idUsuario", SqlDbType.Int).Value = idUsuario;
             return EjecutarLista(comando, lector => new AvisoDestinoDatos
             {
-                IdFuncionalidad = lector.GetInt32(0), Nombre = lector.GetString(1)
+                IdPerfil = lector.GetInt32(0), Nombre = lector.GetString(1)
             });
         }
 
-        // Publica el aviso y deja la autorización jerárquica como responsabilidad de SQL.
-        public void PublicarAviso(int idUsuario, int idDestino, string titulo, string mensaje)
+        // Publica un aviso para varios perfiles y delega la autorización final a SQL.
+        public void PublicarAviso(int idUsuario, IEnumerable<int> idsDestinos, int? idSucursal, string titulo, string mensaje)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = CrearComando("dbo.sp_Aviso_Publicar", conexion);
             comando.Parameters.Add("@idUsuario", SqlDbType.Int).Value = idUsuario;
-            comando.Parameters.Add("@idFuncionalidadDestino", SqlDbType.Int).Value = idDestino;
+            comando.Parameters.Add("@idsPerfilesDestino", SqlDbType.NVarChar, -1).Value = string.Join(",", idsDestinos);
+            comando.Parameters.Add("@idSucursal", SqlDbType.Int).Value = idSucursal ?? (object)DBNull.Value;
             comando.Parameters.Add("@titulo", SqlDbType.NVarChar, 100).Value = titulo;
             comando.Parameters.Add("@mensaje", SqlDbType.NVarChar, 500).Value = mensaje;
             conexion.Open();

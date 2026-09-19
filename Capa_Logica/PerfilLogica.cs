@@ -41,6 +41,14 @@ namespace Capa_Logica
             Codigo == 0;
     }
 
+    // Representa un perfil destino seleccionable dentro de la configuración de avisos.
+    public class PerfilAvisoDestinoModelo
+    {
+        public int IdPerfil { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public bool Asignado { get; set; }
+    }
+
 
     // ============================================================
     // Clase: PerfilLogica
@@ -355,6 +363,20 @@ namespace Capa_Logica
                 );
             }
 
+            string? errorAlcanceReportes =
+                ValidarAlcancesReportes(
+                    seleccionadas,
+                    disponibles,
+                    false
+                );
+
+            if (errorAlcanceReportes != null)
+            {
+                return ResultadoInvalido(
+                    errorAlcanceReportes
+                );
+            }
+
             ResultadoPerfilDatos resultado =
                 perfilDatos.Guardar(
                     idPerfil,
@@ -592,6 +614,20 @@ namespace Capa_Logica
                 );
             }
 
+            string? errorAlcanceReportes =
+                ValidarAlcancesReportes(
+                    seleccionadas,
+                    disponibles,
+                    perfil.AlcanceGlobal
+                );
+
+            if (errorAlcanceReportes != null)
+            {
+                return ResultadoInvalido(
+                    errorAlcanceReportes
+                );
+            }
+
 
             ResultadoPerfilDatos resultado =
                 perfilDatos
@@ -743,6 +779,75 @@ namespace Capa_Logica
             if (descripcionNormalizada.Length > 200)
             {
                 return "La descripción no puede superar los 200 caracteres.";
+            }
+
+            return null;
+        }
+
+        // Obtiene los perfiles activos que pueden configurarse como destino del perfil indicado.
+        public List<PerfilAvisoDestinoModelo> ObtenerDestinosAviso(int idPerfil)
+        {
+            if (!PuedeGestionarPermisos() || idPerfil <= 0) return new List<PerfilAvisoDestinoModelo>();
+            return perfilDatos.ListarDestinosAviso(idPerfil)
+                .Select(destino => new PerfilAvisoDestinoModelo
+                {
+                    IdPerfil = destino.IdPerfil,
+                    Nombre = destino.Nombre,
+                    Asignado = destino.Asignado
+                }).ToList();
+        }
+
+        // Valida y guarda relaciones emisor-destino sin permitir IDs inválidos o duplicados.
+        public ResultadoPerfil GuardarDestinosAviso(int idPerfil, IEnumerable<int> idsDestinos)
+        {
+            if (!PuedeGestionarPermisos()) return ResultadoNoPermitido("No tiene permiso para administrar destinos de avisos.");
+            if (idPerfil <= 0) return ResultadoInvalido("El tipo de usuario indicado no es válido.");
+            List<int> destinos = (idsDestinos ?? Enumerable.Empty<int>()).ToList();
+            if (destinos.Any(id => id <= 0) || destinos.Count != destinos.Distinct().Count()) return ResultadoInvalido("Los perfiles destino seleccionados no son válidos.");
+            if (destinos.Contains(idPerfil)) return ResultadoInvalido("Un perfil no puede enviarse avisos a sí mismo.");
+            return ConvertirResultado(perfilDatos.GuardarDestinosAviso(idPerfil, destinos));
+        }
+
+
+        // Garantiza que los permisos de alcance de Reportes no formen combinaciones ambiguas.
+        private static string? ValidarAlcancesReportes(
+            IEnumerable<int> seleccionadas,
+            IEnumerable<FuncionalidadPerfilModelo> disponibles,
+            bool perfilGlobal)
+        {
+            HashSet<int> idsSeleccionados =
+                seleccionadas.ToHashSet();
+
+            List<string> alcances =
+                disponibles
+                    .Where(
+                        funcionalidad =>
+                            idsSeleccionados.Contains(
+                                funcionalidad.IdFuncionalidad
+                            )
+                            && funcionalidad.Codigo.StartsWith(
+                                "REPORTES_ALCANCE_",
+                                StringComparison.OrdinalIgnoreCase
+                            )
+                    )
+                    .Select(
+                        funcionalidad =>
+                            funcionalidad.Codigo
+                    )
+                    .ToList();
+
+            if (alcances.Count > 1)
+            {
+                return "Solo puede asignarse un alcance de Reportes por perfil.";
+            }
+
+            if (
+                alcances.Contains(
+                    "REPORTES_ALCANCE_GLOBAL"
+                )
+                && !perfilGlobal)
+            {
+                return "El alcance global de Reportes requiere un perfil global.";
             }
 
             return null;

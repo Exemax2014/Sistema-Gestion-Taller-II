@@ -19,6 +19,13 @@ BEGIN
 END;
 GO
 
+/* Crea la base destino en una instalacion limpia sin afectar una existente. */
+IF DB_ID(N'SistemaGestion') IS NULL
+BEGIN
+    CREATE DATABASE SistemaGestion;
+END;
+GO
+
 USE SistemaGestion;
 GO
 
@@ -776,9 +783,7 @@ GO
 /* ========================
    AVISO
    ========================
-   Comunicaciones internas persistentes. El destinatario se expresa
-   mediante una funcionalidad para mantener la jerarquía desacoplada
-   de nombres concretos de perfiles. */
+   Comunicaciones internas con destinatarios configurables por perfil. */
 IF OBJECT_ID('dbo.AVISO', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.AVISO
@@ -790,7 +795,6 @@ BEGIN
             CONSTRAINT DF_AVISO_fecha_creacion DEFAULT SYSDATETIME(),
         id_usuario_autor INT NOT NULL,
         id_sucursal INT NULL,
-        id_funcionalidad_destino INT NOT NULL,
         activo BIT NOT NULL
             CONSTRAINT DF_AVISO_activo DEFAULT (1),
         eliminado_en DATETIME2 NULL,
@@ -801,9 +805,6 @@ BEGIN
         CONSTRAINT FK_AVISO_SUCURSAL
             FOREIGN KEY (id_sucursal)
             REFERENCES dbo.SUCURSAL(id_sucursal),
-        CONSTRAINT FK_AVISO_FUNCIONALIDAD_DESTINO
-            FOREIGN KEY (id_funcionalidad_destino)
-            REFERENCES dbo.FUNCIONALIDAD(id_funcionalidad),
         CONSTRAINT CK_AVISO_titulo_no_vacio
             CHECK (LEN(LTRIM(RTRIM(titulo))) > 0),
         CONSTRAINT CK_AVISO_mensaje_no_vacio
@@ -812,18 +813,129 @@ BEGIN
 END;
 GO
 
-
-/* Acelera la consulta de avisos activos por alcance y destinatario. */
-IF OBJECT_ID('dbo.AVISO', 'U') IS NOT NULL
-   AND NOT EXISTS
-   (
-       SELECT 1 FROM sys.indexes
-       WHERE object_id = OBJECT_ID('dbo.AVISO')
-         AND name = 'IX_AVISO_DestinoActivo'
-   )
+/* Relaciona perfiles que pueden publicar avisos con sus perfiles destino. */
+IF OBJECT_ID('dbo.PERFIL_AVISO_DESTINO', 'U') IS NULL
 BEGIN
-    CREATE INDEX IX_AVISO_DestinoActivo
-        ON dbo.AVISO(id_funcionalidad_destino, id_sucursal, activo, fecha_creacion DESC);
+    CREATE TABLE dbo.PERFIL_AVISO_DESTINO
+    (
+        id_perfil_emisor INT NOT NULL,
+        id_perfil_destino INT NOT NULL,
+        CONSTRAINT PK_PERFIL_AVISO_DESTINO PRIMARY KEY (id_perfil_emisor, id_perfil_destino),
+        CONSTRAINT FK_PERFIL_AVISO_DESTINO_EMISOR FOREIGN KEY (id_perfil_emisor) REFERENCES dbo.PERFIL(id_perfil),
+        CONSTRAINT FK_PERFIL_AVISO_DESTINO_DESTINO FOREIGN KEY (id_perfil_destino) REFERENCES dbo.PERFIL(id_perfil),
+        CONSTRAINT CK_PERFIL_AVISO_DESTINO_DISTINTO CHECK (id_perfil_emisor <> id_perfil_destino)
+    );
+END;
+GO
+
+/* Permite que un aviso tenga uno o más perfiles destinatarios. */
+IF OBJECT_ID('dbo.AVISO_PERFIL_DESTINO', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.AVISO_PERFIL_DESTINO
+    (
+        id_aviso INT NOT NULL,
+        id_perfil INT NOT NULL,
+        CONSTRAINT PK_AVISO_PERFIL_DESTINO PRIMARY KEY (id_aviso, id_perfil),
+        CONSTRAINT FK_AVISO_PERFIL_DESTINO_AVISO FOREIGN KEY (id_aviso) REFERENCES dbo.AVISO(id_aviso),
+        CONSTRAINT FK_AVISO_PERFIL_DESTINO_PERFIL FOREIGN KEY (id_perfil) REFERENCES dbo.PERFIL(id_perfil)
+    );
+END;
+GO
+
+/* Migra avisos heredados por funcionalidad hacia los perfiles que tenían ese permiso. */
+IF COL_LENGTH('dbo.AVISO', 'id_funcionalidad_destino') IS NOT NULL
+BEGIN
+    /*
+       La columna heredada sólo se menciona dentro de SQL dinámico.
+       Así, una base ya migrada no falla durante la compilación de este lote.
+    */
+    DECLARE @sqlMigracionAvisos NVARCHAR(MAX) = N'
+        INSERT INTO dbo.AVISO_PERFIL_DESTINO (id_aviso, id_perfil)
+        SELECT DISTINCT a.id_aviso, pf.id_perfil
+        FROM dbo.AVISO AS a
+        INNER JOIN dbo.PERFIL_FUNCIONALIDAD AS pf
+            ON pf.id_funcionalidad = a.id_funcionalidad_destino
+        INNER JOIN dbo.PERFIL AS p
+            ON p.id_perfil = pf.id_perfil
+           AND p.eliminado_en IS NULL
+        WHERE NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.AVISO_PERFIL_DESTINO AS apd
+            WHERE apd.id_aviso = a.id_aviso
+              AND apd.id_perfil = pf.id_perfil
+        );
+
+        IF EXISTS
+        (
+            SELECT 1 FROM sys.indexes
+            WHERE object_id = OBJECT_ID(N''dbo.AVISO'')
+              AND name = N''IX_AVISO_DestinoActivo''
+        )
+            DROP INDEX IX_AVISO_DestinoActivo ON dbo.AVISO;
+        ELSE IF EXISTS
+        (
+            SELECT 1 FROM sys.stats
+            WHERE object_id = OBJECT_ID(N''dbo.AVISO'')
+              AND name = N''IX_AVISO_DestinoActivo''
+        )
+            DROP STATISTICS dbo.AVISO.IX_AVISO_DestinoActivo;
+
+        IF EXISTS
+        (
+            SELECT 1 FROM sys.foreign_keys
+            WHERE parent_object_id = OBJECT_ID(N''dbo.AVISO'')
+              AND name = N''FK_AVISO_FUNCIONALIDAD_DESTINO''
+        )
+            ALTER TABLE dbo.AVISO
+            DROP CONSTRAINT FK_AVISO_FUNCIONALIDAD_DESTINO;
+
+        ALTER TABLE dbo.AVISO
+        DROP COLUMN id_funcionalidad_destino;';
+
+    EXEC sys.sp_executesql @sqlMigracionAvisos;
+END;
+GO
+
+/* Acelera la lectura de avisos activos por alcance y por perfil destinatario. */
+IF OBJECT_ID(N'dbo.AVISO', N'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE object_id = OBJECT_ID(N'dbo.AVISO')
+      AND name = N'IX_AVISO_DestinoActivo'
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM sys.stats
+    WHERE object_id = OBJECT_ID(N'dbo.AVISO')
+      AND name = N'IX_AVISO_DestinoActivo'
+)
+BEGIN
+    EXEC(N'
+        CREATE INDEX IX_AVISO_DestinoActivo
+        ON dbo.AVISO(activo, id_sucursal, fecha_creacion DESC);
+    ');
+END;
+
+IF OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO', N'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE object_id = OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO')
+      AND name = N'IX_AVISO_PERFIL_DESTINO_PerfilAviso'
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM sys.stats
+    WHERE object_id = OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO')
+      AND name = N'IX_AVISO_PERFIL_DESTINO_PerfilAviso'
+)
+BEGIN
+    EXEC(N'
+        CREATE INDEX IX_AVISO_PERFIL_DESTINO_PerfilAviso
+        ON dbo.AVISO_PERFIL_DESTINO(id_perfil, id_aviso);
+    ');
 END;
 GO
 

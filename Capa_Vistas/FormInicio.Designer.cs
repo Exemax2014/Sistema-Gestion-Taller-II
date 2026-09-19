@@ -34,7 +34,7 @@ namespace Capa_Vistas
             pnlAvisos = new Panel();
             dgvAvisos = new DataGridView();
             btnPublicarAviso = new Button();
-            cmbAvisoDestino = new ComboBox();
+            clbAvisoDestinos = new CheckedListBox();
             txtAvisoMensaje = new TextBox();
             txtAvisoTitulo = new TextBox();
             lblAvisosTitulo = new Label();
@@ -115,7 +115,7 @@ namespace Capa_Vistas
             pnlAvisos.BorderStyle = BorderStyle.FixedSingle;
             pnlAvisos.Controls.Add(dgvAvisos);
             pnlAvisos.Controls.Add(btnPublicarAviso);
-            pnlAvisos.Controls.Add(cmbAvisoDestino);
+            pnlAvisos.Controls.Add(clbAvisoDestinos);
             pnlAvisos.Controls.Add(txtAvisoMensaje);
             pnlAvisos.Controls.Add(txtAvisoTitulo);
             pnlAvisos.Controls.Add(lblAvisosTitulo);
@@ -149,12 +149,13 @@ namespace Capa_Vistas
             txtAvisoMensaje.PlaceholderText = "Mensaje";
             txtAvisoMensaje.Size = new Size(350, 27);
             // 
-            // cmbAvisoDestino
+            // clbAvisoDestinos
             // 
-            cmbAvisoDestino.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbAvisoDestino.Location = new Point(634, 48);
-            cmbAvisoDestino.Name = "cmbAvisoDestino";
-            cmbAvisoDestino.Size = new Size(210, 28);
+            clbAvisoDestinos.CheckOnClick = true;
+            clbAvisoDestinos.FormattingEnabled = true;
+            clbAvisoDestinos.Location = new Point(634, 48);
+            clbAvisoDestinos.Name = "clbAvisoDestinos";
+            clbAvisoDestinos.Size = new Size(210, 58);
             // 
             // btnPublicarAviso
             // 
@@ -730,7 +731,7 @@ namespace Capa_Vistas
         private Label lblAvisosTitulo;
         private TextBox txtAvisoTitulo;
         private TextBox txtAvisoMensaje;
-        private ComboBox cmbAvisoDestino;
+        private CheckedListBox clbAvisoDestinos;
         private Button btnPublicarAviso;
         private DataGridView dgvAvisos;
     }

@@ -42,6 +42,14 @@ namespace Capa_Datos
             Codigo == 0;
     }
 
+    // Representa un perfil disponible para configurar destinos de avisos.
+    public class PerfilAvisoDestinoDatos
+    {
+        public int IdPerfil { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public bool Asignado { get; set; }
+    }
+
 
     // ============================================================
     // Clase: PerfilGestionDatos
@@ -56,6 +64,39 @@ namespace Capa_Datos
 
     public class PerfilGestionDatos
     {
+        // Lista perfiles activos indicando cuáles puede recibir avisos del perfil consultado.
+        public List<PerfilAvisoDestinoDatos> ListarDestinosAviso(int idPerfil)
+        {
+            List<PerfilAvisoDestinoDatos> destinos = new();
+            using SqlConnection conexion = Conexion.CrearConexion();
+            using SqlCommand comando = new SqlCommand("dbo.sp_Perfil_AvisoDestino_Listar", conexion);
+            comando.CommandType = CommandType.StoredProcedure;
+            comando.Parameters.Add("@idPerfil", SqlDbType.Int).Value = idPerfil;
+            conexion.Open();
+            using SqlDataReader lector = comando.ExecuteReader();
+            while (lector.Read()) destinos.Add(new PerfilAvisoDestinoDatos
+            {
+                IdPerfil = Convert.ToInt32(lector["id_perfil"]),
+                Nombre = lector["nombre"].ToString() ?? string.Empty,
+                Asignado = Convert.ToBoolean(lector["asignado"])
+            });
+            return destinos;
+        }
+
+        // Reemplaza los destinos configurados del perfil mediante un procedimiento validado.
+        public ResultadoPerfilDatos GuardarDestinosAviso(int idPerfil, IEnumerable<int> idsDestinos)
+        {
+            using SqlConnection conexion = Conexion.CrearConexion();
+            using SqlCommand comando = new SqlCommand("dbo.sp_Perfil_AvisoDestino_Guardar", conexion);
+            comando.CommandType = CommandType.StoredProcedure;
+            comando.Parameters.Add("@idPerfil", SqlDbType.Int).Value = idPerfil;
+            comando.Parameters.Add("@idsPerfilesDestino", SqlDbType.NVarChar, -1).Value = string.Join(",", idsDestinos ?? Enumerable.Empty<int>());
+            SqlParameter codigo = comando.Parameters.Add("@CodigoResultado", SqlDbType.Int); codigo.Direction = ParameterDirection.Output;
+            SqlParameter mensaje = comando.Parameters.Add("@MensajeResultado", SqlDbType.NVarChar, 250); mensaje.Direction = ParameterDirection.Output;
+            conexion.Open(); comando.ExecuteNonQuery();
+            return new ResultadoPerfilDatos { Codigo = Convert.ToInt32(codigo.Value), Mensaje = mensaje.Value?.ToString() ?? string.Empty, IdGenerado = idPerfil };
+        }
+
         // Guarda el perfil y sus funcionalidades mediante un único procedimiento transaccional.
         public ResultadoPerfilDatos Guardar(
             int? idPerfil,

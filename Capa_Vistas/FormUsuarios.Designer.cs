@@ -15,6 +15,7 @@ namespace Capa_Vistas
         private Panel pnlNavegacion;
         private Button btnVistaUsuarios;
         private Button btnVistaPerfiles;
+        private Button btnVistaSucursales;
 
         private Panel pnlVistaUsuarios;
         private Panel pnlFiltros;
@@ -49,8 +50,32 @@ namespace Capa_Vistas
         private Label lblPermisosTitulo;
         private Label lblPermisosDescripcion;
         private FlowLayoutPanel flpPermisos;
+        private Label lblDestinosAvisoTitulo;
+        private Label lblDestinosAvisoDescripcion;
+        private FlowLayoutPanel flpDestinosAviso;
         private Button btnGuardarPerfil;
         private Button btnEliminarPerfil;
+
+        private Panel pnlVistaSucursales;
+        private Panel pnlListadoSucursales;
+        private Label lblSucursalesTitulo;
+        private Label lblSucursalesDescripcion;
+        private Button btnNuevaSucursal;
+        private FlowLayoutPanel flpSucursales;
+        private Label lblCantidadSucursales;
+        private Panel pnlFormularioSucursal;
+        private Label lblFormularioSucursalTitulo;
+        private Label lblNombreSucursal;
+        private TextBox txtNombreSucursal;
+        private Label lblProvinciaSucursal;
+        private ComboBox cmbSucursalProvincia;
+        private Label lblLocalidadSucursal;
+        private ComboBox cmbSucursalLocalidad;
+        private Label lblDireccionSucursal;
+        private TextBox txtDireccionSucursal;
+        private CheckBox chkSucursalActiva;
+        private Button btnCancelarSucursal;
+        private Button btnGuardarSucursal;
 
         protected override void Dispose(bool disposing)
         {
@@ -78,6 +103,7 @@ namespace Capa_Vistas
             pnlNavegacion = new Panel();
             btnVistaUsuarios = new Button();
             btnVistaPerfiles = new Button();
+            btnVistaSucursales = new Button();
 
             pnlVistaUsuarios = new Panel();
             pnlFiltros = new Panel();
@@ -112,8 +138,32 @@ namespace Capa_Vistas
             lblPermisosTitulo = new Label();
             lblPermisosDescripcion = new Label();
             flpPermisos = new FlowLayoutPanel();
+            lblDestinosAvisoTitulo = new Label();
+            lblDestinosAvisoDescripcion = new Label();
+            flpDestinosAviso = new FlowLayoutPanel();
             btnGuardarPerfil = new Button();
             btnEliminarPerfil = new Button();
+
+            pnlVistaSucursales = new Panel();
+            pnlListadoSucursales = new Panel();
+            lblSucursalesTitulo = new Label();
+            lblSucursalesDescripcion = new Label();
+            btnNuevaSucursal = new Button();
+            flpSucursales = new FlowLayoutPanel();
+            lblCantidadSucursales = new Label();
+            pnlFormularioSucursal = new Panel();
+            lblFormularioSucursalTitulo = new Label();
+            lblNombreSucursal = new Label();
+            txtNombreSucursal = new TextBox();
+            lblProvinciaSucursal = new Label();
+            cmbSucursalProvincia = new ComboBox();
+            lblLocalidadSucursal = new Label();
+            cmbSucursalLocalidad = new ComboBox();
+            lblDireccionSucursal = new Label();
+            txtDireccionSucursal = new TextBox();
+            chkSucursalActiva = new CheckBox();
+            btnCancelarSucursal = new Button();
+            btnGuardarSucursal = new Button();
 
             pnlCabecera.SuspendLayout();
             pnlNavegacion.SuspendLayout();
@@ -124,6 +174,9 @@ namespace Capa_Vistas
             pnlVistaPerfiles.SuspendLayout();
             pnlListaPerfiles.SuspendLayout();
             pnlDetallePerfil.SuspendLayout();
+            pnlVistaSucursales.SuspendLayout();
+            pnlListadoSucursales.SuspendLayout();
+            pnlFormularioSucursal.SuspendLayout();
             SuspendLayout();
 
             pnlCabecera.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -176,6 +229,7 @@ namespace Capa_Vistas
             pnlNavegacion.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlNavegacion.Controls.Add(btnVistaUsuarios);
             pnlNavegacion.Controls.Add(btnVistaPerfiles);
+            pnlNavegacion.Controls.Add(btnVistaSucursales);
             pnlNavegacion.Location = new Point(32, 103);
             pnlNavegacion.Name = "pnlNavegacion";
             pnlNavegacion.Size = new Size(1243, 43);
@@ -204,6 +258,18 @@ namespace Capa_Vistas
             btnVistaPerfiles.TabIndex = 1;
             btnVistaPerfiles.Text = "Tipos de usuario y permisos";
             btnVistaPerfiles.UseVisualStyleBackColor = false;
+
+            btnVistaSucursales.BackColor = Color.FromArgb(235, 237, 240);
+            btnVistaSucursales.Cursor = Cursors.Hand;
+            btnVistaSucursales.FlatAppearance.BorderSize = 0;
+            btnVistaSucursales.FlatStyle = FlatStyle.Flat;
+            btnVistaSucursales.ForeColor = Color.FromArgb(55, 59, 64);
+            btnVistaSucursales.Location = new Point(387, 0);
+            btnVistaSucursales.Name = "btnVistaSucursales";
+            btnVistaSucursales.Size = new Size(130, 40);
+            btnVistaSucursales.TabIndex = 2;
+            btnVistaSucursales.Text = "Sucursales";
+            btnVistaSucursales.UseVisualStyleBackColor = false;
 
             pnlVistaUsuarios.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlVistaUsuarios.Controls.Add(pnlFiltros);
@@ -442,6 +508,9 @@ namespace Capa_Vistas
             pnlDetallePerfil.Controls.Add(lblPermisosTitulo);
             pnlDetallePerfil.Controls.Add(lblPermisosDescripcion);
             pnlDetallePerfil.Controls.Add(flpPermisos);
+            pnlDetallePerfil.Controls.Add(lblDestinosAvisoTitulo);
+            pnlDetallePerfil.Controls.Add(lblDestinosAvisoDescripcion);
+            pnlDetallePerfil.Controls.Add(flpDestinosAviso);
             pnlDetallePerfil.Controls.Add(btnGuardarPerfil);
             pnlDetallePerfil.Controls.Add(btnEliminarPerfil);
             pnlDetallePerfil.Location = new Point(367, 0);
@@ -514,9 +583,35 @@ namespace Capa_Vistas
             flpPermisos.Location = new Point(22, 264);
             flpPermisos.Name = "flpPermisos";
             flpPermisos.Padding = new Padding(12);
-            flpPermisos.Size = new Size(831, 235);
+            flpPermisos.Size = new Size(831, 128);
             flpPermisos.TabIndex = 7;
             flpPermisos.WrapContents = false;
+
+            lblDestinosAvisoTitulo.AutoSize = true;
+            lblDestinosAvisoTitulo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            lblDestinosAvisoTitulo.ForeColor = Color.FromArgb(55, 59, 64);
+            lblDestinosAvisoTitulo.Location = new Point(22, 404);
+            lblDestinosAvisoTitulo.Name = "lblDestinosAvisoTitulo";
+            lblDestinosAvisoTitulo.Text = "Puede enviar avisos a";
+
+            lblDestinosAvisoDescripcion.AutoSize = true;
+            lblDestinosAvisoDescripcion.Font = new Font("Segoe UI", 8F);
+            lblDestinosAvisoDescripcion.ForeColor = Color.FromArgb(105, 110, 116);
+            lblDestinosAvisoDescripcion.Location = new Point(190, 406);
+            lblDestinosAvisoDescripcion.Name = "lblDestinosAvisoDescripcion";
+            lblDestinosAvisoDescripcion.Text = "Perfiles destino configurables.";
+
+            flpDestinosAviso.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            flpDestinosAviso.AutoScroll = true;
+            flpDestinosAviso.BackColor = Color.FromArgb(248, 249, 250);
+            flpDestinosAviso.BorderStyle = BorderStyle.FixedSingle;
+            flpDestinosAviso.FlowDirection = FlowDirection.TopDown;
+            flpDestinosAviso.Location = new Point(22, 430);
+            flpDestinosAviso.Name = "flpDestinosAviso";
+            flpDestinosAviso.Padding = new Padding(8);
+            flpDestinosAviso.Size = new Size(831, 70);
+            flpDestinosAviso.TabIndex = 8;
+            flpDestinosAviso.WrapContents = false;
 
             btnGuardarPerfil.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             btnGuardarPerfil.BackColor = Color.FromArgb(190, 137, 45);
@@ -544,6 +639,203 @@ namespace Capa_Vistas
             btnEliminarPerfil.Text = "Dar de baja";
             btnEliminarPerfil.UseVisualStyleBackColor = false;
 
+            pnlVistaSucursales.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlVistaSucursales.Controls.Add(pnlListadoSucursales);
+            pnlVistaSucursales.Controls.Add(pnlFormularioSucursal);
+            pnlVistaSucursales.Location = new Point(32, 152);
+            pnlVistaSucursales.Name = "pnlVistaSucursales";
+            pnlVistaSucursales.Size = new Size(1243, 576);
+            pnlVistaSucursales.TabIndex = 4;
+            pnlVistaSucursales.Visible = false;
+
+            pnlListadoSucursales.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlListadoSucursales.BackColor = Color.White;
+            pnlListadoSucursales.BorderStyle = BorderStyle.FixedSingle;
+            pnlListadoSucursales.Controls.Add(lblSucursalesTitulo);
+            pnlListadoSucursales.Controls.Add(lblSucursalesDescripcion);
+            pnlListadoSucursales.Controls.Add(btnNuevaSucursal);
+            pnlListadoSucursales.Controls.Add(flpSucursales);
+            pnlListadoSucursales.Controls.Add(lblCantidadSucursales);
+            pnlListadoSucursales.Location = new Point(0, 0);
+            pnlListadoSucursales.Name = "pnlListadoSucursales";
+            pnlListadoSucursales.Size = new Size(1243, 576);
+            pnlListadoSucursales.TabIndex = 0;
+
+            lblSucursalesTitulo.AutoSize = true;
+            lblSucursalesTitulo.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
+            lblSucursalesTitulo.ForeColor = Color.FromArgb(55, 59, 64);
+            lblSucursalesTitulo.Location = new Point(18, 16);
+            lblSucursalesTitulo.Name = "lblSucursalesTitulo";
+            lblSucursalesTitulo.Size = new Size(101, 25);
+            lblSucursalesTitulo.TabIndex = 0;
+            lblSucursalesTitulo.Text = "Sucursales";
+
+            lblSucursalesDescripcion.AutoSize = true;
+            lblSucursalesDescripcion.Font = new Font("Segoe UI", 8.5F);
+            lblSucursalesDescripcion.ForeColor = Color.FromArgb(105, 110, 116);
+            lblSucursalesDescripcion.Location = new Point(18, 48);
+            lblSucursalesDescripcion.Name = "lblSucursalesDescripcion";
+            lblSucursalesDescripcion.Size = new Size(394, 19);
+            lblSucursalesDescripcion.TabIndex = 1;
+            lblSucursalesDescripcion.Text = "Cada resumen se adapta a los perfiles configurados actualmente.";
+
+            btnNuevaSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnNuevaSucursal.BackColor = Color.FromArgb(45, 49, 54);
+            btnNuevaSucursal.Cursor = Cursors.Hand;
+            btnNuevaSucursal.FlatAppearance.BorderSize = 0;
+            btnNuevaSucursal.FlatStyle = FlatStyle.Flat;
+            btnNuevaSucursal.ForeColor = Color.White;
+            btnNuevaSucursal.Location = new Point(1070, 22);
+            btnNuevaSucursal.Name = "btnNuevaSucursal";
+            btnNuevaSucursal.Size = new Size(150, 40);
+            btnNuevaSucursal.TabIndex = 2;
+            btnNuevaSucursal.Text = "+ Nueva sucursal";
+            btnNuevaSucursal.UseVisualStyleBackColor = false;
+
+            flpSucursales.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            flpSucursales.AutoScroll = true;
+            flpSucursales.BackColor = Color.FromArgb(248, 249, 250);
+            flpSucursales.FlowDirection = FlowDirection.TopDown;
+            flpSucursales.Location = new Point(18, 82);
+            flpSucursales.Name = "flpSucursales";
+            flpSucursales.Padding = new Padding(12);
+            flpSucursales.Size = new Size(1205, 440);
+            flpSucursales.TabIndex = 3;
+            flpSucursales.WrapContents = false;
+
+            lblCantidadSucursales.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            lblCantidadSucursales.AutoSize = true;
+            lblCantidadSucursales.Font = new Font("Segoe UI", 8.5F);
+            lblCantidadSucursales.ForeColor = Color.FromArgb(105, 110, 116);
+            lblCantidadSucursales.Location = new Point(18, 538);
+            lblCantidadSucursales.Name = "lblCantidadSucursales";
+            lblCantidadSucursales.Size = new Size(150, 20);
+            lblCantidadSucursales.TabIndex = 4;
+            lblCantidadSucursales.Text = "0 sucursal(es) activa(s)";
+
+            pnlFormularioSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlFormularioSucursal.BackColor = Color.White;
+            pnlFormularioSucursal.BorderStyle = BorderStyle.FixedSingle;
+            pnlFormularioSucursal.Controls.Add(lblFormularioSucursalTitulo);
+            pnlFormularioSucursal.Controls.Add(lblNombreSucursal);
+            pnlFormularioSucursal.Controls.Add(txtNombreSucursal);
+            pnlFormularioSucursal.Controls.Add(lblProvinciaSucursal);
+            pnlFormularioSucursal.Controls.Add(cmbSucursalProvincia);
+            pnlFormularioSucursal.Controls.Add(lblLocalidadSucursal);
+            pnlFormularioSucursal.Controls.Add(cmbSucursalLocalidad);
+            pnlFormularioSucursal.Controls.Add(lblDireccionSucursal);
+            pnlFormularioSucursal.Controls.Add(txtDireccionSucursal);
+            pnlFormularioSucursal.Controls.Add(chkSucursalActiva);
+            pnlFormularioSucursal.Controls.Add(btnCancelarSucursal);
+            pnlFormularioSucursal.Controls.Add(btnGuardarSucursal);
+            pnlFormularioSucursal.Location = new Point(0, 0);
+            pnlFormularioSucursal.Name = "pnlFormularioSucursal";
+            pnlFormularioSucursal.Size = new Size(1243, 576);
+            pnlFormularioSucursal.TabIndex = 1;
+            pnlFormularioSucursal.Visible = false;
+
+            lblFormularioSucursalTitulo.AutoSize = true;
+            lblFormularioSucursalTitulo.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
+            lblFormularioSucursalTitulo.ForeColor = Color.FromArgb(55, 59, 64);
+            lblFormularioSucursalTitulo.Location = new Point(28, 24);
+            lblFormularioSucursalTitulo.Name = "lblFormularioSucursalTitulo";
+            lblFormularioSucursalTitulo.Size = new Size(146, 28);
+            lblFormularioSucursalTitulo.TabIndex = 0;
+            lblFormularioSucursalTitulo.Text = "Nueva sucursal";
+
+            lblNombreSucursal.AutoSize = true;
+            lblNombreSucursal.Location = new Point(28, 83);
+            lblNombreSucursal.Name = "lblNombreSucursal";
+            lblNombreSucursal.Size = new Size(64, 20);
+            lblNombreSucursal.TabIndex = 1;
+            lblNombreSucursal.Text = "Nombre";
+
+            txtNombreSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtNombreSucursal.Location = new Point(28, 108);
+            txtNombreSucursal.MaxLength = 100;
+            txtNombreSucursal.Name = "txtNombreSucursal";
+            txtNombreSucursal.Size = new Size(1184, 27);
+            txtNombreSucursal.TabIndex = 2;
+
+            lblProvinciaSucursal.AutoSize = true;
+            lblProvinciaSucursal.Location = new Point(28, 166);
+            lblProvinciaSucursal.Name = "lblProvinciaSucursal";
+            lblProvinciaSucursal.Size = new Size(68, 20);
+            lblProvinciaSucursal.TabIndex = 3;
+            lblProvinciaSucursal.Text = "Provincia";
+
+            cmbSucursalProvincia.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbSucursalProvincia.Location = new Point(28, 191);
+            cmbSucursalProvincia.Name = "cmbSucursalProvincia";
+            cmbSucursalProvincia.Size = new Size(560, 28);
+            cmbSucursalProvincia.TabIndex = 4;
+
+            lblLocalidadSucursal.AutoSize = true;
+            lblLocalidadSucursal.Location = new Point(634, 166);
+            lblLocalidadSucursal.Name = "lblLocalidadSucursal";
+            lblLocalidadSucursal.Size = new Size(69, 20);
+            lblLocalidadSucursal.TabIndex = 5;
+            lblLocalidadSucursal.Text = "Localidad";
+
+            cmbSucursalLocalidad.FormattingEnabled = true;
+            cmbSucursalLocalidad.Location = new Point(634, 191);
+            cmbSucursalLocalidad.MaxLength = 100;
+            cmbSucursalLocalidad.Name = "cmbSucursalLocalidad";
+            cmbSucursalLocalidad.Size = new Size(578, 28);
+            cmbSucursalLocalidad.TabIndex = 6;
+
+            lblDireccionSucursal.AutoSize = true;
+            lblDireccionSucursal.Location = new Point(28, 252);
+            lblDireccionSucursal.Name = "lblDireccionSucursal";
+            lblDireccionSucursal.Size = new Size(72, 20);
+            lblDireccionSucursal.TabIndex = 7;
+            lblDireccionSucursal.Text = "Dirección";
+
+            txtDireccionSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            txtDireccionSucursal.Location = new Point(28, 277);
+            txtDireccionSucursal.MaxLength = 150;
+            txtDireccionSucursal.Name = "txtDireccionSucursal";
+            txtDireccionSucursal.Size = new Size(1184, 27);
+            txtDireccionSucursal.TabIndex = 8;
+
+            chkSucursalActiva.AutoSize = true;
+            chkSucursalActiva.Checked = true;
+            chkSucursalActiva.CheckState = CheckState.Checked;
+            chkSucursalActiva.Enabled = false;
+            chkSucursalActiva.ForeColor = Color.FromArgb(55, 59, 64);
+            chkSucursalActiva.Location = new Point(28, 335);
+            chkSucursalActiva.Name = "chkSucursalActiva";
+            chkSucursalActiva.Size = new Size(130, 24);
+            chkSucursalActiva.TabIndex = 9;
+            chkSucursalActiva.Text = "Sucursal activa";
+            chkSucursalActiva.UseVisualStyleBackColor = true;
+
+            btnCancelarSucursal.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            btnCancelarSucursal.BackColor = Color.White;
+            btnCancelarSucursal.Cursor = Cursors.Hand;
+            btnCancelarSucursal.FlatAppearance.BorderColor = Color.FromArgb(160, 165, 170);
+            btnCancelarSucursal.FlatStyle = FlatStyle.Flat;
+            btnCancelarSucursal.ForeColor = Color.FromArgb(55, 59, 64);
+            btnCancelarSucursal.Location = new Point(28, 516);
+            btnCancelarSucursal.Name = "btnCancelarSucursal";
+            btnCancelarSucursal.Size = new Size(120, 40);
+            btnCancelarSucursal.TabIndex = 10;
+            btnCancelarSucursal.Text = "Cancelar";
+            btnCancelarSucursal.UseVisualStyleBackColor = false;
+
+            btnGuardarSucursal.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnGuardarSucursal.BackColor = Color.FromArgb(190, 137, 45);
+            btnGuardarSucursal.Cursor = Cursors.Hand;
+            btnGuardarSucursal.FlatAppearance.BorderSize = 0;
+            btnGuardarSucursal.FlatStyle = FlatStyle.Flat;
+            btnGuardarSucursal.ForeColor = Color.White;
+            btnGuardarSucursal.Location = new Point(1052, 516);
+            btnGuardarSucursal.Name = "btnGuardarSucursal";
+            btnGuardarSucursal.Size = new Size(160, 40);
+            btnGuardarSucursal.TabIndex = 11;
+            btnGuardarSucursal.Text = "Guardar sucursal";
+            btnGuardarSucursal.UseVisualStyleBackColor = false;
+
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.FromArgb(245, 246, 248);
             ClientSize = new Size(1307, 760);
@@ -551,6 +843,7 @@ namespace Capa_Vistas
             Controls.Add(pnlNavegacion);
             Controls.Add(pnlVistaUsuarios);
             Controls.Add(pnlVistaPerfiles);
+            Controls.Add(pnlVistaSucursales);
             FormBorderStyle = FormBorderStyle.None;
             Name = "FormUsuarios";
             Text = "Usuarios";
@@ -569,6 +862,11 @@ namespace Capa_Vistas
             pnlListaPerfiles.PerformLayout();
             pnlDetallePerfil.ResumeLayout(false);
             pnlDetallePerfil.PerformLayout();
+            pnlVistaSucursales.ResumeLayout(false);
+            pnlListadoSucursales.ResumeLayout(false);
+            pnlListadoSucursales.PerformLayout();
+            pnlFormularioSucursal.ResumeLayout(false);
+            pnlFormularioSucursal.PerformLayout();
             ResumeLayout(false);
         }
 

@@ -1,7 +1,7 @@
 # AGENTS.md — Sistema Hierro y Forja / Taller de Programación II
 
 Documento operativo del proyecto para integrantes del equipo y agentes de IA.
-Última actualización: 2026-09-18.
+Última actualización: 2026-09-19.
 
 ## 1. Contexto
 
@@ -36,7 +36,9 @@ Sistema_Hierro_Y_Forja/
 │   ├── 02_DatosIniciales.sql
 │   ├── 03_Procedimientos.sql
 │   ├── 04_DatosPrueba.sql
-│   └── 05_CatalogoInicial.sql
+│   ├── 05_ResetBasePruebas.sql
+│   └── Historico/
+│       └── 05_CatalogoInicial.sql
 ├── Capa_Datos/      Conexion y servicios de usuarios, perfiles, clientes,
 │                    direcciones, productos, inventario, sucursales y ventas
 ├── Capa_Logica/     Sesión, autenticación, permisos y lógica de esos módulos
@@ -54,7 +56,7 @@ La solución contiene únicamente `Capa_Datos`, `Capa_Logica` y `Capa_Vistas`.
 
 ## 4. Base de datos
 
-Base: `SistemaGestion`, con 18 tablas, incluida `MARCA`.
+Base: `SistemaGestion`, con 19 tablas, incluidas `MARCA` y `AVISO`.
 
 Reglas: bajas mediante `eliminado_en`; no usar borrado físico cuando corresponda baja lógica; `PRODUCTO.precio_venta` se calcula desde costo + porcentaje; `DETALLE_VENTA.precio_unitario` conserva el precio histórico; inventario por producto+sucursal; permisos por PERFIL, FUNCIONALIDAD y PERFIL_FUNCIONALIDAD.
 
@@ -64,7 +66,10 @@ Scripts:
 - `02_DatosIniciales.sql`: datos y permisos iniciales.
 - `03_Procedimientos.sql`: procedimientos versionados.
 - `04_DatosPrueba.sql`: datos exclusivos de desarrollo/prueba.
-- `05_CatalogoInicial.sql`: catálogo inicial idempotente de categorías, marcas, productos e inventario por sucursal.
+- `05_ResetBasePruebas.sql`: reset destructivo exclusivo de testing; devuelve la base al estado de `01 + 02 + 03`.
+- `Historico/05_CatalogoInicial.sql`: catálogo heredado, conservado solo como referencia y fuera del flujo oficial.
+
+Flujo oficial: producción `01 -> 02 -> 03`; testing `01 -> 02 -> 03 -> 05_ResetBasePruebas -> 04_DatosPrueba`; para volver al estado inicial ejecutar `05_ResetBasePruebas`.
 
 Las familias actuales de procedimientos cubren autenticación y usuarios; perfiles y funcionalidades; provincias/localidades y direcciones; clientes; categorías, marcas y productos; inventario; ventas, pagos y sus consultas; reportes; sucursales y métodos de pago. Convención: `sp_<Entidad>_<Accion>`.
 
@@ -128,26 +133,30 @@ Sí realizar cambios pequeños, reutilizar código, obtener datos dinámicos des
 
 ## 13. Estado completado
 
-- Solución de tres capas, configuración externa, conexión SQL, autenticación PBKDF2 + SHA-256, SesionActual y permisos obtenidos desde SQL.
-- Base `SistemaGestion` con 18 tablas, scripts de estructura/datos/pruebas y catálogo inicial; MARCA e inventario por producto+sucursal.
-- FormPrincipal, FormInicio, navegación dentro de `pnlContenido`, cierre de sesión y menú visible condicionado por permisos.
+- Solución funcional de tres capas, configuración externa, conexión SQL, autenticación PBKDF2 + SHA-256, SesionActual, permisos y selector de sucursal operativa.
+- Base `SistemaGestion` con 19 tablas, scripts de estructura/datos/pruebas y catálogo inicial; MARCA, AVISO e inventario por producto+sucursal.
+- FormPrincipal, navegación embebida en `pnlContenido`, cierre de sesión y menú visible condicionado por permisos.
 - Clientes: listado/búsqueda por estado, alta, modificación, baja lógica, reactivación, historial de compras, dirección y provincias/localidades dinámicas; validaciones reforzadas en Vista, Lógica y SQL.
 - Productos: alta/modificación con validación autoritativa unificada; límites y prevención de formato para nombre, código, costo, ganancia, stock y stock mínimo.
 - Usuarios: listado, filtros, alta, modificación, baja/reactivación y carga dinámica de perfiles/sucursales. `sp_Usuario_ObtenerPorId` devuelve `activo` y admite usuarios inactivos; detalle y mensajes corregidos.
-- Perfiles y permisos: gestión desde SQL y validaciones reforzadas de nombre/descripción, sin cambiar perfiles globales ni la regla de `PERMISOS_GESTIONAR`.
+- Sucursales: consulta activa dentro de Usuarios, resumen dinámico de usuarios por perfil, alta con provincia/localidad/dirección y permisos `SUCURSALES_*`; perfiles nuevos aparecen sin cambios de código.
+- Perfiles y permisos: gestión dinámica desde SQL, validaciones reforzadas y guardado transaccional de perfil + funcionalidades; se conserva la protección global y `PERMISOS_GESTIONAR`.
 - Ventas: selección de cliente/productos, carrito, pagos, registro transaccional, actualización de stock, detalle/listado y aviso preventivo si falta sucursal operativa.
+- Inventario: validaciones de stock, permisos por sesión/alcance y autorización reforzada también en SQL.
+- Inicio / Dashboard: métricas reales por sucursal o negocio, actividad, gráficos breves y avisos persistentes por perfiles destino configurables (`AVISOS_VER` / `AVISOS_PUBLICAR`).
 - Auditoría de validaciones cerrada en Clientes, Productos, Ventas, Usuarios, Inventario y Perfiles/permisos: Vista, Lógica y SQL cubren los flujos actuales según corresponda.
 - Grillas de Usuarios, Clientes y Productos con estados, acciones, alineación y presentación visual unificadas.
-- Reportes: formularios General, Gerente y Vendedor, con procedimientos de recaudación, productos más vendidos y ventas por vendedor.
+- Reportes: `FormReportesGeneral` es la única vista activa; permisos granulares `REPORTES_*`, alcance propio/sucursal/global, gráfico de ventas y recaudación, productos más vendidos, rendimiento de vendedores, stock bajo, detalle de ventas y exportación CSV. `FormReportesGerente` y `FormReportesVendedor` quedan fuera de navegación.
+- Los permisos heredados `REPORTES_ADMINISTRADOR`, `REPORTES_GERENTE` y `REPORTES_VENDEDOR` se conservan por compatibilidad, pero no forman parte de la lógica nueva de Reportes.
 
 ## 14. Pendiente y decisiones abiertas
 
-- Inventario: `sp_Inventario_EstablecerStock` no replica autorización por usuario/sucursal; actualmente se aplica en Capa_Logica.
-- Perfiles: alta/modificación y actualización de funcionalidades no forman una única operación transaccional de extremo a extremo.
-- Despliegue: ejecutar en la instancia SQL Server real los scripts y procedimientos actualizados antes de cerrar las pruebas funcionales.
-- Pruebas funcionales finales posteriores al despliegue SQL, incluidas restricciones, permisos y escenarios multisucursal; backup, SQL Server central, TCP/IP/firewall y cuenta SQL específica.
-
-No asumir sin consultar: si Administrador puede realizar ventas; alcance final del Vendedor; contenido exacto de reportes; tipos de factura; reglas finales de descuento; política de cambio/restablecimiento de contraseñas; cuenta SQL definitiva; datos finales de producción.
+1. Prueba funcional integral final del sistema.
+2. Correcciones que surjan de esa prueba.
+3. Preparación de despliegue/instalador para Windows.
+4. Configuración final de SQL Server central, red/TCP/IP/firewall y cuenta SQL.
+5. Revisión final de scripts para instalación limpia en otra PC.
+6. Mejoras opcionales posteriores, como PDF si se decide implementarlo.
 
 ## Regla de continuidad
 

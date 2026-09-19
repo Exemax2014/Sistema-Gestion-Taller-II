@@ -16,6 +16,7 @@ namespace Capa_Vistas
         private readonly UsuarioLogica usuarioLogica;
         private readonly PerfilLogica perfilLogica;
         private readonly VentaLogica ventaLogica;
+        private readonly SucursalLogica sucursalLogica;
         private readonly FormPrincipal formPrincipal;
 
         private int? idPerfilEdicion;
@@ -38,6 +39,9 @@ namespace Capa_Vistas
 
             ventaLogica =
                 new VentaLogica();
+
+            sucursalLogica =
+                new SucursalLogica();
 
             ConfigurarGrilla();
             ConfigurarEventos();
@@ -273,6 +277,24 @@ namespace Capa_Vistas
             btnVistaPerfiles.Click +=
                 BtnVistaPerfiles_Click;
 
+            btnVistaSucursales.Click +=
+                BtnVistaSucursales_Click;
+
+            btnNuevaSucursal.Click +=
+                BtnNuevaSucursal_Click;
+
+            btnCancelarSucursal.Click +=
+                BtnCancelarSucursal_Click;
+
+            btnGuardarSucursal.Click +=
+                BtnGuardarSucursal_Click;
+
+            cmbSucursalProvincia.SelectedIndexChanged +=
+                CmbSucursalProvincia_SelectedIndexChanged;
+
+            flpSucursales.Resize +=
+                FlpSucursales_Resize;
+
             lstPerfiles.SelectedIndexChanged +=
                 LstPerfiles_SelectedIndexChanged;
 
@@ -328,6 +350,15 @@ namespace Capa_Vistas
 
             btnVistaPerfiles.Enabled =
                 puedeGestionarPermisos;
+
+            bool puedeVerSucursales =
+                sucursalLogica.PuedeVerSucursales();
+
+            btnVistaSucursales.Enabled =
+                puedeVerSucursales;
+
+            btnNuevaSucursal.Visible =
+                sucursalLogica.PuedeCrearSucursal();
         }
 
 
@@ -361,12 +392,34 @@ namespace Capa_Vistas
         }
 
 
+        // Abre la gestión de sucursales solo cuando la sesión posee el permiso de consulta.
+        private void BtnVistaSucursales_Click(
+            object? sender,
+            EventArgs e)
+        {
+            if (!sucursalLogica.PuedeVerSucursales())
+            {
+                MostrarMensaje(
+                    "Acceso no permitido",
+                    "No tiene permiso para consultar sucursales."
+                );
+
+                return;
+            }
+
+            MostrarVistaSucursales();
+        }
+
+
         private void MostrarVistaUsuarios()
         {
             pnlVistaUsuarios.Visible =
                 true;
 
             pnlVistaPerfiles.Visible =
+                false;
+
+            pnlVistaSucursales.Visible =
                 false;
 
             btnVistaUsuarios.BackColor =
@@ -379,6 +432,12 @@ namespace Capa_Vistas
                 Color.FromArgb(235, 237, 240);
 
             btnVistaPerfiles.ForeColor =
+                Color.FromArgb(55, 59, 64);
+
+            btnVistaSucursales.BackColor =
+                Color.FromArgb(235, 237, 240);
+
+            btnVistaSucursales.ForeColor =
                 Color.FromArgb(55, 59, 64);
 
             lblTitulo.Text =
@@ -400,6 +459,9 @@ namespace Capa_Vistas
             pnlVistaPerfiles.Visible =
                 true;
 
+            pnlVistaSucursales.Visible =
+                false;
+
             btnVistaUsuarios.BackColor =
                 Color.FromArgb(235, 237, 240);
 
@@ -412,6 +474,12 @@ namespace Capa_Vistas
             btnVistaPerfiles.ForeColor =
                 Color.White;
 
+            btnVistaSucursales.BackColor =
+                Color.FromArgb(235, 237, 240);
+
+            btnVistaSucursales.ForeColor =
+                Color.FromArgb(55, 59, 64);
+
             lblTitulo.Text =
                 "Tipos de usuario y permisos";
 
@@ -422,6 +490,388 @@ namespace Capa_Vistas
                 false;
 
             CargarPerfilesGestion();
+        }
+
+
+        // Alterna a la vista de sucursales y refresca el resumen por perfil.
+        private void MostrarVistaSucursales()
+        {
+            pnlVistaUsuarios.Visible = false;
+            pnlVistaPerfiles.Visible = false;
+            pnlVistaSucursales.Visible = true;
+
+            btnVistaUsuarios.BackColor = Color.FromArgb(235, 237, 240);
+            btnVistaUsuarios.ForeColor = Color.FromArgb(55, 59, 64);
+            btnVistaPerfiles.BackColor = Color.FromArgb(235, 237, 240);
+            btnVistaPerfiles.ForeColor = Color.FromArgb(55, 59, 64);
+            btnVistaSucursales.BackColor = Color.FromArgb(190, 137, 45);
+            btnVistaSucursales.ForeColor = Color.White;
+
+            lblTitulo.Text = "Sucursales";
+            lblSubtitulo.Text = "Consulta las sucursales activas y la distribución de usuarios por perfil.";
+            btnNuevoUsuario.Visible = false;
+
+            MostrarListadoSucursales();
+            CargarSucursales();
+        }
+
+
+        // Carga bloques de sucursales y sus perfiles sin asumir una lista fija de roles.
+        private void CargarSucursales()
+        {
+            flpSucursales.SuspendLayout();
+            flpSucursales.Controls.Clear();
+
+            if (!sucursalLogica.PuedeVerSucursales())
+            {
+                lblCantidadSucursales.Text = "No tiene permiso para consultar sucursales.";
+                flpSucursales.ResumeLayout();
+                return;
+            }
+
+            try
+            {
+                List<SucursalResumenModelo> sucursales =
+                    sucursalLogica.ObtenerResumenUsuariosPorPerfil();
+
+                foreach (SucursalResumenModelo sucursal in sucursales)
+                {
+                    flpSucursales.Controls.Add(CrearBloqueSucursal(sucursal));
+                }
+
+                lblCantidadSucursales.Text =
+                    $"{sucursales.Count} sucursal(es) activa(s)";
+
+                AjustarAnchoBloquesSucursales();
+            }
+            catch (Exception ex)
+            {
+                lblCantidadSucursales.Text = "No se pudieron cargar las sucursales.";
+                MostrarMensaje("No se pudieron cargar las sucursales", ex.Message);
+            }
+            finally
+            {
+                flpSucursales.ResumeLayout();
+            }
+        }
+
+
+        // Crea el bloque visual de una sucursal con los perfiles obtenidos dinámicamente.
+        private Panel CrearBloqueSucursal(SucursalResumenModelo sucursal)
+        {
+            int altoResumen = Math.Max(1, sucursal.UsuariosPorPerfil.Count) * 24;
+            Panel bloque = new Panel
+            {
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Height = 105 + altoResumen,
+                Margin = new Padding(0, 0, 0, 12),
+                Tag = sucursal.IdSucursal
+            };
+
+            Label lblNombre = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 11F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(55, 59, 64),
+                Location = new Point(18, 15),
+                Text = sucursal.Nombre
+            };
+
+            string ubicacion = string.Join(", ", new[]
+            {
+                sucursal.Calle,
+                sucursal.Localidad,
+                sucursal.Provincia
+            }.Where(texto => !string.IsNullOrWhiteSpace(texto)));
+
+            Label lblUbicacion = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F),
+                ForeColor = Color.FromArgb(105, 110, 116),
+                Location = new Point(18, 45),
+                Text = string.IsNullOrWhiteSpace(ubicacion)
+                    ? "Sin dirección registrada"
+                    : ubicacion
+            };
+
+            Label lblResumen = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.FromArgb(190, 137, 45),
+                Location = new Point(18, 73),
+                Text = "Usuarios activos por perfil"
+            };
+
+            FlowLayoutPanel perfiles = new FlowLayoutPanel
+            {
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                FlowDirection = FlowDirection.LeftToRight,
+                Location = new Point(18, 99),
+                Size = new Size(Math.Max(300, flpSucursales.ClientSize.Width - 55), altoResumen),
+                WrapContents = true
+            };
+
+            foreach (PerfilSucursalResumenModelo perfil in sucursal.UsuariosPorPerfil)
+            {
+                perfiles.Controls.Add(new Label
+                {
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 8.5F),
+                    ForeColor = Color.FromArgb(55, 59, 64),
+                    Margin = new Padding(0, 0, 28, 4),
+                    Text = $"{perfil.Perfil}: {perfil.CantidadUsuarios}"
+                });
+            }
+
+            bloque.Controls.Add(lblNombre);
+            bloque.Controls.Add(lblUbicacion);
+            bloque.Controls.Add(lblResumen);
+            bloque.Controls.Add(perfiles);
+            return bloque;
+        }
+
+
+        // Ajusta el ancho de los bloques al área visible sin trasladar layout dinámico al Designer.
+        private void FlpSucursales_Resize(object? sender, EventArgs e)
+        {
+            AjustarAnchoBloquesSucursales();
+        }
+
+
+        // Mantiene las tarjetas alineadas y evita desbordes al cambiar el tamaño del formulario.
+        private void AjustarAnchoBloquesSucursales()
+        {
+            int ancho = Math.Max(360, flpSucursales.ClientSize.Width - 24);
+
+            foreach (Control control in flpSucursales.Controls)
+            {
+                if (control is Panel bloque)
+                {
+                    bloque.Width = ancho;
+                }
+            }
+        }
+
+
+        // Abre el formulario interno de alta y carga sus catálogos dinámicos de ubicación.
+        private void BtnNuevaSucursal_Click(object? sender, EventArgs e)
+        {
+            if (!sucursalLogica.PuedeCrearSucursal())
+            {
+                MostrarMensaje("Acceso no permitido", "No tiene permiso para registrar sucursales.");
+                return;
+            }
+
+            LimpiarFormularioSucursal();
+            pnlListadoSucursales.Visible = false;
+            pnlFormularioSucursal.Visible = true;
+            CargarProvinciasSucursal();
+            txtNombreSucursal.Focus();
+        }
+
+
+        // Regresa al listado sin persistir los cambios ingresados en el formulario interno.
+        private void BtnCancelarSucursal_Click(object? sender, EventArgs e)
+        {
+            MostrarListadoSucursales();
+        }
+
+
+        // Valida y registra la nueva sucursal después de resolver la localidad elegida o creada.
+        private void BtnGuardarSucursal_Click(object? sender, EventArgs e)
+        {
+            int? idProvincia = ObtenerIdSucursalSeleccionado(cmbSucursalProvincia);
+
+            if (!ValidarSucursalEnVista(idProvincia) || !idProvincia.HasValue)
+            {
+                return;
+            }
+
+            if (!IntentarResolverLocalidadSucursal(idProvincia.Value, out int idLocalidad))
+            {
+                return;
+            }
+
+            ResultadoSucursal resultado;
+            try
+            {
+                resultado = sucursalLogica.Alta(
+                    txtNombreSucursal.Text,
+                    idProvincia,
+                    idLocalidad,
+                    txtDireccionSucursal.Text
+                );
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("No se pudo crear la sucursal", ex.Message);
+                return;
+            }
+
+            MostrarMensaje(
+                resultado.Exitoso ? "Sucursal creada" : "No se pudo crear la sucursal",
+                resultado.Mensaje
+            );
+
+            if (resultado.Exitoso)
+            {
+                MostrarListadoSucursales();
+                CargarSucursales();
+            }
+        }
+
+
+        // Recarga las localidades y limpia la selección al cambiar la provincia de la sucursal.
+        private void CmbSucursalProvincia_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            CargarLocalidadesSucursal(ObtenerIdSucursalSeleccionado(cmbSucursalProvincia) ?? 0, true);
+        }
+
+
+        // Obtiene el catálogo cerrado de provincias para el alta de sucursal.
+        private void CargarProvinciasSucursal()
+        {
+            List<OpcionSucursalModelo> provincias = sucursalLogica.ObtenerProvincias();
+            provincias.Insert(0, new OpcionSucursalModelo { Id = 0, Nombre = "Seleccioná una provincia" });
+
+            cmbSucursalProvincia.DataSource = provincias;
+            cmbSucursalProvincia.DisplayMember = nameof(OpcionSucursalModelo.Nombre);
+            cmbSucursalProvincia.ValueMember = nameof(OpcionSucursalModelo.Id);
+            cmbSucursalProvincia.SelectedIndex = 0;
+        }
+
+
+        // Carga localidades de la provincia y configura sugerencias sin permitir cruces entre provincias.
+        private void CargarLocalidadesSucursal(int idProvincia, bool limpiarSeleccion)
+        {
+            List<OpcionSucursalModelo> localidades = idProvincia > 0
+                ? sucursalLogica.ObtenerLocalidades(idProvincia)
+                : new List<OpcionSucursalModelo>();
+
+            cmbSucursalLocalidad.DataSource = null;
+            cmbSucursalLocalidad.DisplayMember = nameof(OpcionSucursalModelo.Nombre);
+            cmbSucursalLocalidad.ValueMember = nameof(OpcionSucursalModelo.Id);
+            cmbSucursalLocalidad.DataSource = localidades;
+
+            AutoCompleteStringCollection sugerencias = new();
+            sugerencias.AddRange(localidades.Select(localidad => localidad.Nombre).ToArray());
+            cmbSucursalLocalidad.AutoCompleteCustomSource = sugerencias;
+            cmbSucursalLocalidad.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            cmbSucursalLocalidad.AutoCompleteSource = AutoCompleteSource.CustomSource;
+
+            if (limpiarSeleccion)
+            {
+                cmbSucursalLocalidad.SelectedIndex = -1;
+                cmbSucursalLocalidad.Text = string.Empty;
+            }
+        }
+
+
+        // Reutiliza una localidad existente o solicita confirmación antes de crearla por la capa lógica.
+        private bool IntentarResolverLocalidadSucursal(int idProvincia, out int idLocalidad)
+        {
+            idLocalidad = 0;
+            string nombre = cmbSucursalLocalidad.Text.Trim();
+            OpcionSucursalModelo? existente = sucursalLogica.BuscarLocalidad(idProvincia, nombre);
+
+            if (existente != null)
+            {
+                idLocalidad = existente.Id;
+                cmbSucursalLocalidad.SelectedValue = idLocalidad;
+                return true;
+            }
+
+            using FormMensaje confirmacion = new FormMensaje(
+                "Nueva localidad",
+                $"La localidad \"{nombre}\" no existe en la provincia seleccionada. ¿Deseás crearla?",
+                "Crear localidad",
+                true
+            );
+
+            confirmacion.StartPosition = FormStartPosition.CenterParent;
+            if (confirmacion.ShowDialog(formPrincipal) != DialogResult.OK)
+            {
+                return false;
+            }
+
+            ResultadoSucursal resultado = sucursalLogica.ObtenerOCrearLocalidad(idProvincia, nombre);
+            if (!resultado.Exitoso)
+            {
+                MostrarMensaje("Localidad", resultado.Mensaje);
+                return false;
+            }
+
+            CargarLocalidadesSucursal(idProvincia, false);
+            cmbSucursalLocalidad.SelectedValue = resultado.IdGenerado;
+            idLocalidad = resultado.IdGenerado;
+            return true;
+        }
+
+
+        // Repite en la Vista los obligatorios y longitudes antes de delegar la validación autoritativa.
+        private bool ValidarSucursalEnVista(int? idProvincia)
+        {
+            string nombre = NormalizarEspaciosSucursal(txtNombreSucursal.Text);
+            string direccion = NormalizarEspaciosSucursal(txtDireccionSucursal.Text);
+            string localidad = NormalizarEspaciosSucursal(cmbSucursalLocalidad.Text);
+            string? error = string.IsNullOrWhiteSpace(nombre)
+                ? "El nombre de la sucursal es obligatorio."
+                : nombre.Length > 100
+                    ? "El nombre de la sucursal no puede superar los 100 caracteres."
+                    : !idProvincia.HasValue || idProvincia.Value <= 0
+                        ? "Seleccioná una provincia válida."
+                        : string.IsNullOrWhiteSpace(localidad) || localidad.Length > 100
+                            ? "Seleccioná o ingresá una localidad válida."
+                            : string.IsNullOrWhiteSpace(direccion) || direccion.Length > 150
+                                ? "La dirección es obligatoria y no puede superar los 150 caracteres."
+                                : null;
+
+            if (error == null)
+            {
+                txtNombreSucursal.Text = NormalizarEspaciosSucursal(txtNombreSucursal.Text);
+                txtDireccionSucursal.Text = NormalizarEspaciosSucursal(txtDireccionSucursal.Text);
+                return true;
+            }
+
+            MostrarMensaje("Sucursal", error);
+            return false;
+        }
+
+
+        // Restablece el formulario para evitar reutilizar una ubicación de una alta anterior.
+        private void LimpiarFormularioSucursal()
+        {
+            txtNombreSucursal.Clear();
+            txtDireccionSucursal.Clear();
+            chkSucursalActiva.Checked = true;
+            cmbSucursalProvincia.DataSource = null;
+            cmbSucursalLocalidad.DataSource = null;
+            cmbSucursalLocalidad.Text = string.Empty;
+        }
+
+
+        // Muestra el listado y oculta el formulario de alta dentro de la misma pestaña.
+        private void MostrarListadoSucursales()
+        {
+            pnlFormularioSucursal.Visible = false;
+            pnlListadoSucursales.Visible = true;
+        }
+
+
+        // Obtiene el ID actual del ComboBox sin depender de posiciones o IDs fijos.
+        private static int? ObtenerIdSucursalSeleccionado(ComboBox combo)
+        {
+            return combo.SelectedValue is int id ? id : null;
+        }
+
+
+        // Reduce espacios repetidos para reflejar el valor que validará y almacenará la lógica.
+        private static string NormalizarEspaciosSucursal(string? valor)
+        {
+            return string.Join(' ', (valor ?? string.Empty).Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries));
         }
 
 
@@ -597,6 +1047,8 @@ namespace Capa_Vistas
                 CargarPermisosPerfil(
                     perfil
                 );
+
+                CargarDestinosAvisoPerfil(perfil);
             }
             catch (Exception ex)
             {
@@ -693,6 +1145,30 @@ namespace Capa_Vistas
                 flpPermisos.Controls.Add(
                     check
                 );
+            }
+
+            flpDestinosAviso.Controls.Clear();
+        }
+
+
+        // Carga perfiles destino configurables sin asumir roles ni nombres predefinidos.
+        private void CargarDestinosAvisoPerfil(PerfilGestionModelo perfil)
+        {
+            flpDestinosAviso.Controls.Clear();
+
+            foreach (PerfilAvisoDestinoModelo destino in perfilLogica.ObtenerDestinosAviso(perfil.IdPerfil))
+            {
+                flpDestinosAviso.Controls.Add(new CheckBox
+                {
+                    AutoSize = true,
+                    Font = new Font("Segoe UI", 8.5F),
+                    ForeColor = Color.FromArgb(55, 59, 64),
+                    Text = destino.Nombre,
+                    Tag = destino.IdPerfil,
+                    Checked = destino.Asignado,
+                    Enabled = !perfil.AlcanceGlobal,
+                    Margin = new Padding(4, 2, 4, 2)
+                });
             }
         }
 
@@ -874,6 +1350,17 @@ namespace Capa_Vistas
                         resultado.Mensaje
                     );
 
+                    return;
+                }
+
+                ResultadoPerfil destinosAviso = perfilLogica.GuardarDestinosAviso(
+                    resultado.IdGenerado,
+                    ObtenerDestinosAvisoSeleccionados()
+                );
+
+                if (!destinosAviso.Exitoso)
+                {
+                    MostrarMensaje("No se pudieron guardar los destinos de avisos", destinosAviso.Mensaje);
                     return;
                 }
 
@@ -1065,6 +1552,18 @@ namespace Capa_Vistas
         }
 
 
+        // Reúne los perfiles destino seleccionados para persistir la matriz de avisos.
+        private List<int> ObtenerDestinosAvisoSeleccionados()
+        {
+            return flpDestinosAviso.Controls
+                .OfType<CheckBox>()
+                .Where(check => check.Checked)
+                .Select(check => check.Tag)
+                .OfType<int>()
+                .ToList();
+        }
+
+
         private void LimpiarEdicionPerfil()
         {
             idPerfilEdicion =
@@ -1087,6 +1586,8 @@ namespace Capa_Vistas
             txtDescripcionPerfil.Clear();
 
             flpPermisos.Controls.Clear();
+
+            flpDestinosAviso.Controls.Clear();
 
             btnEliminarPerfil.Visible =
                 false;

@@ -858,17 +858,10 @@ namespace Capa_Vistas
             );
 
 
+            // El acceso al módulo depende del permiso granular y no del nombre o tipo de perfil.
             bool puedeVerReportes =
                 SesionActual.TienePermiso(
-                    "REPORTES_ADMINISTRADOR"
-                )
-                ||
-                SesionActual.TienePermiso(
-                    "REPORTES_GERENTE"
-                )
-                ||
-                SesionActual.TienePermiso(
-                    "REPORTES_VENDEDOR"
+                    "REPORTES_VER"
                 );
 
 
@@ -1361,7 +1354,7 @@ namespace Capa_Vistas
             EventArgs e)
         {
             FormReportesGeneral reportes =
-                new FormReportesGeneral();
+                new FormReportesGeneral(this);
 
 
             AbrirFormularioEnPanel(
