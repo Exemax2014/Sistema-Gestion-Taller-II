@@ -109,7 +109,9 @@ namespace Capa_Datos
         }
 
 
+        // Envía el usuario de sesión para que SQL Server valide permiso y alcance antes de modificar existencias.
         public ResultadoInventarioDatos EstablecerStock(
+            int idUsuario,
             int idProducto,
             int idSucursal,
             int stock,
@@ -128,6 +130,12 @@ namespace Capa_Datos
 
             comando.CommandType =
                 CommandType.StoredProcedure;
+
+
+            comando.Parameters.Add(
+                "@idUsuario",
+                SqlDbType.Int
+            ).Value = idUsuario;
 
 
             comando.Parameters.Add(

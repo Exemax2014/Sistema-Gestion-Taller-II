@@ -15,6 +15,10 @@ namespace Capa_Datos
         public string Documento { get; set; } = string.Empty;
         public string Correo { get; set; } = string.Empty;
         public string Telefono { get; set; } = string.Empty;
+        public string Localidad { get; set; } = string.Empty;
+        public string Provincia { get; set; } = string.Empty;
+        public string Calle { get; set; } = string.Empty;
+        public string Altura { get; set; } = string.Empty;
         public bool Activo { get; set; }
     }
 
@@ -95,6 +99,10 @@ namespace Capa_Datos
                     Documento = LeerTexto(lector, "documento"),
                     Correo = LeerTexto(lector, "correo"),
                     Telefono = LeerTexto(lector, "telefono"),
+                    Localidad = LeerTexto(lector, "localidad"),
+                    Provincia = LeerTexto(lector, "provincia"),
+                    Calle = LeerTexto(lector, "calle"),
+                    Altura = LeerTexto(lector, "altura"),
                     Activo = Convert.ToBoolean(lector["activo"])
                 });
             }

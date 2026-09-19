@@ -14,6 +14,9 @@ namespace Capa_Logica
 
     public class ProductoLogica
     {
+        private const decimal PrecioMaximo = 9999999999999999.99m;
+        private const decimal PorcentajeGananciaMaximo = 999.99m;
+
         private readonly ProductoDatos productoDatos =
             new ProductoDatos();
 
@@ -238,11 +241,14 @@ namespace Capa_Logica
         // VALIDAR PRODUCTO
         // ========================================================
 
+        // Centraliza las reglas autoritativas para altas y modificaciones
+        // antes de enviar valores que puedan fallar por rango en SQL Server.
         public string? ValidarProducto(
             int? idCategoria,
-            string nombre,
-            string precioCostoTexto,
-            string porcentajeGananciaTexto)
+            string? codigoBarra,
+            string? nombre,
+            decimal precioCosto,
+            decimal porcentajeGanancia)
         {
             if (
                 !idCategoria.HasValue
@@ -253,42 +259,48 @@ namespace Capa_Logica
             }
 
 
-            if (string.IsNullOrWhiteSpace(nombre))
+            string nombreNormalizado = (nombre ?? string.Empty).Trim();
+            string codigoNormalizado = (codigoBarra ?? string.Empty).Trim();
+
+            if (string.IsNullOrWhiteSpace(nombreNormalizado))
             {
                 return "El nombre es obligatorio.";
             }
 
-
-            if (
-                !decimal.TryParse(
-                    precioCostoTexto,
-                    out decimal precioCosto
-                )
-                ||
-                precioCosto < 0)
+            if (nombreNormalizado.Length > 100)
             {
-                return
-                    "El precio de costo debe ser un número mayor o igual a 0.";
+                return "El nombre supera el máximo de 100 caracteres.";
             }
 
-
-            if (
-                !decimal.TryParse(
-                    porcentajeGananciaTexto,
-                    out decimal porcentaje
-                )
-                ||
-                porcentaje < 0)
+            if (nombreNormalizado.Any(char.IsControl))
             {
                 return
-                    "El porcentaje de ganancia debe ser un número mayor o igual a 0.";
+                    "El nombre contiene caracteres no válidos.";
             }
 
-
-            if (porcentaje > 999.99m)
+            if (codigoNormalizado.Length > 50)
             {
                 return
-                    "El porcentaje de ganancia no puede superar 999.99.";
+                    "El código de barras supera el máximo de 50 caracteres.";
+            }
+
+            if (precioCosto < 0 || precioCosto > PrecioMaximo ||
+                !TieneHastaDosDecimales(precioCosto))
+            {
+                return
+                    "El precio de costo debe ser un valor no negativo de hasta 2 decimales.";
+            }
+
+            if (porcentajeGanancia < 0 || porcentajeGanancia > PorcentajeGananciaMaximo ||
+                !TieneHastaDosDecimales(porcentajeGanancia))
+            {
+                return
+                    "El porcentaje de ganancia debe estar entre 0 y 999,99 y tener hasta 2 decimales.";
+            }
+
+            if (!PrecioVentaEnRango(precioCosto, porcentajeGanancia))
+            {
+                return "El costo y el porcentaje superan el rango permitido para el precio de venta.";
             }
 
 
@@ -300,6 +312,7 @@ namespace Capa_Logica
         // ALTA
         // ========================================================
 
+        // Registra un producto solo después de aplicar la validación común autoritativa.
         public ResultadoProducto Alta(
             int idCategoria,
             int? idMarca,
@@ -321,6 +334,18 @@ namespace Capa_Logica
                 };
             }
 
+            string? error = ValidarProducto(
+                idCategoria,
+                codigoBarra,
+                nombre,
+                precioCosto,
+                porcentajeGanancia
+            );
+
+            if (error != null)
+            {
+                return new ResultadoProducto { Codigo = 3, Mensaje = error };
+            }
 
             ResultadoProductoDatos resultado =
                 productoDatos.Alta(
@@ -345,6 +370,7 @@ namespace Capa_Logica
         // MODIFICAR
         // ========================================================
 
+        // Modifica un producto usando la misma validación común que el alta.
         public ResultadoProducto Modificar(
             int idProducto,
             int idCategoria,
@@ -379,6 +405,18 @@ namespace Capa_Logica
                 };
             }
 
+            string? error = ValidarProducto(
+                idCategoria,
+                codigoBarra,
+                nombre,
+                precioCosto,
+                porcentajeGanancia
+            );
+
+            if (error != null)
+            {
+                return new ResultadoProducto { Codigo = 3, Mensaje = error };
+            }
 
             return ConvertirResultado(
                 productoDatos.Modificar(
@@ -453,6 +491,20 @@ namespace Capa_Logica
                 IdGenerado =
                     resultado.IdGenerado
             };
+        }
+
+        // Comprueba la escala admitida por los campos DECIMAL(18,2) y DECIMAL(5,2).
+        private static bool TieneHastaDosDecimales(decimal valor)
+        {
+            int escala = (decimal.GetBits(valor)[3] >> 16) & 0x7F;
+            return escala <= 2;
+        }
+
+        // Evita que el precio calculado de SQL exceda DECIMAL(18,2).
+        private static bool PrecioVentaEnRango(decimal precioCosto, decimal porcentajeGanancia)
+        {
+            decimal factor = 1m + porcentajeGanancia / 100m;
+            return precioCosto <= PrecioMaximo / factor;
         }
     }
 }

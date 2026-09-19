@@ -1,5 +1,8 @@
 ﻿using Capa_Logica;
 
+using System.Net.Mail;
+using System.Text.RegularExpressions;
+
 namespace Capa_Vistas
 {
     public partial class FormClienteDetalle : Form
@@ -13,6 +16,7 @@ namespace Capa_Vistas
 
         private bool hayCambios;
         private bool cargandoDatos = true;
+        private List<OpcionClienteModelo> localidadesActuales = new();
 
         private bool EsAlta => !idCliente.HasValue;
 
@@ -27,13 +31,14 @@ namespace Capa_Vistas
 
             this.formPrincipal = formPrincipal;
 
-            ConfigurarCentrado();
+            ConfigurarLayoutResponsive();
 
             lblTitulo.Text = "Nuevo cliente";
 
             CargarProvincias();
 
             ConfigurarEventos();
+            ConfigurarValidacionesVisuales();
 
             cargandoDatos = false;
 
@@ -59,15 +64,17 @@ namespace Capa_Vistas
 
             this.idCliente = idCliente;
 
-            ConfigurarCentrado();
+            ConfigurarLayoutResponsive();
 
             lblTitulo.Text = "Editar cliente";
 
             CargarProvincias();
 
             ConfigurarEventos();
+            ConfigurarValidacionesVisuales();
 
             CargarCliente();
+            ConfigurarModoEdicion();
 
             cargandoDatos = false;
 
@@ -76,51 +83,115 @@ namespace Capa_Vistas
 
 
         // =========================================================
-        // CENTRADO DEL CONTENIDO
+        // LAYOUT RESPONSIVE
         // =========================================================
-        private void ConfigurarCentrado()
+        // Registra los eventos que recalculan el formulario dentro de pnlContenido.
+        private void ConfigurarLayoutResponsive()
         {
-            CentrarContenido();
-
-            Resize +=
-                FormClienteDetalle_Resize;
+            Load += FormClienteDetalle_Load;
+            Resize += FormClienteDetalle_Resize;
+            pnlContenedor.Resize += FormClienteDetalle_Resize;
         }
 
-
-        private void FormClienteDetalle_Resize(
-            object? sender,
-            EventArgs e)
+        // Aplica el primer cálculo cuando el contenedor ya dispone de su tamaño real.
+        private void FormClienteDetalle_Load(object? sender, EventArgs e)
         {
-            CentrarContenido();
+            AjustarLayoutResponsive();
         }
 
-
-        private void CentrarContenido()
+        // Recalcula la distribución al cambiar el tamaño del formulario o contenedor.
+        private void FormClienteDetalle_Resize(object? sender, EventArgs e)
         {
-            int margenHorizontal = 30;
-            int margenSuperior = 25;
+            AjustarLayoutResponsive();
+        }
 
-            int posicionX =
-                (ClientSize.Width -
-                 pnlContenido.Width) / 2;
-
-            if (posicionX < margenHorizontal)
+        // Ajusta tarjeta, márgenes y columnas según el espacio disponible;
+        // el contenedor conserva scroll si el contenido no entra verticalmente.
+        private void AjustarLayoutResponsive()
+        {
+            if (pnlContenedor.ClientSize.Width <= 0)
             {
-                posicionX =
-                    margenHorizontal;
+                return;
             }
 
-            pnlContenido.Left =
-                posicionX;
+            const int anchoMinimo = 560;
+            const int anchoMaximo = 1120;
+            const int altoContenido = 680;
+            const int margenVertical = 20;
 
-            pnlContenido.Top =
-                margenSuperior;
+            int anchoDisponible = pnlContenedor.ClientSize.Width - 64;
+            int anchoContenido = Math.Clamp(anchoDisponible, anchoMinimo, anchoMaximo);
+            int margenLateral = Math.Max(32, (pnlContenedor.ClientSize.Width - anchoContenido) / 2);
+            int relleno = Math.Max(42, (int)(anchoContenido * 0.06));
+            int anchoCampos = anchoContenido - (relleno * 2);
+            int separacionColumnas = 34;
+            int anchoColumna = (anchoCampos - separacionColumnas) / 2;
+            int segundaColumna = relleno + anchoColumna + separacionColumnas;
+
+            pnlContenedor.SuspendLayout();
+            pnlContenido.SuspendLayout();
+
+            pnlContenido.Size = new Size(anchoContenido, altoContenido);
+            pnlContenido.Location = new Point(margenLateral, margenVertical);
+            pnlContenedor.AutoScrollMinSize = new Size(
+                anchoContenido + (margenLateral * 2),
+                altoContenido + (margenVertical * 2));
+
+            btnVolver.Location = new Point(relleno - 22, 22);
+            lblTitulo.Location = new Point(relleno, 75);
+            pnlLineaDorada.Location = new Point(relleno + 3, 132);
+
+            AjustarFilaCompleta(lblDni, txtDni, relleno, 170, anchoCampos);
+            AjustarFilaDoble(lblNombre, txtNombre, relleno, lblApellido, txtApellido, segundaColumna, 255, anchoColumna);
+            AjustarFilaDoble(lblTelefono, txtTelefono, relleno, lblEmail, txtEmail, segundaColumna, 345, anchoColumna);
+            AjustarFilaDoble(lblProvincia, cmbProvincia, relleno, lblLocalidad, cmbLocalidad, segundaColumna, 435, anchoColumna);
+            AjustarFilaCompleta(lblDireccion, txtDireccion, relleno, 525, anchoCampos);
+
+            btnCancelar.Location = new Point(relleno, 610);
+            btnGuardar.Location = new Point(anchoContenido - relleno - btnGuardar.Width, 610);
+
+            pnlContenido.ResumeLayout(false);
+            pnlContenedor.ResumeLayout(true);
+        }
+
+        // Ubica una etiqueta y su control ocupando todo el ancho disponible.
+        private static void AjustarFilaCompleta(
+            Label etiqueta,
+            Control campo,
+            int izquierda,
+            int superiorEtiqueta,
+            int ancho)
+        {
+            etiqueta.Location = new Point(izquierda, superiorEtiqueta);
+            campo.Location = new Point(izquierda, superiorEtiqueta + 28);
+            campo.Width = ancho;
+        }
+
+        // Mantiene dos campos alineados en una misma fila responsive.
+        private static void AjustarFilaDoble(
+            Label etiquetaIzquierda,
+            Control campoIzquierdo,
+            int izquierda,
+            Label etiquetaDerecha,
+            Control campoDerecho,
+            int derecha,
+            int superiorEtiqueta,
+            int ancho)
+        {
+            etiquetaIzquierda.Location = new Point(izquierda, superiorEtiqueta);
+            campoIzquierdo.Location = new Point(izquierda, superiorEtiqueta + 28);
+            campoIzquierdo.Width = ancho;
+
+            etiquetaDerecha.Location = new Point(derecha, superiorEtiqueta);
+            campoDerecho.Location = new Point(derecha, superiorEtiqueta + 28);
+            campoDerecho.Width = ancho;
         }
 
 
         // =========================================================
         // PROVINCIAS Y LOCALIDADES
         // =========================================================
+        // Carga el catálogo cerrado de provincias desde la lógica para impedir altas libres.
         private void CargarProvincias()
         {
             List<OpcionClienteModelo> provincias =
@@ -137,6 +208,8 @@ namespace Capa_Vistas
         }
 
 
+        // Al cambiar de provincia descarta la localidad previa y carga solo
+        // las opciones correspondientes a la nueva selección.
         private void CmbProvincia_SelectedIndexChanged(
             object? sender,
             EventArgs e)
@@ -144,21 +217,35 @@ namespace Capa_Vistas
             int idProvincia =
                 ObtenerIdSeleccionado(cmbProvincia) ?? 0;
 
-            List<OpcionClienteModelo> localidades =
-                idProvincia > 0
-                    ? clienteLogica.ObtenerLocalidades(idProvincia)
-                    : new List<OpcionClienteModelo>();
-
-            localidades.Insert(
-                0,
-                new OpcionClienteModelo { Id = 0, Nombre = "Seleccioná una localidad" }
-            );
-
-            cmbLocalidad.DataSource = localidades;
-            cmbLocalidad.DisplayMember = nameof(OpcionClienteModelo.Nombre);
-            cmbLocalidad.ValueMember = nameof(OpcionClienteModelo.Id);
+            CargarLocalidades(idProvincia, true);
 
             ControlModificado(sender, e);
+        }
+
+        // Carga las localidades activas de la provincia seleccionada
+        // y configura el autocompletado del ComboBox editable.
+        private void CargarLocalidades(int idProvincia, bool limpiarSeleccion)
+        {
+            localidadesActuales = idProvincia > 0
+                ? clienteLogica.ObtenerLocalidades(idProvincia)
+                : new List<OpcionClienteModelo>();
+
+            cmbLocalidad.DataSource = null;
+            cmbLocalidad.DisplayMember = nameof(OpcionClienteModelo.Nombre);
+            cmbLocalidad.ValueMember = nameof(OpcionClienteModelo.Id);
+            cmbLocalidad.DataSource = localidadesActuales;
+
+            AutoCompleteStringCollection sugerencias = new AutoCompleteStringCollection();
+            sugerencias.AddRange(localidadesActuales.Select(l => l.Nombre).ToArray());
+            cmbLocalidad.AutoCompleteCustomSource = sugerencias;
+            cmbLocalidad.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            cmbLocalidad.AutoCompleteSource = AutoCompleteSource.CustomSource;
+
+            if (limpiarSeleccion)
+            {
+                cmbLocalidad.SelectedIndex = -1;
+                cmbLocalidad.Text = string.Empty;
+            }
         }
 
 
@@ -235,6 +322,78 @@ namespace Capa_Vistas
             txtTelefono.TextChanged += ControlModificado;
             txtEmail.TextChanged += ControlModificado;
             txtDireccion.TextChanged += ControlModificado;
+            cmbLocalidad.TextChanged += ControlModificado;
+        }
+
+        // Configura límites preventivos de los controles sin reemplazar la validación de negocio.
+        private void ConfigurarValidacionesVisuales()
+        {
+            txtDni.MaxLength = 20;
+            txtNombre.MaxLength = 100;
+            txtApellido.MaxLength = 100;
+            txtTelefono.MaxLength = 30;
+            txtEmail.MaxLength = 150;
+            txtDireccion.MaxLength = 150;
+            cmbLocalidad.MaxLength = 100;
+            txtDni.KeyPress += SoloNumeros_KeyPress;
+            txtNombre.KeyPress += SoloLetras_KeyPress;
+            txtApellido.KeyPress += SoloLetras_KeyPress;
+            txtTelefono.KeyPress += Telefono_KeyPress;
+        }
+
+        // Impide caracteres ajenos a los nombres sin reemplazar la validación
+        // final ante texto pegado o llamadas externas.
+        private static void SoloLetras_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar) || char.IsLetter(e.KeyChar) ||
+                char.IsWhiteSpace(e.KeyChar) || e.KeyChar == '\'' || e.KeyChar == '-')
+            {
+                return;
+            }
+
+            e.Handled = true;
+        }
+
+        private void ConfigurarModoEdicion()
+        {
+            if (EsAlta || clienteLogica.PuedeModificarCliente())
+            {
+                return;
+            }
+
+            lblTitulo.Text = "Detalle de cliente";
+            txtDni.ReadOnly = true;
+            txtNombre.ReadOnly = true;
+            txtApellido.ReadOnly = true;
+            txtTelefono.ReadOnly = true;
+            txtEmail.ReadOnly = true;
+            txtDireccion.ReadOnly = true;
+            cmbProvincia.Enabled = false;
+            cmbLocalidad.Enabled = false;
+            btnGuardar.Visible = false;
+            btnCancelar.Text = "Volver";
+        }
+
+        private static void SoloNumeros_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+
+        // Restringe el teléfono a caracteres admitidos mientras se escribe;
+        // la presencia de un dígito se comprueba al guardar.
+        private static void Telefono_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar) || char.IsDigit(e.KeyChar) ||
+                char.IsWhiteSpace(e.KeyChar) || e.KeyChar == '+' || e.KeyChar == '-' ||
+                e.KeyChar == '(' || e.KeyChar == ')')
+            {
+                return;
+            }
+
+            e.Handled = true;
         }
 
 
@@ -297,10 +456,20 @@ namespace Capa_Vistas
             EventArgs e)
         {
             int? idProvincia = ObtenerIdSeleccionado(cmbProvincia);
-            int? idLocalidad = ObtenerIdSeleccionado(cmbLocalidad);
 
             if (idProvincia == 0) idProvincia = null;
-            if (idLocalidad == 0) idLocalidad = null;
+
+            if (!ValidarVista(idProvincia))
+            {
+                return;
+            }
+
+            int provinciaSeleccionada = idProvincia.GetValueOrDefault();
+
+            if (!IntentarResolverLocalidad(provinciaSeleccionada, out int idLocalidad))
+            {
+                return;
+            }
 
             string? error =
                 clienteLogica.ValidarCliente(
@@ -308,6 +477,7 @@ namespace Capa_Vistas
                     txtApellido.Text,
                     txtDni.Text,
                     txtEmail.Text,
+                    txtTelefono.Text,
                     idProvincia,
                     idLocalidad,
                     txtDireccion.Text
@@ -334,6 +504,7 @@ namespace Capa_Vistas
                         txtDni.Text,
                         txtEmail.Text,
                         txtTelefono.Text,
+                        idProvincia,
                         idLocalidad,
                         txtDireccion.Text,
                         null // no hay campo de altura separado
@@ -350,6 +521,7 @@ namespace Capa_Vistas
                         txtDni.Text,
                         txtEmail.Text,
                         txtTelefono.Text,
+                        idProvincia,
                         idLocalidad,
                         txtDireccion.Text,
                         null
@@ -374,6 +546,150 @@ namespace Capa_Vistas
             mensaje.ShowDialog(this);
 
             VolverAClientes();
+        }
+
+        // Repite formato y obligatoriedad en la Vista para cubrir texto pegado;
+        // ClienteLogica vuelve a verificar las mismas reglas de negocio.
+        private bool ValidarVista(int? idProvincia)
+        {
+            if (string.IsNullOrWhiteSpace(txtNombre.Text) ||
+                !Regex.IsMatch(txtNombre.Text.Trim(), @"^[\p{L}\s'-]+$"))
+            {
+                return ErrorCampo(txtNombre, "Ingresá un nombre válido.");
+            }
+
+            if (string.IsNullOrWhiteSpace(txtApellido.Text) ||
+                !Regex.IsMatch(txtApellido.Text.Trim(), @"^[\p{L}\s'-]+$"))
+            {
+                return ErrorCampo(txtApellido, "Ingresá un apellido válido.");
+            }
+
+            string documento = txtDni.Text.Trim();
+
+            if (string.IsNullOrWhiteSpace(documento) || !documento.All(char.IsDigit))
+            {
+                return ErrorCampo(txtDni, "El documento es obligatorio y debe contener solo números.");
+            }
+
+            string telefono = txtTelefono.Text.Trim();
+
+            if (!string.IsNullOrWhiteSpace(telefono) &&
+                (!telefono.Any(char.IsDigit) || !Regex.IsMatch(telefono, @"^[0-9+\-\s()]+$")))
+            {
+                return ErrorCampo(txtTelefono, "El teléfono debe contener al menos un dígito y solo caracteres válidos.");
+            }
+
+            string correo = txtEmail.Text.Trim();
+
+            if (!string.IsNullOrWhiteSpace(correo) && !EsCorreoValido(correo))
+            {
+                return ErrorCampo(txtEmail, "El correo ingresado no es válido.");
+            }
+
+            if (!idProvincia.HasValue || idProvincia.Value <= 0)
+            {
+                return ErrorCampo(cmbProvincia, "Seleccioná una provincia.");
+            }
+
+            if (string.IsNullOrWhiteSpace(cmbLocalidad.Text))
+            {
+                return ErrorCampo(cmbLocalidad, "Seleccioná o ingresá una localidad.");
+            }
+
+            if (string.IsNullOrWhiteSpace(txtDireccion.Text))
+            {
+                return ErrorCampo(txtDireccion, "Ingresá la calle de la dirección.");
+            }
+
+            return true;
+        }
+
+        // Valida el correo opcional sin aceptar direcciones incompletas.
+        private static bool EsCorreoValido(string correo)
+        {
+            try
+            {
+                if (!Regex.IsMatch(correo, @"^[^@\s]+@[^@\s]+\.[^@\s]+$"))
+                {
+                    return false;
+                }
+
+                MailAddress direccion = new MailAddress(correo);
+                return string.Equals(direccion.Address, correo, StringComparison.OrdinalIgnoreCase);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        // Muestra el error del control y devuelve false para detener el guardado.
+        private bool ErrorCampo(Control control, string mensaje)
+        {
+            MostrarMensaje("Cliente", mensaje);
+
+            if (control.CanFocus)
+            {
+                control.Focus();
+            }
+
+            return false;
+        }
+
+        // Reutiliza una localidad existente o pide confirmación antes de crearla;
+        // al finalizar deja seleccionado el ID devuelto por la lógica.
+        private bool IntentarResolverLocalidad(int idProvincia, out int idLocalidad)
+        {
+            idLocalidad = 0;
+            string nombreLocalidad = cmbLocalidad.Text.Trim();
+
+            OpcionClienteModelo? existente =
+                clienteLogica.BuscarLocalidad(idProvincia, nombreLocalidad);
+
+            if (existente != null)
+            {
+                idLocalidad = existente.Id;
+                cmbLocalidad.SelectedValue = idLocalidad;
+                return true;
+            }
+
+            if (string.IsNullOrWhiteSpace(nombreLocalidad))
+            {
+                MostrarMensaje("Cliente", "Seleccioná o ingresá una localidad.");
+                return false;
+            }
+
+            using FormMensaje confirmacion = new FormMensaje(
+                "Nueva localidad",
+                $"La localidad \"{nombreLocalidad}\" no existe en la provincia seleccionada. ¿Deseás crearla?",
+                "Crear localidad",
+                true);
+
+            if (confirmacion.ShowDialog(this) != DialogResult.OK)
+            {
+                return false;
+            }
+
+            ResultadoCliente resultado =
+                clienteLogica.ObtenerOCrearLocalidad(idProvincia, nombreLocalidad);
+
+            if (!resultado.Exitoso)
+            {
+                MostrarMensaje("Localidad", resultado.Mensaje);
+                return false;
+            }
+
+            CargarLocalidades(idProvincia, false);
+            cmbLocalidad.SelectedValue = resultado.IdGenerado;
+            idLocalidad = resultado.IdGenerado;
+            return true;
+        }
+
+        // Centraliza los mensajes visuales de este formulario.
+        private void MostrarMensaje(string titulo, string mensaje)
+        {
+            using FormMensaje dialogo = new FormMensaje(titulo, mensaje);
+            dialogo.ShowDialog(this);
         }
 
 

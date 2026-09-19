@@ -1,4 +1,5 @@
 ﻿using Capa_Logica;
+using System.Globalization;
 
 namespace Capa_Vistas
 {
@@ -70,6 +71,8 @@ namespace Capa_Vistas
             ConfigurarGrillaStock();
 
             ConfigurarEventos();
+
+            ConfigurarValidacionesVisuales();
 
             CargarCombos();
 
@@ -294,6 +297,79 @@ namespace Capa_Vistas
 
             chkActivo.CheckedChanged +=
                 CampoCambiado;
+        }
+
+
+        // Configura límites y filtros preventivos sin reemplazar las validaciones de Lógica.
+        private void ConfigurarValidacionesVisuales()
+        {
+            txtCodigoBarra.MaxLength = 50;
+            txtNombre.MaxLength = 100;
+            txtPrecioCosto.MaxLength = 19;
+            txtPorcentajeGanancia.MaxLength = 6;
+            txtNuevoStock.MaxLength = 10;
+            txtStockMinimo.MaxLength = 10;
+
+            txtPrecioCosto.KeyPress += DecimalNoNegativo_KeyPress;
+            txtPorcentajeGanancia.KeyPress += DecimalNoNegativo_KeyPress;
+            txtNuevoStock.KeyPress += EnteroNoNegativo_KeyPress;
+            txtStockMinimo.KeyPress += EnteroNoNegativo_KeyPress;
+            txtNombre.KeyPress += TextoUnaLinea_KeyPress;
+        }
+
+
+        // Evita saltos de línea en el nombre sin restringir caracteres habituales de productos.
+        private static void TextoUnaLinea_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (e.KeyChar == '\r' || e.KeyChar == '\n')
+            {
+                e.Handled = true;
+            }
+        }
+
+
+        // Permite solo enteros no negativos mientras se edita el stock de una sucursal.
+        private static void EnteroNoNegativo_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar))
+            {
+                e.Handled = true;
+            }
+        }
+
+
+        // Restringe costo y ganancia al separador decimal local y a dos decimales al escribir.
+        private static void DecimalNoNegativo_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (char.IsControl(e.KeyChar) || char.IsDigit(e.KeyChar))
+            {
+                if (sender is TextBox texto && char.IsDigit(e.KeyChar))
+                {
+                    string separador = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+                    int indiceSeparador = texto.Text.IndexOf(separador, StringComparison.Ordinal);
+
+                    if (indiceSeparador >= 0 && texto.SelectionStart > indiceSeparador &&
+                        texto.SelectionLength == 0 && texto.Text.Length - indiceSeparador - 1 >= 2)
+                    {
+                        e.Handled = true;
+                    }
+                }
+
+                return;
+            }
+
+            if (sender is TextBox control)
+            {
+                string separador = CultureInfo.CurrentCulture.NumberFormat.NumberDecimalSeparator;
+
+                if (separador.Length == 1 && e.KeyChar == separador[0] &&
+                    !control.Text.Contains(separador, StringComparison.Ordinal))
+                {
+                    return;
+                }
+            }
+
+            e.Handled = true;
         }
 
 
@@ -889,37 +965,24 @@ namespace Capa_Vistas
             }
 
 
-            string? error =
-                productoLogica.ValidarProducto(
-                    idCategoria,
-                    txtNombre.Text,
-                    txtPrecioCosto.Text,
-                    txtPorcentajeGanancia.Text
-                );
-
-
-            if (error != null)
+            if (!IntentarObtenerImportes(out decimal costo, out decimal ganancia))
             {
-                MostrarMensaje(
-                    "Producto",
-                    error
-                );
-
-
                 return;
             }
 
+            string? error = productoLogica.ValidarProducto(
+                idCategoria,
+                txtCodigoBarra.Text,
+                txtNombre.Text,
+                costo,
+                ganancia
+            );
 
-            decimal costo =
-                decimal.Parse(
-                    txtPrecioCosto.Text
-                );
-
-
-            decimal ganancia =
-                decimal.Parse(
-                    txtPorcentajeGanancia.Text
-                );
+            if (error != null)
+            {
+                MostrarMensaje("Producto", error);
+                return;
+            }
 
 
             ResultadoProducto resultado;
@@ -979,6 +1042,33 @@ namespace Capa_Vistas
 
 
             VolverListadoSinPreguntar();
+        }
+
+
+        // Comprueba el formato visual de importes, incluso cuando el texto fue pegado.
+        private bool IntentarObtenerImportes(out decimal costo, out decimal ganancia)
+        {
+            bool costoValido = decimal.TryParse(
+                txtPrecioCosto.Text,
+                NumberStyles.Number,
+                CultureInfo.CurrentCulture,
+                out costo
+            );
+
+            bool gananciaValida = decimal.TryParse(
+                txtPorcentajeGanancia.Text,
+                NumberStyles.Number,
+                CultureInfo.CurrentCulture,
+                out ganancia
+            );
+
+            if (!costoValido || !gananciaValida)
+            {
+                MostrarMensaje("Producto", "Ingresá un costo y un porcentaje de ganancia válidos.");
+                return false;
+            }
+
+            return true;
         }
 
 

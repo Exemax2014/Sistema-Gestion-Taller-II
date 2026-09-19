@@ -86,6 +86,32 @@ namespace Capa_Datos
             return localidades;
         }
 
+        // Resuelve la localidad por provincia y nombre mediante el procedimiento
+        // idempotente, que evita duplicados y puede reactivar registros existentes.
+        public ResultadoDireccionDatos ObtenerOCrearLocalidad(int idProvincia, string nombre)
+        {
+            using SqlConnection conexion = Conexion.CrearConexion();
+            using SqlCommand comando = new SqlCommand("dbo.sp_Localidad_ObtenerOCrear", conexion);
+            comando.CommandType = CommandType.StoredProcedure;
+
+            comando.Parameters.Add("@idProvincia", SqlDbType.Int).Value = idProvincia;
+            comando.Parameters.Add("@nombre", SqlDbType.NVarChar, 100).Value = nombre.Trim();
+
+            SqlParameter idGenerado = CrearSalida(comando, "@IdGenerado", SqlDbType.Int);
+            SqlParameter codigoResultado = CrearSalida(comando, "@CodigoResultado", SqlDbType.Int);
+            SqlParameter mensajeResultado = CrearSalida(comando, "@MensajeResultado", SqlDbType.NVarChar, 250);
+
+            conexion.Open();
+            comando.ExecuteNonQuery();
+
+            return new ResultadoDireccionDatos
+            {
+                Codigo = Convert.ToInt32(codigoResultado.Value),
+                Mensaje = mensajeResultado.Value?.ToString() ?? string.Empty,
+                IdGenerado = idGenerado.Value == DBNull.Value ? 0 : Convert.ToInt32(idGenerado.Value)
+            };
+        }
+
         public ResultadoDireccionDatos Alta(int idLocalidad, string calle, string? altura)
         {
             using SqlConnection conexion = Conexion.CrearConexion();

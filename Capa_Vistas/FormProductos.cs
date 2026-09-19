@@ -44,10 +44,24 @@ namespace Capa_Vistas
         // GRILLA
         // ========================================================
 
+        // Configura las columnas dinámicas de productos y deja el formato
+        // dependiente del estado en CellFormatting para cada fila.
         private void ConfigurarGrilla()
         {
             dgvProductos.AutoGenerateColumns =
                 false;
+
+            dgvProductos.ColumnHeadersDefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
+
+            dgvProductos.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleLeft;
+
+            dgvProductos.DefaultCellStyle.Padding =
+                new Padding(8, 0, 8, 0);
+
+            dgvProductos.RowTemplate.Height =
+                40;
 
 
             dgvProductos.Columns.Clear();
@@ -80,6 +94,9 @@ namespace Capa_Vistas
 
             colCodigo.Width =
                 135;
+
+            colCodigo.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
 
 
             DataGridViewTextBoxColumn colNombre =
@@ -116,6 +133,9 @@ namespace Capa_Vistas
             colCategoria.Width =
                 160;
 
+            colCategoria.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
+
 
             DataGridViewTextBoxColumn colMarca =
                 new DataGridViewTextBoxColumn();
@@ -132,6 +152,9 @@ namespace Capa_Vistas
             colMarca.Width =
                 145;
 
+            colMarca.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
+
 
             DataGridViewTextBoxColumn colPrecio =
                 new DataGridViewTextBoxColumn();
@@ -147,6 +170,9 @@ namespace Capa_Vistas
 
             colPrecio.DefaultCellStyle.Format =
                 "C2";
+
+            colPrecio.DefaultCellStyle.Alignment =
+                DataGridViewContentAlignment.MiddleRight;
 
             colPrecio.Width =
                 135;
@@ -178,16 +204,39 @@ namespace Capa_Vistas
                 "";
 
             colDetalle.Text =
-                "Ver detalle";
+                string.Empty;
 
             colDetalle.UseColumnTextForButtonValue =
-                true;
+                false;
 
             colDetalle.FlatStyle =
                 FlatStyle.Flat;
 
             colDetalle.Width =
                 115;
+
+            colDetalle.DefaultCellStyle =
+                new DataGridViewCellStyle
+                {
+                    Alignment =
+                        DataGridViewContentAlignment.MiddleCenter,
+
+                    Padding =
+                        Padding.Empty,
+
+                    Font =
+                        new Font(
+                            "Segoe UI",
+                            8.5F,
+                            FontStyle.Bold
+                        ),
+
+                    ForeColor =
+                        Color.White,
+
+                    SelectionForeColor =
+                        Color.White
+                };
 
 
             dgvProductos.Columns.AddRange(
@@ -227,6 +276,10 @@ namespace Capa_Vistas
 
             dgvProductos.CellContentClick +=
                 DgvProductos_CellContentClick;
+
+
+            dgvProductos.CellFormatting +=
+                DgvProductos_CellFormatting;
         }
 
 
@@ -495,6 +548,135 @@ namespace Capa_Vistas
         // ========================================================
         // VER DETALLE
         // ========================================================
+
+        // Unifica el estado y la acción principal con Usuarios para que
+        // la grilla comunique visualmente la disponibilidad del producto.
+        private void DgvProductos_CellFormatting(
+            object? sender,
+            DataGridViewCellFormattingEventArgs e)
+        {
+            if (
+                e.RowIndex < 0
+                ||
+                e.RowIndex >= dgvProductos.Rows.Count
+                ||
+                dgvProductos.Rows[e.RowIndex].DataBoundItem
+                    is not ProductoListaModelo producto)
+            {
+                return;
+            }
+
+
+            string nombreColumna =
+                dgvProductos
+                    .Columns[e.ColumnIndex]
+                    .Name;
+
+
+            if (nombreColumna == "colEstado")
+            {
+                e.Value =
+                    producto.Activo
+                        ? "Activo"
+                        : "Inactivo";
+
+                AplicarEstiloEstado(
+                    e.CellStyle,
+                    producto.Activo
+                );
+
+                e.FormattingApplied =
+                    true;
+
+                return;
+            }
+
+
+            if (nombreColumna == "colDetalle")
+            {
+                e.Value =
+                    producto.Activo
+                        ? "Ver detalle"
+                        : "Dar de alta";
+
+                AplicarEstiloAccionPrincipal(
+                    e.CellStyle,
+                    producto.Activo
+                );
+
+                e.FormattingApplied =
+                    true;
+            }
+        }
+
+
+        // Mantiene el código de color de estado compartido por las grillas.
+        private static void AplicarEstiloEstado(
+            DataGridViewCellStyle estilo,
+            bool activo)
+        {
+            estilo.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
+
+            estilo.Padding =
+                Padding.Empty;
+
+            estilo.Font =
+                new Font(
+                    "Segoe UI",
+                    8.5F,
+                    FontStyle.Bold
+                );
+
+            estilo.ForeColor =
+                Color.White;
+
+            estilo.SelectionForeColor =
+                Color.White;
+
+            estilo.BackColor =
+                activo
+                    ? Color.FromArgb(46, 125, 74)
+                    : Color.FromArgb(165, 55, 55);
+
+            estilo.SelectionBackColor =
+                estilo.BackColor;
+        }
+
+
+        // Distingue visualmente la consulta de un producto activo de la
+        // gestión de uno inactivo sin cambiar la navegación existente.
+        private static void AplicarEstiloAccionPrincipal(
+            DataGridViewCellStyle estilo,
+            bool activo)
+        {
+            estilo.Alignment =
+                DataGridViewContentAlignment.MiddleCenter;
+
+            estilo.Padding =
+                Padding.Empty;
+
+            estilo.Font =
+                new Font(
+                    "Segoe UI",
+                    8.5F,
+                    FontStyle.Bold
+                );
+
+            estilo.ForeColor =
+                Color.White;
+
+            estilo.SelectionForeColor =
+                Color.White;
+
+            estilo.BackColor =
+                activo
+                    ? Color.FromArgb(105, 110, 116)
+                    : Color.FromArgb(46, 125, 74);
+
+            estilo.SelectionBackColor =
+                estilo.BackColor;
+        }
 
         private void DgvProductos_CellContentClick(
             object? sender,

@@ -4,14 +4,9 @@ using Microsoft.Data.SqlClient;
 namespace Capa_Datos
 {
     // ============================================================
-    // Clase: UsuarioLoginDatos
-    //
-    // Representa los datos de un usuario que necesita el sistema
-    // durante el proceso de inicio de sesión.
-    //
-    // Esta clase recibe los valores obtenidos desde SQL Server
-    // mediante el procedimiento almacenado de búsqueda de usuario.
+    // MODELOS DE DATOS - USUARIO
     // ============================================================
+
     public class UsuarioLoginDatos
     {
         public int IdUsuario { get; set; }
@@ -28,145 +23,910 @@ namespace Capa_Datos
     }
 
 
+    public class UsuarioListadoDatos
+    {
+        public int IdUsuario { get; set; }
+
+        public string Nombre { get; set; } = string.Empty;
+        public string Apellido { get; set; } = string.Empty;
+        public string Dni { get; set; } = string.Empty;
+        public string Telefono { get; set; } = string.Empty;
+        public string NombreUsuario { get; set; } = string.Empty;
+        public string Correo { get; set; } = string.Empty;
+        public string Sexo { get; set; } = string.Empty;
+        public DateTime? FechaNacimiento { get; set; }
+
+        public int IdPerfil { get; set; }
+        public string Perfil { get; set; } = string.Empty;
+
+        public int? IdSucursal { get; set; }
+        public string Sucursal { get; set; } = string.Empty;
+
+        public bool Activo { get; set; }
+    }
+
+
+    public class UsuarioDetalleDatos
+    {
+        public int IdUsuario { get; set; }
+
+        public int IdPerfil { get; set; }
+        public int? IdSucursal { get; set; }
+        public int? IdDireccion { get; set; }
+
+        public string Nombre { get; set; } = string.Empty;
+        public string Apellido { get; set; } = string.Empty;
+        public string Dni { get; set; } = string.Empty;
+        public string Telefono { get; set; } = string.Empty;
+        public string NombreUsuario { get; set; } = string.Empty;
+        public string Correo { get; set; } = string.Empty;
+        public string Sexo { get; set; } = string.Empty;
+        public DateTime? FechaNacimiento { get; set; }
+
+        public string Perfil { get; set; } = string.Empty;
+        public string Sucursal { get; set; } = string.Empty;
+
+        public bool Activo { get; set; }
+    }
+
+
+    public class UsuarioGuardarDatos
+    {
+        public int IdPerfil { get; set; }
+        public int? IdSucursal { get; set; }
+
+        public string Nombre { get; set; } = string.Empty;
+        public string Apellido { get; set; } = string.Empty;
+        public string Dni { get; set; } = string.Empty;
+        public string Telefono { get; set; } = string.Empty;
+        public string NombreUsuario { get; set; } = string.Empty;
+        public string Correo { get; set; } = string.Empty;
+        public string Sexo { get; set; } = string.Empty;
+        public DateTime? FechaNacimiento { get; set; }
+
+        public int? IdDireccion { get; set; }
+
+        // Solo se utiliza en el alta.
+        public string ContrasenaHash { get; set; } = string.Empty;
+    }
+
+
+    public class PerfilDatos
+    {
+        public int IdPerfil { get; set; }
+        public string Nombre { get; set; } = string.Empty;
+        public string Descripcion { get; set; } = string.Empty;
+        public bool AlcanceGlobal { get; set; }
+    }
+
+
+    public class ResultadoUsuarioDatos
+    {
+        public int Codigo { get; set; }
+        public string Mensaje { get; set; } = string.Empty;
+        public int IdGenerado { get; set; }
+
+        public bool Exitoso =>
+            Codigo == 0;
+    }
+
+
     // ============================================================
     // Clase: UsuarioDatos
     //
-    // Contiene las operaciones de acceso a datos relacionadas
-    // con los usuarios.
+    // Responsabilidad:
+    // Acceso a SQL Server para autenticación y administración
+    // de usuarios.
     //
-    // Esta clase pertenece exclusivamente a Capa_Datos.
+    // No contiene reglas visuales ni muestra mensajes.
     // ============================================================
+
     public class UsuarioDatos
     {
         // ========================================================
-        // Método: BuscarPorNombreUsuario
-        //
-        // Busca un usuario mediante el procedimiento almacenado:
-        // dbo.sp_Usuario_BuscarPorNombreUsuario
-        //
-        // Devuelve:
-        // - UsuarioLoginDatos si encuentra un usuario válido.
-        // - null si no existe.
+        // AUTENTICACIÓN
         // ========================================================
-        public UsuarioLoginDatos? BuscarPorNombreUsuario(string nombreUsuario)
+
+        public UsuarioLoginDatos? BuscarPorNombreUsuario(
+            string nombreUsuario)
         {
-            // Crear la conexión utilizando la configuración
-            // centralizada de Capa_Datos.
-            using SqlConnection conexion = Conexion.CrearConexion();
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
 
-            // Indicar el nombre del procedimiento almacenado
-            // que se ejecutará en SQL Server.
-            using SqlCommand comando = new SqlCommand(
-                "dbo.sp_Usuario_BuscarPorNombreUsuario",
-                conexion
-            );
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Usuario_BuscarPorNombreUsuario",
+                    conexion
+                );
 
-            // Informar que el comando corresponde a un
-            // procedimiento almacenado y no a una consulta SQL directa.
-            comando.CommandType = CommandType.StoredProcedure;
+            comando.CommandType =
+                CommandType.StoredProcedure;
 
-            // Enviar el nombre de usuario como parámetro.
-            // Se utiliza el mismo tipo y tamaño definido en SQL Server.
             comando.Parameters.Add(
                 "@nombreUsuario",
                 SqlDbType.NVarChar,
                 100
-            ).Value = nombreUsuario.Trim();
+            ).Value =
+                nombreUsuario.Trim();
 
-            // Abrir la conexión con SQL Server.
             conexion.Open();
 
-            // Ejecutar el procedimiento y obtener el resultado.
-            using SqlDataReader lector = comando.ExecuteReader();
+            using SqlDataReader lector =
+                comando.ExecuteReader();
 
-            // Si el procedimiento no devolvió ninguna fila,
-            // el usuario no existe o no se encuentra activo.
             if (!lector.Read())
             {
                 return null;
             }
 
-            // Convertir la fila recibida desde SQL Server
-            // en un objeto que pueda utilizar posteriormente Capa_Logica.
             return new UsuarioLoginDatos
             {
-                IdUsuario = Convert.ToInt32(lector["id_usuario"]),
-                IdPerfil = Convert.ToInt32(lector["id_perfil"]),
+                IdUsuario =
+                    Convert.ToInt32(
+                        lector["id_usuario"]
+                    ),
 
-                IdSucursal = lector["id_sucursal"] == DBNull.Value
-                    ? null
-                    : Convert.ToInt32(lector["id_sucursal"]),
+                IdPerfil =
+                    Convert.ToInt32(
+                        lector["id_perfil"]
+                    ),
 
-                Nombre = lector["nombre"].ToString() ?? string.Empty,
-                Apellido = lector["apellido"].ToString() ?? string.Empty,
-                NombreUsuario = lector["nombre_usuario"].ToString() ?? string.Empty,
-                ContrasenaHash = lector["contrasena_hash"].ToString() ?? string.Empty,
+                IdSucursal =
+                    lector["id_sucursal"] == DBNull.Value
+                        ? null
+                        : Convert.ToInt32(
+                            lector["id_sucursal"]
+                        ),
 
-                Perfil = lector["perfil"].ToString() ?? string.Empty,
-                Sucursal = lector["sucursal"].ToString() ?? string.Empty
+                Nombre =
+                    lector["nombre"].ToString()
+                    ?? string.Empty,
+
+                Apellido =
+                    lector["apellido"].ToString()
+                    ?? string.Empty,
+
+                NombreUsuario =
+                    lector["nombre_usuario"].ToString()
+                    ?? string.Empty,
+
+                ContrasenaHash =
+                    lector["contrasena_hash"].ToString()
+                    ?? string.Empty,
+
+                Perfil =
+                    lector["perfil"].ToString()
+                    ?? string.Empty,
+
+                Sucursal =
+                    lector["sucursal"].ToString()
+                    ?? string.Empty
             };
         }
 
-        // ========================================================
-        // Método: ObtenerFuncionalidadesPerfil
-        //
-        // Obtiene los códigos de funcionalidades asignados
-        // al perfil indicado.
-        //
-        // Utiliza el procedimiento almacenado:
-        // dbo.sp_Perfil_ObtenerFuncionalidades
-        //
-        // Devuelve una lista de códigos como:
-        // - VENTAS_VER
-        // - CLIENTES_VER
-        // - PRODUCTOS_VER
-        // - USUARIOS_VER
-        // ========================================================
-        public List<string> ObtenerFuncionalidadesPerfil(int idPerfil)
+
+        public List<string> ObtenerFuncionalidadesPerfil(
+            int idPerfil)
         {
-            // Lista donde se almacenarán los permisos recuperados
-            // desde SQL Server.
-            List<string> funcionalidades = new List<string>();
+            List<string> funcionalidades =
+                new List<string>();
 
-            // Crear la conexión utilizando la configuración
-            // centralizada de Capa_Datos.
-            using SqlConnection conexion = Conexion.CrearConexion();
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
 
-            // Preparar la ejecución del procedimiento almacenado.
-            using SqlCommand comando = new SqlCommand(
-                "dbo.sp_Perfil_ObtenerFuncionalidades",
-                conexion
-            );
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Perfil_ObtenerFuncionalidades",
+                    conexion
+                );
 
-            comando.CommandType = CommandType.StoredProcedure;
+            comando.CommandType =
+                CommandType.StoredProcedure;
 
-            // Enviar el identificador del perfil como parámetro.
             comando.Parameters.Add(
                 "@idPerfil",
                 SqlDbType.Int
-            ).Value = idPerfil;
+            ).Value =
+                idPerfil;
 
-            // Abrir la conexión con SQL Server.
             conexion.Open();
 
-            // Ejecutar el procedimiento y recorrer todos los
-            // códigos de funcionalidades recibidos.
-            using SqlDataReader lector = comando.ExecuteReader();
+            using SqlDataReader lector =
+                comando.ExecuteReader();
 
             while (lector.Read())
             {
                 string codigo =
-                    lector["codigo"].ToString() ?? string.Empty;
+                    lector["codigo"].ToString()
+                    ?? string.Empty;
 
-                // Evitar agregar valores vacíos a la sesión.
-                if (!string.IsNullOrWhiteSpace(codigo))
+                if (!string.IsNullOrWhiteSpace(
+                    codigo))
                 {
-                    funcionalidades.Add(codigo);
+                    funcionalidades.Add(
+                        codigo
+                    );
                 }
             }
 
             return funcionalidades;
         }
 
+
+        // ========================================================
+        // LISTADO
+        // ========================================================
+
+        public List<UsuarioListadoDatos> Listar(
+            bool? activo = null)
+        {
+            List<UsuarioListadoDatos> usuarios =
+                new List<UsuarioListadoDatos>();
+
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Usuario_Listar",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            SqlParameter parametroActivo =
+                comando.Parameters.Add(
+                    "@activo",
+                    SqlDbType.Bit
+                );
+
+            parametroActivo.Value =
+                activo.HasValue
+                    ? activo.Value
+                    : DBNull.Value;
+
+            conexion.Open();
+
+            using SqlDataReader lector =
+                comando.ExecuteReader();
+
+            while (lector.Read())
+            {
+                usuarios.Add(
+                    new UsuarioListadoDatos
+                    {
+                        IdUsuario =
+                            Convert.ToInt32(
+                                lector["id_usuario"]
+                            ),
+
+                        Nombre =
+                            lector["nombre"].ToString()
+                            ?? string.Empty,
+
+                        Apellido =
+                            lector["apellido"].ToString()
+                            ?? string.Empty,
+
+                        Dni =
+                            lector["dni"].ToString()
+                            ?? string.Empty,
+
+                        Telefono =
+                            lector["telefono"].ToString()
+                            ?? string.Empty,
+
+                        NombreUsuario =
+                            lector["nombre_usuario"].ToString()
+                            ?? string.Empty,
+
+                        Correo =
+                            lector["correo"].ToString()
+                            ?? string.Empty,
+
+                        Sexo =
+                            lector["sexo"].ToString()
+                            ?? string.Empty,
+
+                        FechaNacimiento =
+                            lector["fecha_nacimiento"]
+                                == DBNull.Value
+                                    ? null
+                                    : Convert.ToDateTime(
+                                        lector["fecha_nacimiento"]
+                                    ),
+
+                        IdPerfil =
+                            Convert.ToInt32(
+                                lector["id_perfil"]
+                            ),
+
+                        Perfil =
+                            lector["perfil"].ToString()
+                            ?? string.Empty,
+
+                        IdSucursal =
+                            lector["id_sucursal"]
+                                == DBNull.Value
+                                    ? null
+                                    : Convert.ToInt32(
+                                        lector["id_sucursal"]
+                                    ),
+
+                        Sucursal =
+                            lector["sucursal"].ToString()
+                            ?? string.Empty,
+
+                        Activo =
+                            Convert.ToBoolean(
+                                lector["activo"]
+                            )
+                    }
+                );
+            }
+
+            return usuarios;
+        }
+
+
+        // ========================================================
+        // DETALLE
+        // ========================================================
+
+        public UsuarioDetalleDatos? ObtenerPorId(
+            int idUsuario)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Usuario_ObtenerPorId",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            comando.Parameters.Add(
+                "@idUsuario",
+                SqlDbType.Int
+            ).Value =
+                idUsuario;
+
+            conexion.Open();
+
+            using SqlDataReader lector =
+                comando.ExecuteReader();
+
+            if (!lector.Read())
+            {
+                return null;
+            }
+
+            return new UsuarioDetalleDatos
+            {
+                IdUsuario =
+                    Convert.ToInt32(
+                        lector["id_usuario"]
+                    ),
+
+                IdPerfil =
+                    Convert.ToInt32(
+                        lector["id_perfil"]
+                    ),
+
+                IdSucursal =
+                    lector["id_sucursal"]
+                        == DBNull.Value
+                            ? null
+                            : Convert.ToInt32(
+                                lector["id_sucursal"]
+                            ),
+
+                IdDireccion =
+                    lector["id_direccion"]
+                        == DBNull.Value
+                            ? null
+                            : Convert.ToInt32(
+                                lector["id_direccion"]
+                            ),
+
+                Nombre =
+                    lector["nombre"].ToString()
+                    ?? string.Empty,
+
+                Apellido =
+                    lector["apellido"].ToString()
+                    ?? string.Empty,
+
+                Dni =
+                    lector["dni"].ToString()
+                    ?? string.Empty,
+
+                Telefono =
+                    lector["telefono"].ToString()
+                    ?? string.Empty,
+
+                NombreUsuario =
+                    lector["nombre_usuario"].ToString()
+                    ?? string.Empty,
+
+                Correo =
+                    lector["correo"].ToString()
+                    ?? string.Empty,
+
+                Sexo =
+                    lector["sexo"].ToString()
+                    ?? string.Empty,
+
+                FechaNacimiento =
+                    lector["fecha_nacimiento"]
+                        == DBNull.Value
+                            ? null
+                            : Convert.ToDateTime(
+                                lector["fecha_nacimiento"]
+                            ),
+
+                Perfil =
+                    lector["perfil"].ToString()
+                    ?? string.Empty,
+
+                Sucursal =
+                    lector["sucursal"].ToString()
+                    ?? string.Empty,
+
+                Activo =
+                    Convert.ToBoolean(
+                        lector["activo"]
+                    )
+            };
+        }
+
+
+        // ========================================================
+        // PERFILES
+        // ========================================================
+
+        public List<PerfilDatos> ListarPerfiles()
+        {
+            List<PerfilDatos> perfiles =
+                new List<PerfilDatos>();
+
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Perfil_Listar",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            conexion.Open();
+
+            using SqlDataReader lector =
+                comando.ExecuteReader();
+
+            while (lector.Read())
+            {
+                perfiles.Add(
+                    new PerfilDatos
+                    {
+                        IdPerfil =
+                            Convert.ToInt32(
+                                lector["id_perfil"]
+                            ),
+
+                        Nombre =
+                            lector["nombre"].ToString()
+                            ?? string.Empty,
+
+                        Descripcion =
+                            lector["descripcion"].ToString()
+                            ?? string.Empty,
+
+                        AlcanceGlobal =
+                            Convert.ToBoolean(
+                                lector["alcance_global"]
+                            )
+                    }
+                );
+            }
+
+            return perfiles;
+        }
+
+
+        // ========================================================
+        // ALTA
+        // ========================================================
+
+        public ResultadoUsuarioDatos Alta(
+            UsuarioGuardarDatos usuario)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Usuario_Alta",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            CargarParametrosUsuario(
+                comando,
+                usuario,
+                incluirContrasena: true
+            );
+
+            SqlParameter idGenerado =
+                comando.Parameters.Add(
+                    "@IdGenerado",
+                    SqlDbType.Int
+                );
+
+            idGenerado.Direction =
+                ParameterDirection.Output;
+
+            SqlParameter codigoResultado =
+                comando.Parameters.Add(
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+            codigoResultado.Direction =
+                ParameterDirection.Output;
+
+            SqlParameter mensajeResultado =
+                comando.Parameters.Add(
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
+            mensajeResultado.Direction =
+                ParameterDirection.Output;
+
+            conexion.Open();
+
+            comando.ExecuteNonQuery();
+
+            return new ResultadoUsuarioDatos
+            {
+                IdGenerado =
+                    idGenerado.Value == DBNull.Value
+                        ? 0
+                        : Convert.ToInt32(
+                            idGenerado.Value
+                        ),
+
+                Codigo =
+                    codigoResultado.Value == DBNull.Value
+                        ? 500
+                        : Convert.ToInt32(
+                            codigoResultado.Value
+                        ),
+
+                Mensaje =
+                    mensajeResultado.Value?.ToString()
+                    ?? string.Empty
+            };
+        }
+
+
+        // ========================================================
+        // MODIFICACIÓN
+        // ========================================================
+
+        public ResultadoUsuarioDatos Modificar(
+            int idUsuario,
+            UsuarioGuardarDatos usuario)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Usuario_Modificar",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            comando.Parameters.Add(
+                "@idUsuario",
+                SqlDbType.Int
+            ).Value =
+                idUsuario;
+
+            CargarParametrosUsuario(
+                comando,
+                usuario,
+                incluirContrasena: false
+            );
+
+            SqlParameter codigoResultado =
+                comando.Parameters.Add(
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+            codigoResultado.Direction =
+                ParameterDirection.Output;
+
+            SqlParameter mensajeResultado =
+                comando.Parameters.Add(
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
+            mensajeResultado.Direction =
+                ParameterDirection.Output;
+
+            conexion.Open();
+
+            comando.ExecuteNonQuery();
+
+            return new ResultadoUsuarioDatos
+            {
+                Codigo =
+                    codigoResultado.Value == DBNull.Value
+                        ? 500
+                        : Convert.ToInt32(
+                            codigoResultado.Value
+                        ),
+
+                Mensaje =
+                    mensajeResultado.Value?.ToString()
+                    ?? string.Empty
+            };
+        }
+
+
+        // ========================================================
+        // BAJA LÓGICA
+        // ========================================================
+
+        public ResultadoUsuarioDatos Baja(
+            int idUsuario)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Usuario_Baja",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            comando.Parameters.Add(
+                "@idUsuario",
+                SqlDbType.Int
+            ).Value =
+                idUsuario;
+
+            SqlParameter codigoResultado =
+                comando.Parameters.Add(
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+            codigoResultado.Direction =
+                ParameterDirection.Output;
+
+            SqlParameter mensajeResultado =
+                comando.Parameters.Add(
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
+            mensajeResultado.Direction =
+                ParameterDirection.Output;
+
+            conexion.Open();
+
+            comando.ExecuteNonQuery();
+
+            return new ResultadoUsuarioDatos
+            {
+                Codigo =
+                    codigoResultado.Value == DBNull.Value
+                        ? 500
+                        : Convert.ToInt32(
+                            codigoResultado.Value
+                        ),
+
+                Mensaje =
+                    mensajeResultado.Value?.ToString()
+                    ?? string.Empty
+            };
+        }
+
+
+        // ========================================================
+        // REACTIVAR USUARIO
+        // ========================================================
+
+        public ResultadoUsuarioDatos Reactivar(
+            int idUsuario)
+        {
+            using SqlConnection conexion =
+                Conexion.CrearConexion();
+
+            using SqlCommand comando =
+                new SqlCommand(
+                    "dbo.sp_Usuario_Reactivar",
+                    conexion
+                );
+
+            comando.CommandType =
+                CommandType.StoredProcedure;
+
+            comando.Parameters.Add(
+                "@idUsuario",
+                SqlDbType.Int
+            ).Value =
+                idUsuario;
+
+
+            SqlParameter codigoResultado =
+                comando.Parameters.Add(
+                    "@CodigoResultado",
+                    SqlDbType.Int
+                );
+
+            codigoResultado.Direction =
+                ParameterDirection.Output;
+
+
+            SqlParameter mensajeResultado =
+                comando.Parameters.Add(
+                    "@MensajeResultado",
+                    SqlDbType.NVarChar,
+                    250
+                );
+
+            mensajeResultado.Direction =
+                ParameterDirection.Output;
+
+
+            conexion.Open();
+
+            comando.ExecuteNonQuery();
+
+
+            return new ResultadoUsuarioDatos
+            {
+                Codigo =
+                    codigoResultado.Value == DBNull.Value
+                        ? 500
+                        : Convert.ToInt32(
+                            codigoResultado.Value
+                        ),
+
+                Mensaje =
+                    mensajeResultado.Value?.ToString()
+                    ?? string.Empty
+            };
+        }
+
+
+        // ========================================================
+        // PARÁMETROS COMPARTIDOS
+        // ========================================================
+
+        private static void CargarParametrosUsuario(
+            SqlCommand comando,
+            UsuarioGuardarDatos usuario,
+            bool incluirContrasena)
+        {
+            comando.Parameters.Add(
+                "@idPerfil",
+                SqlDbType.Int
+            ).Value =
+                usuario.IdPerfil;
+
+            comando.Parameters.Add(
+                "@idSucursal",
+                SqlDbType.Int
+            ).Value =
+                usuario.IdSucursal.HasValue
+                    ? usuario.IdSucursal.Value
+                    : DBNull.Value;
+
+            comando.Parameters.Add(
+                "@nombre",
+                SqlDbType.NVarChar,
+                100
+            ).Value =
+                usuario.Nombre.Trim();
+
+            comando.Parameters.Add(
+                "@apellido",
+                SqlDbType.NVarChar,
+                100
+            ).Value =
+                usuario.Apellido.Trim();
+
+            comando.Parameters.Add(
+                "@dni",
+                SqlDbType.NVarChar,
+                20
+            ).Value =
+                usuario.Dni.Trim();
+
+            comando.Parameters.Add(
+                "@telefono",
+                SqlDbType.NVarChar,
+                30
+            ).Value =
+                string.IsNullOrWhiteSpace(
+                    usuario.Telefono)
+                        ? DBNull.Value
+                        : usuario.Telefono.Trim();
+
+            comando.Parameters.Add(
+                "@nombreUsuario",
+                SqlDbType.NVarChar,
+                50
+            ).Value =
+                usuario.NombreUsuario.Trim();
+
+            if (incluirContrasena)
+            {
+                comando.Parameters.Add(
+                    "@contrasenaHash",
+                    SqlDbType.NVarChar,
+                    255
+                ).Value =
+                    usuario.ContrasenaHash;
+            }
+
+            comando.Parameters.Add(
+                "@correo",
+                SqlDbType.NVarChar,
+                150
+            ).Value =
+                usuario.Correo.Trim();
+
+            comando.Parameters.Add(
+                "@sexo",
+                SqlDbType.NVarChar,
+                20
+            ).Value =
+                string.IsNullOrWhiteSpace(
+                    usuario.Sexo)
+                        ? DBNull.Value
+                        : usuario.Sexo.Trim();
+
+            comando.Parameters.Add(
+                "@fechaNacimiento",
+                SqlDbType.Date
+            ).Value =
+                usuario.FechaNacimiento.HasValue
+                    ? usuario.FechaNacimiento.Value.Date
+                    : DBNull.Value;
+
+            comando.Parameters.Add(
+                "@idDireccion",
+                SqlDbType.Int
+            ).Value =
+                usuario.IdDireccion.HasValue
+                    ? usuario.IdDireccion.Value
+                    : DBNull.Value;
+        }
     }
 }

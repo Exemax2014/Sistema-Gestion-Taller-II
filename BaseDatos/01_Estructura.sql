@@ -9,10 +9,18 @@
    - Adaptar PRODUCTO si la base ya existía.
    - Agregar MARCA.
    - Mantener el stock por PRODUCTO + SUCURSAL mediante INVENTARIO.
+   - Preparar los tipos de tabla usados para registrar ventas con múltiples ítems y pagos.
    - Evitar errores al ejecutar este script más de una vez.
    ========================================================= */
 
 IF DB_ID('SistemaGestion') IS NULL
+BEGIN
+    CREATE DATABASE SistemaGestion;
+END;
+GO
+
+/* Crea la base destino en una instalacion limpia sin afectar una existente. */
+IF DB_ID(N'SistemaGestion') IS NULL
 BEGIN
     CREATE DATABASE SistemaGestion;
 END;
@@ -584,6 +592,50 @@ END;
 GO
 
 
+/* =========================================================
+   TIPOS DE TABLA PARA REGISTRO DE VENTAS
+   =========================================================
+   Permiten enviar desde Capa_Datos todos los productos y pagos
+   de una venta en una sola llamada a sp_Venta_Registrar.
+
+   La Vista no envía precios ni subtotales de productos:
+   SQL Server volverá a obtener el precio vigente de PRODUCTO.
+   ========================================================= */
+
+IF TYPE_ID(N'dbo.VentaItemTipo') IS NULL
+BEGIN
+    EXEC
+    (
+        N'
+        CREATE TYPE dbo.VentaItemTipo AS TABLE
+        (
+            id_producto INT NOT NULL PRIMARY KEY,
+            cantidad INT NOT NULL
+                CHECK (cantidad > 0)
+        );
+        '
+    );
+END;
+GO
+
+
+IF TYPE_ID(N'dbo.VentaPagoTipo') IS NULL
+BEGIN
+    EXEC
+    (
+        N'
+        CREATE TYPE dbo.VentaPagoTipo AS TABLE
+        (
+            id_metodo_pago INT NOT NULL PRIMARY KEY,
+            monto DECIMAL(18,2) NOT NULL
+                CHECK (monto > 0)
+        );
+        '
+    );
+END;
+GO
+
+
 /* ========================
    VENTA
    ======================== */
@@ -601,7 +653,9 @@ BEGIN
         fecha_hora DATETIME2 NOT NULL
             CONSTRAINT DF_VENTA_fecha_hora DEFAULT SYSDATETIME(),
 
-        tipo_factura NVARCHAR(20) NOT NULL,
+        /* La facturación real todavía no está definida.
+           Se permite NULL hasta implementar los tipos de comprobante. */
+        tipo_factura NVARCHAR(20) NULL,
 
         subtotal DECIMAL(18,2) NOT NULL,
 
@@ -633,6 +687,23 @@ BEGIN
         CONSTRAINT CK_VENTA_total
             CHECK (total >= 0)
     );
+END;
+GO
+
+
+/* =========================================================
+   ADAPTACIÓN VENTA - TIPO DE FACTURA OPCIONAL
+   =========================================================
+   La política de comprobantes todavía no está definida.
+   Se mantiene la columna para una futura implementación,
+   pero por ahora no forma parte del flujo de registro.
+   ========================================================= */
+
+IF OBJECT_ID('dbo.VENTA', 'U') IS NOT NULL
+   AND COL_LENGTH('dbo.VENTA', 'tipo_factura') IS NOT NULL
+BEGIN
+    ALTER TABLE dbo.VENTA
+    ALTER COLUMN tipo_factura NVARCHAR(20) NULL;
 END;
 GO
 
@@ -705,6 +776,166 @@ BEGIN
         CONSTRAINT CK_PAGO_monto
             CHECK (monto > 0)
     );
+END;
+GO
+
+
+/* ========================
+   AVISO
+   ========================
+   Comunicaciones internas con destinatarios configurables por perfil. */
+IF OBJECT_ID('dbo.AVISO', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.AVISO
+    (
+        id_aviso INT IDENTITY(1,1) PRIMARY KEY,
+        titulo NVARCHAR(100) NOT NULL,
+        mensaje NVARCHAR(500) NOT NULL,
+        fecha_creacion DATETIME2 NOT NULL
+            CONSTRAINT DF_AVISO_fecha_creacion DEFAULT SYSDATETIME(),
+        id_usuario_autor INT NOT NULL,
+        id_sucursal INT NULL,
+        activo BIT NOT NULL
+            CONSTRAINT DF_AVISO_activo DEFAULT (1),
+        eliminado_en DATETIME2 NULL,
+
+        CONSTRAINT FK_AVISO_USUARIO_AUTOR
+            FOREIGN KEY (id_usuario_autor)
+            REFERENCES dbo.USUARIO(id_usuario),
+        CONSTRAINT FK_AVISO_SUCURSAL
+            FOREIGN KEY (id_sucursal)
+            REFERENCES dbo.SUCURSAL(id_sucursal),
+        CONSTRAINT CK_AVISO_titulo_no_vacio
+            CHECK (LEN(LTRIM(RTRIM(titulo))) > 0),
+        CONSTRAINT CK_AVISO_mensaje_no_vacio
+            CHECK (LEN(LTRIM(RTRIM(mensaje))) > 0)
+    );
+END;
+GO
+
+/* Relaciona perfiles que pueden publicar avisos con sus perfiles destino. */
+IF OBJECT_ID('dbo.PERFIL_AVISO_DESTINO', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.PERFIL_AVISO_DESTINO
+    (
+        id_perfil_emisor INT NOT NULL,
+        id_perfil_destino INT NOT NULL,
+        CONSTRAINT PK_PERFIL_AVISO_DESTINO PRIMARY KEY (id_perfil_emisor, id_perfil_destino),
+        CONSTRAINT FK_PERFIL_AVISO_DESTINO_EMISOR FOREIGN KEY (id_perfil_emisor) REFERENCES dbo.PERFIL(id_perfil),
+        CONSTRAINT FK_PERFIL_AVISO_DESTINO_DESTINO FOREIGN KEY (id_perfil_destino) REFERENCES dbo.PERFIL(id_perfil),
+        CONSTRAINT CK_PERFIL_AVISO_DESTINO_DISTINTO CHECK (id_perfil_emisor <> id_perfil_destino)
+    );
+END;
+GO
+
+/* Permite que un aviso tenga uno o más perfiles destinatarios. */
+IF OBJECT_ID('dbo.AVISO_PERFIL_DESTINO', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.AVISO_PERFIL_DESTINO
+    (
+        id_aviso INT NOT NULL,
+        id_perfil INT NOT NULL,
+        CONSTRAINT PK_AVISO_PERFIL_DESTINO PRIMARY KEY (id_aviso, id_perfil),
+        CONSTRAINT FK_AVISO_PERFIL_DESTINO_AVISO FOREIGN KEY (id_aviso) REFERENCES dbo.AVISO(id_aviso),
+        CONSTRAINT FK_AVISO_PERFIL_DESTINO_PERFIL FOREIGN KEY (id_perfil) REFERENCES dbo.PERFIL(id_perfil)
+    );
+END;
+GO
+
+/* Migra avisos heredados por funcionalidad hacia los perfiles que tenían ese permiso. */
+IF COL_LENGTH('dbo.AVISO', 'id_funcionalidad_destino') IS NOT NULL
+BEGIN
+    /*
+       La columna heredada sólo se menciona dentro de SQL dinámico.
+       Así, una base ya migrada no falla durante la compilación de este lote.
+    */
+    DECLARE @sqlMigracionAvisos NVARCHAR(MAX) = N'
+        INSERT INTO dbo.AVISO_PERFIL_DESTINO (id_aviso, id_perfil)
+        SELECT DISTINCT a.id_aviso, pf.id_perfil
+        FROM dbo.AVISO AS a
+        INNER JOIN dbo.PERFIL_FUNCIONALIDAD AS pf
+            ON pf.id_funcionalidad = a.id_funcionalidad_destino
+        INNER JOIN dbo.PERFIL AS p
+            ON p.id_perfil = pf.id_perfil
+           AND p.eliminado_en IS NULL
+        WHERE NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.AVISO_PERFIL_DESTINO AS apd
+            WHERE apd.id_aviso = a.id_aviso
+              AND apd.id_perfil = pf.id_perfil
+        );
+
+        IF EXISTS
+        (
+            SELECT 1 FROM sys.indexes
+            WHERE object_id = OBJECT_ID(N''dbo.AVISO'')
+              AND name = N''IX_AVISO_DestinoActivo''
+        )
+            DROP INDEX IX_AVISO_DestinoActivo ON dbo.AVISO;
+        ELSE IF EXISTS
+        (
+            SELECT 1 FROM sys.stats
+            WHERE object_id = OBJECT_ID(N''dbo.AVISO'')
+              AND name = N''IX_AVISO_DestinoActivo''
+        )
+            DROP STATISTICS dbo.AVISO.IX_AVISO_DestinoActivo;
+
+        IF EXISTS
+        (
+            SELECT 1 FROM sys.foreign_keys
+            WHERE parent_object_id = OBJECT_ID(N''dbo.AVISO'')
+              AND name = N''FK_AVISO_FUNCIONALIDAD_DESTINO''
+        )
+            ALTER TABLE dbo.AVISO
+            DROP CONSTRAINT FK_AVISO_FUNCIONALIDAD_DESTINO;
+
+        ALTER TABLE dbo.AVISO
+        DROP COLUMN id_funcionalidad_destino;';
+
+    EXEC sys.sp_executesql @sqlMigracionAvisos;
+END;
+GO
+
+/* Acelera la lectura de avisos activos por alcance y por perfil destinatario. */
+IF OBJECT_ID(N'dbo.AVISO', N'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE object_id = OBJECT_ID(N'dbo.AVISO')
+      AND name = N'IX_AVISO_DestinoActivo'
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM sys.stats
+    WHERE object_id = OBJECT_ID(N'dbo.AVISO')
+      AND name = N'IX_AVISO_DestinoActivo'
+)
+BEGIN
+    EXEC(N'
+        CREATE INDEX IX_AVISO_DestinoActivo
+        ON dbo.AVISO(activo, id_sucursal, fecha_creacion DESC);
+    ');
+END;
+
+IF OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO', N'U') IS NOT NULL
+AND NOT EXISTS (
+    SELECT 1
+    FROM sys.indexes
+    WHERE object_id = OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO')
+      AND name = N'IX_AVISO_PERFIL_DESTINO_PerfilAviso'
+)
+AND NOT EXISTS (
+    SELECT 1
+    FROM sys.stats
+    WHERE object_id = OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO')
+      AND name = N'IX_AVISO_PERFIL_DESTINO_PerfilAviso'
+)
+BEGIN
+    EXEC(N'
+        CREATE INDEX IX_AVISO_PERFIL_DESTINO_PerfilAviso
+        ON dbo.AVISO_PERFIL_DESTINO(id_perfil, id_aviso);
+    ');
 END;
 GO
 
