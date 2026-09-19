@@ -78,10 +78,7 @@ GO
 
 
 CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Listar
-<<<<<<< HEAD
     @activo BIT = NULL
-=======
->>>>>>> josi-dev
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -99,7 +96,6 @@ BEGIN
         u.id_perfil,
         p.nombre AS perfil,
         u.id_sucursal,
-<<<<<<< HEAD
         ISNULL(s.nombre, N'Todas las sucursales') AS sucursal,
         CAST(
             CASE
@@ -108,15 +104,11 @@ BEGIN
             END
             AS BIT
         ) AS activo
-=======
-        ISNULL(s.nombre, N'Todas las sucursales') AS sucursal
->>>>>>> josi-dev
     FROM dbo.USUARIO AS u
     INNER JOIN dbo.PERFIL AS p
         ON p.id_perfil = u.id_perfil
     LEFT JOIN dbo.SUCURSAL AS s
         ON s.id_sucursal = u.id_sucursal
-<<<<<<< HEAD
     WHERE
         (
             @activo IS NULL
@@ -129,9 +121,6 @@ BEGIN
                 AND u.eliminado_en IS NOT NULL
             )
         )
-=======
-    WHERE u.eliminado_en IS NULL
->>>>>>> josi-dev
     ORDER BY u.apellido, u.nombre;
 END;
 GO
@@ -173,16 +162,10 @@ GO
    Procedimiento: sp_Usuario_Alta
 
    Regla de sucursal:
-<<<<<<< HEAD
    - Perfil con alcance_global = 1:
      id_sucursal se guarda en NULL.
    - Perfil con alcance_global = 0:
      debe tener una sucursal asignada.
-=======
-   - Administrador: no pertenece a una sucursal específica.
-     Su id_sucursal se guarda en NULL.
-   - Gerente y Vendedor: deben tener una sucursal asignada.
->>>>>>> josi-dev
 
    Códigos de resultado:
    0   = Correcto
@@ -214,11 +197,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-<<<<<<< HEAD
     DECLARE @alcanceGlobal BIT;
-=======
-    DECLARE @nombrePerfil NVARCHAR(100);
->>>>>>> josi-dev
 
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
@@ -232,21 +211,13 @@ BEGIN
            ----------------------------------------------------- */
 
         SELECT
-<<<<<<< HEAD
             @alcanceGlobal = alcance_global
-=======
-            @nombrePerfil = nombre
->>>>>>> josi-dev
         FROM dbo.PERFIL
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
 
 
-<<<<<<< HEAD
         IF @alcanceGlobal IS NULL
-=======
-        IF @nombrePerfil IS NULL
->>>>>>> josi-dev
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado =
@@ -260,19 +231,11 @@ BEGIN
            Regla de sucursal según perfil
            ----------------------------------------------------- */
 
-<<<<<<< HEAD
         IF @alcanceGlobal = 1
         BEGIN
             /*
                Los perfiles de alcance global no pertenecen
                obligatoriamente a una sucursal específica.
-=======
-        IF @nombrePerfil = N'Administrador'
-        BEGIN
-            /*
-               El administrador trabaja a nivel global,
-               por lo tanto no se asocia a una sucursal.
->>>>>>> josi-dev
             */
             SET @idSucursal = NULL;
         END
@@ -280,13 +243,8 @@ BEGIN
         BEGIN
 
             /*
-<<<<<<< HEAD
                Los perfiles sin alcance global deben estar
                asociados a una sucursal activa.
-=======
-               Gerentes, vendedores y demás perfiles
-               deben estar asociados a una sucursal.
->>>>>>> josi-dev
             */
             IF @idSucursal IS NULL
             BEGIN
@@ -451,16 +409,10 @@ GO
    Procedimiento: sp_Usuario_Modificar
 
    Regla de sucursal:
-<<<<<<< HEAD
    - Perfil con alcance_global = 1:
      id_sucursal se guarda en NULL.
    - Perfil con alcance_global = 0:
      debe tener una sucursal asignada.
-=======
-   - Administrador: no pertenece a una sucursal específica.
-     Su id_sucursal se guarda en NULL.
-   - Gerente y Vendedor: deben tener una sucursal asignada.
->>>>>>> josi-dev
 
    Códigos de resultado:
    0   = Correcto
@@ -491,11 +443,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
 
-<<<<<<< HEAD
     DECLARE @alcanceGlobal BIT;
-=======
-    DECLARE @nombrePerfil NVARCHAR(100);
->>>>>>> josi-dev
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
@@ -527,21 +475,13 @@ BEGIN
            ----------------------------------------------------- */
 
         SELECT
-<<<<<<< HEAD
             @alcanceGlobal = alcance_global
-=======
-            @nombrePerfil = nombre
->>>>>>> josi-dev
         FROM dbo.PERFIL
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
 
 
-<<<<<<< HEAD
         IF @alcanceGlobal IS NULL
-=======
-        IF @nombrePerfil IS NULL
->>>>>>> josi-dev
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado =
@@ -555,11 +495,7 @@ BEGIN
            Regla de sucursal según perfil
            ----------------------------------------------------- */
 
-<<<<<<< HEAD
         IF @alcanceGlobal = 1
-=======
-        IF @nombrePerfil = N'Administrador'
->>>>>>> josi-dev
         BEGIN
             SET @idSucursal = NULL;
         END
@@ -779,12 +715,8 @@ BEGIN
     SELECT
         id_perfil,
         nombre,
-<<<<<<< HEAD
         descripcion,
         alcance_global
-=======
-        descripcion
->>>>>>> josi-dev
     FROM dbo.PERFIL
     WHERE eliminado_en IS NULL
     ORDER BY nombre;
@@ -792,8 +724,6 @@ END;
 GO
 
 
-<<<<<<< HEAD
-=======
 -- ============================================================
 -- UBICACIONES (PROVINCIA / LOCALIDAD / DIRECCION)
 --
@@ -990,13 +920,13 @@ END;
 GO
 
 
->>>>>>> josi-dev
 -- ============================================================
 -- CLIENTES
 -- ============================================================
 
 CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Buscar
-    @texto NVARCHAR(100)
+    @texto NVARCHAR(100),
+    @estado NVARCHAR(10) = N'ACTIVOS'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1009,24 +939,31 @@ BEGIN
         c.apellido,
         c.documento,
         c.correo,
-        c.telefono
+        c.telefono,
+        CASE WHEN c.eliminado_en IS NULL THEN 1 ELSE 0 END AS activo
     FROM dbo.CLIENTE AS c
-    WHERE c.eliminado_en IS NULL
-      AND
-      (
-          @texto = N''
-          OR c.nombre LIKE N'%' + @texto + N'%'
-          OR c.apellido LIKE N'%' + @texto + N'%'
-          OR c.documento LIKE N'%' + @texto + N'%'
-          OR ISNULL(c.correo, N'') LIKE N'%' + @texto + N'%'
-          OR ISNULL(c.telefono, N'') LIKE N'%' + @texto + N'%'
-      )
+    WHERE
+        (
+            (@estado = N'ACTIVOS' AND c.eliminado_en IS NULL)
+            OR (@estado = N'BAJA' AND c.eliminado_en IS NOT NULL)
+            OR (@estado = N'TODOS')
+        )
+        AND
+        (
+            @texto = N''
+            OR c.nombre LIKE N'%' + @texto + N'%'
+            OR c.apellido LIKE N'%' + @texto + N'%'
+            OR c.documento LIKE N'%' + @texto + N'%'
+            OR ISNULL(c.correo, N'') LIKE N'%' + @texto + N'%'
+            OR ISNULL(c.telefono, N'') LIKE N'%' + @texto + N'%'
+        )
     ORDER BY c.apellido, c.nombre;
 END;
 GO
 
 
 CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Listar
+    @estado NVARCHAR(10) = N'ACTIVOS' -- 'ACTIVOS' | 'BAJA' | 'TODOS'
 AS
 BEGIN
     SET NOCOUNT ON;
@@ -1042,7 +979,8 @@ BEGIN
         l.nombre AS localidad,
         p.nombre AS provincia,
         d.calle,
-        d.altura
+        d.altura,
+        CASE WHEN c.eliminado_en IS NULL THEN 1 ELSE 0 END AS activo
     FROM dbo.CLIENTE AS c
     LEFT JOIN dbo.DIRECCION AS d
         ON d.id_direccion = c.id_direccion
@@ -1053,7 +991,10 @@ BEGIN
     LEFT JOIN dbo.PROVINCIA AS p
         ON p.id_provincia = l.id_provincia
        AND p.eliminado_en IS NULL
-    WHERE c.eliminado_en IS NULL
+    WHERE
+        (@estado = N'ACTIVOS' AND c.eliminado_en IS NULL)
+        OR (@estado = N'BAJA' AND c.eliminado_en IS NOT NULL)
+        OR (@estado = N'TODOS')
     ORDER BY c.apellido, c.nombre;
 END;
 GO
@@ -1280,6 +1221,58 @@ BEGIN
 
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Cliente dado de baja correctamente.';
+
+    END TRY
+    BEGIN CATCH
+        SET @CodigoResultado = 500;
+        SET @MensajeResultado = ERROR_MESSAGE();
+    END CATCH;
+END;
+GO
+
+
+/* ============================================================
+   Procedimiento: sp_Cliente_Reactivar
+
+   Códigos de resultado:
+   0   = Correcto
+   1   = Registro no encontrado (o ya está activo)
+   500 = Error interno de base de datos
+   ============================================================ */
+
+CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Reactivar
+    @id_cliente INT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Operación realizada correctamente.';
+
+    BEGIN TRY
+
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.CLIENTE
+            WHERE id_cliente = @id_cliente
+              AND eliminado_en IS NOT NULL
+        )
+        BEGIN
+            SET @CodigoResultado = 1;
+            SET @MensajeResultado = N'El cliente no existe o ya está activo.';
+            RETURN;
+        END;
+
+        UPDATE dbo.CLIENTE
+        SET eliminado_en = NULL
+        WHERE id_cliente = @id_cliente
+          AND eliminado_en IS NOT NULL;
+
+        SET @CodigoResultado = 0;
+        SET @MensajeResultado = N'Cliente reactivado correctamente.';
 
     END TRY
     BEGIN CATCH
@@ -2218,9 +2211,6 @@ GO
 -- Para implementarlo correctamente primero se debe definir cómo
 -- Capa_Logica enviará múltiples productos y múltiples pagos
 -- (por ejemplo, usando Table-Valued Parameters).
-<<<<<<< HEAD
--- ============================================================
-=======
 --
 -- NOTA SOBRE PERMISOS DE CLIENTES:
 -- Falta decidir e insertar (en 02_DatosIniciales.sql o similar)
@@ -2229,4 +2219,3 @@ GO
 -- perfiles Gerente y Vendedor (Administrador puede asignarse
 -- directamente). Es una decisión abierta del equipo.
 -- ============================================================
->>>>>>> josi-dev

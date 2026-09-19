@@ -26,10 +26,9 @@ namespace Capa_Vistas
             InitializeComponent();
 
             this.formPrincipal = formPrincipal;
+            ConfigurarGrilla();
 
             ConfigurarPermisos();
-
-            ConfigurarGrilla();
 
             ConfigurarEventos();
 
@@ -173,6 +172,7 @@ namespace Capa_Vistas
 
             colEditar.Text =
                 "Editar";
+
 
             colEditar.UseColumnTextForButtonValue =
                 true;
