@@ -7,7 +7,7 @@
    - Crear la base si no existe.
    - Crear tablas únicamente si no existen.
    - Adaptar PRODUCTO si la base ya existía.
-   - Agregar MARCA.
+   - Agregar MARCA y la relación muchos-a-muchos MARCA_CATEGORIA.
    - Mantener el stock por PRODUCTO + SUCURSAL mediante INVENTARIO.
    - Preparar los tipos de tabla usados para registrar ventas con múltiples ítems y pagos.
    - Evitar errores al ejecutar este script más de una vez.
@@ -225,6 +225,33 @@ BEGIN
         CONSTRAINT UQ_MARCA_nombre
             UNIQUE (nombre)
     );
+END;
+GO
+
+/* ========================
+   RELACION MARCA-CATEGORIA
+   ======================== */
+
+IF OBJECT_ID('dbo.MARCA_CATEGORIA', 'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.MARCA_CATEGORIA
+    (
+        id_marca INT NOT NULL,
+        id_categoria INT NOT NULL,
+        CONSTRAINT PK_MARCA_CATEGORIA PRIMARY KEY (id_marca, id_categoria),
+        CONSTRAINT FK_MARCA_CATEGORIA_MARCA FOREIGN KEY (id_marca) REFERENCES dbo.MARCA(id_marca),
+        CONSTRAINT FK_MARCA_CATEGORIA_CATEGORIA FOREIGN KEY (id_categoria) REFERENCES dbo.CATEGORIA(id_categoria)
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
+    SELECT 1 FROM sys.indexes
+    WHERE object_id = OBJECT_ID('dbo.MARCA_CATEGORIA') AND name = 'IX_MARCA_CATEGORIA_CategoriaMarca'
+)
+BEGIN
+    EXEC(N'CREATE INDEX IX_MARCA_CATEGORIA_CategoriaMarca ON dbo.MARCA_CATEGORIA(id_categoria, id_marca);');
 END;
 GO
 
@@ -513,6 +540,22 @@ BEGIN
 END;
 GO
 
+/* Migra cada combinacion que ya utiliza un producto existente. */
+IF OBJECT_ID('dbo.PRODUCTO', 'U') IS NOT NULL
+   AND OBJECT_ID('dbo.MARCA_CATEGORIA', 'U') IS NOT NULL
+BEGIN
+    INSERT INTO dbo.MARCA_CATEGORIA(id_marca, id_categoria)
+    SELECT DISTINCT p.id_marca, p.id_categoria
+    FROM dbo.PRODUCTO AS p
+    WHERE p.id_marca IS NOT NULL
+      AND NOT EXISTS
+      (
+          SELECT 1 FROM dbo.MARCA_CATEGORIA AS mc
+          WHERE mc.id_marca = p.id_marca AND mc.id_categoria = p.id_categoria
+      );
+END;
+GO
+
 
 /* Crear el índice único de código de barra solamente si no existe. */
 IF OBJECT_ID('dbo.PRODUCTO', 'U') IS NOT NULL
@@ -783,7 +826,7 @@ GO
 /* ========================
    AVISO
    ========================
-   Comunicaciones internas con destinatarios configurables por perfil. */
+   Comunicaciones internas globales o restringidas a una sucursal. */
 IF OBJECT_ID('dbo.AVISO', 'U') IS NULL
 BEGIN
     CREATE TABLE dbo.AVISO
@@ -813,36 +856,7 @@ BEGIN
 END;
 GO
 
-/* Relaciona perfiles que pueden publicar avisos con sus perfiles destino. */
-IF OBJECT_ID('dbo.PERFIL_AVISO_DESTINO', 'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.PERFIL_AVISO_DESTINO
-    (
-        id_perfil_emisor INT NOT NULL,
-        id_perfil_destino INT NOT NULL,
-        CONSTRAINT PK_PERFIL_AVISO_DESTINO PRIMARY KEY (id_perfil_emisor, id_perfil_destino),
-        CONSTRAINT FK_PERFIL_AVISO_DESTINO_EMISOR FOREIGN KEY (id_perfil_emisor) REFERENCES dbo.PERFIL(id_perfil),
-        CONSTRAINT FK_PERFIL_AVISO_DESTINO_DESTINO FOREIGN KEY (id_perfil_destino) REFERENCES dbo.PERFIL(id_perfil),
-        CONSTRAINT CK_PERFIL_AVISO_DESTINO_DISTINTO CHECK (id_perfil_emisor <> id_perfil_destino)
-    );
-END;
-GO
-
-/* Permite que un aviso tenga uno o más perfiles destinatarios. */
-IF OBJECT_ID('dbo.AVISO_PERFIL_DESTINO', 'U') IS NULL
-BEGIN
-    CREATE TABLE dbo.AVISO_PERFIL_DESTINO
-    (
-        id_aviso INT NOT NULL,
-        id_perfil INT NOT NULL,
-        CONSTRAINT PK_AVISO_PERFIL_DESTINO PRIMARY KEY (id_aviso, id_perfil),
-        CONSTRAINT FK_AVISO_PERFIL_DESTINO_AVISO FOREIGN KEY (id_aviso) REFERENCES dbo.AVISO(id_aviso),
-        CONSTRAINT FK_AVISO_PERFIL_DESTINO_PERFIL FOREIGN KEY (id_perfil) REFERENCES dbo.PERFIL(id_perfil)
-    );
-END;
-GO
-
-/* Migra avisos heredados por funcionalidad hacia los perfiles que tenían ese permiso. */
+/* Retira el modelo histórico de destinatarios por funcionalidad o perfil. */
 IF COL_LENGTH('dbo.AVISO', 'id_funcionalidad_destino') IS NOT NULL
 BEGIN
     /*
@@ -850,22 +864,6 @@ BEGIN
        Así, una base ya migrada no falla durante la compilación de este lote.
     */
     DECLARE @sqlMigracionAvisos NVARCHAR(MAX) = N'
-        INSERT INTO dbo.AVISO_PERFIL_DESTINO (id_aviso, id_perfil)
-        SELECT DISTINCT a.id_aviso, pf.id_perfil
-        FROM dbo.AVISO AS a
-        INNER JOIN dbo.PERFIL_FUNCIONALIDAD AS pf
-            ON pf.id_funcionalidad = a.id_funcionalidad_destino
-        INNER JOIN dbo.PERFIL AS p
-            ON p.id_perfil = pf.id_perfil
-           AND p.eliminado_en IS NULL
-        WHERE NOT EXISTS
-        (
-            SELECT 1
-            FROM dbo.AVISO_PERFIL_DESTINO AS apd
-            WHERE apd.id_aviso = a.id_aviso
-              AND apd.id_perfil = pf.id_perfil
-        );
-
         IF EXISTS
         (
             SELECT 1 FROM sys.indexes
@@ -897,46 +895,94 @@ BEGIN
 END;
 GO
 
-/* Acelera la lectura de avisos activos por alcance y por perfil destinatario. */
-IF OBJECT_ID(N'dbo.AVISO', N'U') IS NOT NULL
-AND NOT EXISTS (
-    SELECT 1
-    FROM sys.indexes
-    WHERE object_id = OBJECT_ID(N'dbo.AVISO')
-      AND name = N'IX_AVISO_DestinoActivo'
-)
-AND NOT EXISTS (
-    SELECT 1
-    FROM sys.stats
-    WHERE object_id = OBJECT_ID(N'dbo.AVISO')
-      AND name = N'IX_AVISO_DestinoActivo'
-)
-BEGIN
-    EXEC(N'
-        CREATE INDEX IX_AVISO_DestinoActivo
-        ON dbo.AVISO(activo, id_sucursal, fecha_creacion DESC);
-    ');
-END;
-
 IF OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO', N'U') IS NOT NULL
-AND NOT EXISTS (
+    DROP TABLE dbo.AVISO_PERFIL_DESTINO;
+GO
+
+IF OBJECT_ID(N'dbo.PERFIL_AVISO_DESTINO', N'U') IS NOT NULL
+    DROP TABLE dbo.PERFIL_AVISO_DESTINO;
+GO
+
+/* Acelera la lectura de avisos activos por alcance de sucursal. */
+IF OBJECT_ID(N'dbo.AVISO', N'U') IS NOT NULL
+BEGIN
+    IF EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.AVISO') AND name = N'IX_AVISO_DestinoActivo')
+        DROP INDEX IX_AVISO_DestinoActivo ON dbo.AVISO;
+    ELSE IF EXISTS (SELECT 1 FROM sys.stats WHERE object_id = OBJECT_ID(N'dbo.AVISO') AND name = N'IX_AVISO_DestinoActivo')
+        DROP STATISTICS dbo.AVISO.IX_AVISO_DestinoActivo;
+
+    IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID(N'dbo.AVISO') AND name = N'IX_AVISO_ActivoSucursalFecha')
+       AND NOT EXISTS (SELECT 1 FROM sys.stats WHERE object_id = OBJECT_ID(N'dbo.AVISO') AND name = N'IX_AVISO_ActivoSucursalFecha')
+        EXEC(N'CREATE INDEX IX_AVISO_ActivoSucursalFecha ON dbo.AVISO(activo, id_sucursal, fecha_creacion DESC);');
+END;
+GO
+
+
+/* ========================
+   AUDITORIA
+   ========================
+   Historial de acciones administrativas confirmadas. */
+IF OBJECT_ID(N'dbo.AUDITORIA', N'U') IS NULL
+BEGIN
+    CREATE TABLE dbo.AUDITORIA
+    (
+        id_auditoria INT IDENTITY(1,1) NOT NULL
+            CONSTRAINT PK_AUDITORIA PRIMARY KEY,
+        id_usuario INT NOT NULL,
+        fecha DATETIME2 NOT NULL
+            CONSTRAINT DF_AUDITORIA_fecha DEFAULT SYSDATETIME(),
+        accion NVARCHAR(50) NOT NULL,
+        entidad NVARCHAR(50) NOT NULL,
+        id_entidad INT NULL,
+        detalle NVARCHAR(300) NULL,
+        id_sucursal INT NULL,
+
+        CONSTRAINT FK_AUDITORIA_USUARIO
+            FOREIGN KEY (id_usuario)
+            REFERENCES dbo.USUARIO(id_usuario),
+        CONSTRAINT FK_AUDITORIA_SUCURSAL
+            FOREIGN KEY (id_sucursal)
+            REFERENCES dbo.SUCURSAL(id_sucursal),
+        CONSTRAINT CK_AUDITORIA_accion_no_vacia
+            CHECK (LEN(LTRIM(RTRIM(accion))) > 0),
+        CONSTRAINT CK_AUDITORIA_entidad_no_vacia
+            CHECK (LEN(LTRIM(RTRIM(entidad))) > 0)
+    );
+END;
+GO
+
+IF NOT EXISTS
+(
     SELECT 1
     FROM sys.indexes
-    WHERE object_id = OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO')
-      AND name = N'IX_AVISO_PERFIL_DESTINO_PerfilAviso'
+    WHERE object_id = OBJECT_ID(N'dbo.AUDITORIA')
+      AND name = N'IX_AUDITORIA_UsuarioFecha'
 )
-AND NOT EXISTS (
+   AND NOT EXISTS
+   (
+       SELECT 1
+       FROM sys.stats
+       WHERE object_id = OBJECT_ID(N'dbo.AUDITORIA')
+         AND name = N'IX_AUDITORIA_UsuarioFecha'
+   )
+    EXEC(N'CREATE INDEX IX_AUDITORIA_UsuarioFecha ON dbo.AUDITORIA(id_usuario, fecha DESC);');
+GO
+
+IF NOT EXISTS
+(
     SELECT 1
-    FROM sys.stats
-    WHERE object_id = OBJECT_ID(N'dbo.AVISO_PERFIL_DESTINO')
-      AND name = N'IX_AVISO_PERFIL_DESTINO_PerfilAviso'
+    FROM sys.indexes
+    WHERE object_id = OBJECT_ID(N'dbo.AUDITORIA')
+      AND name = N'IX_AUDITORIA_SucursalFecha'
 )
-BEGIN
-    EXEC(N'
-        CREATE INDEX IX_AVISO_PERFIL_DESTINO_PerfilAviso
-        ON dbo.AVISO_PERFIL_DESTINO(id_perfil, id_aviso);
-    ');
-END;
+   AND NOT EXISTS
+   (
+       SELECT 1
+       FROM sys.stats
+       WHERE object_id = OBJECT_ID(N'dbo.AUDITORIA')
+         AND name = N'IX_AUDITORIA_SucursalFecha'
+   )
+    EXEC(N'CREATE INDEX IX_AUDITORIA_SucursalFecha ON dbo.AUDITORIA(id_sucursal, fecha DESC);');
 GO
 
 

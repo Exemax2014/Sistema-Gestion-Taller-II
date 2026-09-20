@@ -12,6 +12,11 @@ namespace Capa_Vistas
         private Label lblTitulo;
         private Label lblSubtitulo;
         private Panel pnlLineaTitulo;
+        private Panel pnlNavegacion;
+        private Button btnGeneral;
+        private Button btnPorUsuario;
+        private Button btnVentasDetalladas;
+        private Button btnStockBajo;
 
 
         private Panel pnlFiltros;
@@ -25,6 +30,8 @@ namespace Capa_Vistas
 
         private Label lblSucursal;
         private ComboBox cmbSucursal;
+        private Label lblVendedor;
+        private ComboBox cmbVendedor;
 
         private Button btnAplicarFiltros;
         private Button btnLimpiarFiltros;
@@ -94,6 +101,11 @@ namespace Capa_Vistas
             lblTitulo = new Label();
             lblSubtitulo = new Label();
             pnlLineaTitulo = new Panel();
+            pnlNavegacion = new Panel();
+            btnGeneral = new Button();
+            btnPorUsuario = new Button();
+            btnVentasDetalladas = new Button();
+            btnStockBajo = new Button();
             pnlFiltros = new Panel();
             lblFiltrosTitulo = new Label();
             lblDesde = new Label();
@@ -102,6 +114,8 @@ namespace Capa_Vistas
             dtpHasta = new DateTimePicker();
             lblSucursal = new Label();
             cmbSucursal = new ComboBox();
+            lblVendedor = new Label();
+            cmbVendedor = new ComboBox();
             btnAplicarFiltros = new Button();
             btnLimpiarFiltros = new Button();
             pnlTarjetaVentas = new Panel();
@@ -130,6 +144,7 @@ namespace Capa_Vistas
             lblProductosVendidosDescripcion = new Label();
             dgvProductosVendidos = new DataGridView();
             pnlCabecera.SuspendLayout();
+            pnlNavegacion.SuspendLayout();
             pnlFiltros.SuspendLayout();
             pnlTarjetaVentas.SuspendLayout();
             pnlTarjetaIngresos.SuspendLayout();
@@ -181,6 +196,66 @@ namespace Capa_Vistas
             pnlLineaTitulo.Name = "pnlLineaTitulo";
             pnlLineaTitulo.Size = new Size(95, 3);
             pnlLineaTitulo.TabIndex = 2;
+            //
+            // pnlNavegacion
+            //
+            pnlNavegacion.BackColor = Color.FromArgb(45, 49, 54);
+            pnlNavegacion.Controls.Add(btnGeneral);
+            pnlNavegacion.Controls.Add(btnPorUsuario);
+            pnlNavegacion.Controls.Add(btnVentasDetalladas);
+            pnlNavegacion.Controls.Add(btnStockBajo);
+            pnlNavegacion.Location = new Point(32, 106);
+            pnlNavegacion.Name = "pnlNavegacion";
+            pnlNavegacion.Size = new Size(1116, 46);
+            pnlNavegacion.TabIndex = 1;
+            //
+            // btnGeneral
+            //
+            btnGeneral.FlatAppearance.BorderSize = 0;
+            btnGeneral.FlatStyle = FlatStyle.Flat;
+            btnGeneral.ForeColor = Color.White;
+            btnGeneral.Location = new Point(8, 5);
+            btnGeneral.Name = "btnGeneral";
+            btnGeneral.Size = new Size(150, 36);
+            btnGeneral.TabIndex = 0;
+            btnGeneral.Text = "General";
+            btnGeneral.UseVisualStyleBackColor = true;
+            //
+            // btnPorUsuario
+            //
+            btnPorUsuario.FlatAppearance.BorderSize = 0;
+            btnPorUsuario.FlatStyle = FlatStyle.Flat;
+            btnPorUsuario.ForeColor = Color.White;
+            btnPorUsuario.Location = new Point(164, 5);
+            btnPorUsuario.Name = "btnPorUsuario";
+            btnPorUsuario.Size = new Size(150, 36);
+            btnPorUsuario.TabIndex = 1;
+            btnPorUsuario.Text = "Por usuario";
+            btnPorUsuario.UseVisualStyleBackColor = true;
+            //
+            // btnVentasDetalladas
+            //
+            btnVentasDetalladas.FlatAppearance.BorderSize = 0;
+            btnVentasDetalladas.FlatStyle = FlatStyle.Flat;
+            btnVentasDetalladas.ForeColor = Color.White;
+            btnVentasDetalladas.Location = new Point(320, 5);
+            btnVentasDetalladas.Name = "btnVentasDetalladas";
+            btnVentasDetalladas.Size = new Size(170, 36);
+            btnVentasDetalladas.TabIndex = 2;
+            btnVentasDetalladas.Text = "Ventas detalladas";
+            btnVentasDetalladas.UseVisualStyleBackColor = true;
+            //
+            // btnStockBajo
+            //
+            btnStockBajo.FlatAppearance.BorderSize = 0;
+            btnStockBajo.FlatStyle = FlatStyle.Flat;
+            btnStockBajo.ForeColor = Color.White;
+            btnStockBajo.Location = new Point(496, 5);
+            btnStockBajo.Name = "btnStockBajo";
+            btnStockBajo.Size = new Size(150, 36);
+            btnStockBajo.TabIndex = 3;
+            btnStockBajo.Text = "Stock bajo";
+            btnStockBajo.UseVisualStyleBackColor = true;
             // 
             // pnlFiltros
             // 
@@ -194,6 +269,8 @@ namespace Capa_Vistas
             pnlFiltros.Controls.Add(dtpHasta);
             pnlFiltros.Controls.Add(lblSucursal);
             pnlFiltros.Controls.Add(cmbSucursal);
+            pnlFiltros.Controls.Add(lblVendedor);
+            pnlFiltros.Controls.Add(cmbVendedor);
             pnlFiltros.Controls.Add(btnAplicarFiltros);
             pnlFiltros.Controls.Add(btnLimpiarFiltros);
             pnlFiltros.Location = new Point(32, 106);
@@ -262,6 +339,23 @@ namespace Capa_Vistas
             cmbSucursal.Name = "cmbSucursal";
             cmbSucursal.Size = new Size(230, 28);
             cmbSucursal.TabIndex = 6;
+            //
+            // lblVendedor
+            //
+            lblVendedor.AutoSize = true;
+            lblVendedor.Location = new Point(610, 41);
+            lblVendedor.Name = "lblVendedor";
+            lblVendedor.Size = new Size(69, 20);
+            lblVendedor.TabIndex = 7;
+            lblVendedor.Text = "Usuario";
+            //
+            // cmbVendedor
+            //
+            cmbVendedor.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbVendedor.Location = new Point(610, 64);
+            cmbVendedor.Name = "cmbVendedor";
+            cmbVendedor.Size = new Size(230, 28);
+            cmbVendedor.TabIndex = 8;
             // 
             // btnAplicarFiltros
             // 
@@ -274,7 +368,7 @@ namespace Capa_Vistas
             btnAplicarFiltros.Location = new Point(776, 41);
             btnAplicarFiltros.Name = "btnAplicarFiltros";
             btnAplicarFiltros.Size = new Size(155, 40);
-            btnAplicarFiltros.TabIndex = 7;
+            btnAplicarFiltros.TabIndex = 9;
             btnAplicarFiltros.Text = "Aplicar filtros";
             btnAplicarFiltros.UseVisualStyleBackColor = false;
             // 
@@ -288,7 +382,7 @@ namespace Capa_Vistas
             btnLimpiarFiltros.Location = new Point(954, 52);
             btnLimpiarFiltros.Name = "btnLimpiarFiltros";
             btnLimpiarFiltros.Size = new Size(140, 40);
-            btnLimpiarFiltros.TabIndex = 8;
+            btnLimpiarFiltros.TabIndex = 10;
             btnLimpiarFiltros.Text = "Limpiar";
             btnLimpiarFiltros.UseVisualStyleBackColor = false;
             // 
@@ -613,6 +707,7 @@ namespace Capa_Vistas
             BackColor = Color.FromArgb(245, 246, 248);
             ClientSize = new Size(1180, 760);
             Controls.Add(pnlCabecera);
+            Controls.Add(pnlNavegacion);
             Controls.Add(pnlFiltros);
             Controls.Add(pnlTarjetaVentas);
             Controls.Add(pnlTarjetaIngresos);
@@ -625,6 +720,7 @@ namespace Capa_Vistas
             Text = "Reportes";
             pnlCabecera.ResumeLayout(false);
             pnlCabecera.PerformLayout();
+            pnlNavegacion.ResumeLayout(false);
             pnlFiltros.ResumeLayout(false);
             pnlFiltros.PerformLayout();
             pnlTarjetaVentas.ResumeLayout(false);

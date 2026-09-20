@@ -22,7 +22,8 @@ namespace Capa_Vistas
         Modal = 0,
         Ventas = 1,
         Usuarios = 2,
-        Clientes = 3
+        Clientes = 3,
+        Reportes = 4
     }
 
 

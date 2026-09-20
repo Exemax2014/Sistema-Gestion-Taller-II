@@ -34,10 +34,14 @@ namespace Capa_Vistas
             pnlAvisos = new Panel();
             dgvAvisos = new DataGridView();
             btnPublicarAviso = new Button();
-            clbAvisoDestinos = new CheckedListBox();
+            cmbAvisoSucursal = new ComboBox();
             txtAvisoMensaje = new TextBox();
             txtAvisoTitulo = new TextBox();
             lblAvisosTitulo = new Label();
+            lblAvisoMensaje = new Label();
+            lblAvisoAlcance = new Label();
+            lblAvisoSucursalFija = new Label();
+            lblAvisosVacio = new Label();
             pnlGraficos = new Panel();
             pnlGraficoProductos = new Panel();
             pnlGraficoIngresos = new Panel();
@@ -114,9 +118,13 @@ namespace Capa_Vistas
             pnlAvisos.BackColor = Color.White;
             pnlAvisos.BorderStyle = BorderStyle.FixedSingle;
             pnlAvisos.Controls.Add(dgvAvisos);
+            pnlAvisos.Controls.Add(lblAvisosVacio);
             pnlAvisos.Controls.Add(btnPublicarAviso);
-            pnlAvisos.Controls.Add(clbAvisoDestinos);
+            pnlAvisos.Controls.Add(lblAvisoSucursalFija);
+            pnlAvisos.Controls.Add(cmbAvisoSucursal);
+            pnlAvisos.Controls.Add(lblAvisoAlcance);
             pnlAvisos.Controls.Add(txtAvisoMensaje);
+            pnlAvisos.Controls.Add(lblAvisoMensaje);
             pnlAvisos.Controls.Add(txtAvisoTitulo);
             pnlAvisos.Controls.Add(lblAvisosTitulo);
             pnlAvisos.Location = new Point(32, 760);
@@ -144,19 +152,48 @@ namespace Capa_Vistas
             // txtAvisoMensaje
             // 
             txtAvisoMensaje.Location = new Point(276, 48);
+            txtAvisoMensaje.Multiline = true;
             txtAvisoMensaje.MaxLength = 500;
             txtAvisoMensaje.Name = "txtAvisoMensaje";
             txtAvisoMensaje.PlaceholderText = "Mensaje";
-            txtAvisoMensaje.Size = new Size(350, 27);
-            // 
-            // clbAvisoDestinos
-            // 
-            clbAvisoDestinos.CheckOnClick = true;
-            clbAvisoDestinos.FormattingEnabled = true;
-            clbAvisoDestinos.Location = new Point(634, 48);
-            clbAvisoDestinos.Name = "clbAvisoDestinos";
-            clbAvisoDestinos.Size = new Size(210, 58);
-            // 
+            txtAvisoMensaje.ScrollBars = ScrollBars.Vertical;
+            txtAvisoMensaje.Size = new Size(350, 92);
+            //
+            // lblAvisoMensaje
+            //
+            lblAvisoMensaje.AutoSize = true;
+            lblAvisoMensaje.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            lblAvisoMensaje.ForeColor = Color.FromArgb(55, 59, 64);
+            lblAvisoMensaje.Location = new Point(276, 28);
+            lblAvisoMensaje.Name = "lblAvisoMensaje";
+            lblAvisoMensaje.Text = "Mensaje";
+            //
+            // cmbAvisoSucursal
+            //
+            cmbAvisoSucursal.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbAvisoSucursal.FormattingEnabled = true;
+            cmbAvisoSucursal.Location = new Point(634, 70);
+            cmbAvisoSucursal.Name = "cmbAvisoSucursal";
+            cmbAvisoSucursal.Size = new Size(210, 28);
+            //
+            // lblAvisoAlcance
+            //
+            lblAvisoAlcance.AutoSize = true;
+            lblAvisoAlcance.Font = new Font("Segoe UI", 8F, FontStyle.Bold);
+            lblAvisoAlcance.ForeColor = Color.FromArgb(55, 59, 64);
+            lblAvisoAlcance.Location = new Point(634, 48);
+            lblAvisoAlcance.Name = "lblAvisoAlcance";
+            lblAvisoAlcance.Text = "Alcance";
+            //
+            // lblAvisoSucursalFija
+            //
+            lblAvisoSucursalFija.AutoEllipsis = true;
+            lblAvisoSucursalFija.Font = new Font("Segoe UI", 8.5F);
+            lblAvisoSucursalFija.ForeColor = Color.FromArgb(105, 110, 116);
+            lblAvisoSucursalFija.Location = new Point(634, 70);
+            lblAvisoSucursalFija.Name = "lblAvisoSucursalFija";
+            lblAvisoSucursalFija.Size = new Size(210, 28);
+            //
             // btnPublicarAviso
             // 
             btnPublicarAviso.BackColor = Color.FromArgb(190, 137, 45);
@@ -184,6 +221,17 @@ namespace Capa_Vistas
             dgvAvisos.RowHeadersVisible = false;
             dgvAvisos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvAvisos.Size = new Size(1078, 185);
+            //
+            // lblAvisosVacio
+            //
+            lblAvisosVacio.BackColor = Color.FromArgb(248, 249, 250);
+            lblAvisosVacio.Font = new Font("Segoe UI", 9F);
+            lblAvisosVacio.ForeColor = Color.FromArgb(105, 110, 116);
+            lblAvisosVacio.Location = new Point(18, 92);
+            lblAvisosVacio.Name = "lblAvisosVacio";
+            lblAvisosVacio.Size = new Size(1078, 185);
+            lblAvisosVacio.Text = "No hay avisos internos para el alcance actual.";
+            lblAvisosVacio.TextAlign = ContentAlignment.MiddleCenter;
             // 
             // pnlGraficos
             // 
@@ -731,8 +779,12 @@ namespace Capa_Vistas
         private Label lblAvisosTitulo;
         private TextBox txtAvisoTitulo;
         private TextBox txtAvisoMensaje;
-        private CheckedListBox clbAvisoDestinos;
+        private ComboBox cmbAvisoSucursal;
         private Button btnPublicarAviso;
         private DataGridView dgvAvisos;
+        private Label lblAvisoMensaje;
+        private Label lblAvisoAlcance;
+        private Label lblAvisoSucursalFija;
+        private Label lblAvisosVacio;
     }
 }

@@ -191,13 +191,16 @@ namespace Capa_Datos
 
         public ResultadoClienteDatos Alta(
             string nombre, string apellido, string documento,
-            string? correo, string? telefono, int? idDireccion)
+            string? correo, string? telefono, int? idDireccion,
+            int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = new SqlCommand("dbo.sp_Cliente_Alta", conexion);
             comando.CommandType = CommandType.StoredProcedure;
 
             CargarParametros(comando, nombre, apellido, documento, correo, telefono, idDireccion);
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter idGenerado = CrearSalida(comando, "@IdGenerado", SqlDbType.Int);
             SqlParameter codigoResultado = CrearSalida(comando, "@CodigoResultado", SqlDbType.Int);
@@ -216,7 +219,8 @@ namespace Capa_Datos
 
         public ResultadoClienteDatos Modificar(
             int idCliente, string nombre, string apellido, string documento,
-            string? correo, string? telefono, int? idDireccion)
+            string? correo, string? telefono, int? idDireccion,
+            int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = new SqlCommand("dbo.sp_Cliente_Modificar", conexion);
@@ -224,6 +228,8 @@ namespace Capa_Datos
 
             comando.Parameters.Add("@idCliente", SqlDbType.Int).Value = idCliente;
             CargarParametros(comando, nombre, apellido, documento, correo, telefono, idDireccion);
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter codigoResultado = CrearSalida(comando, "@CodigoResultado", SqlDbType.Int);
             SqlParameter mensajeResultado = CrearSalida(comando, "@MensajeResultado", SqlDbType.NVarChar, 250);
@@ -238,13 +244,15 @@ namespace Capa_Datos
             };
         }
 
-        public ResultadoClienteDatos Baja(int idCliente)
+        public ResultadoClienteDatos Baja(int idCliente, int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = new SqlCommand("dbo.sp_Cliente_Baja", conexion);
             comando.CommandType = CommandType.StoredProcedure;
 
             comando.Parameters.Add("@id_cliente", SqlDbType.Int).Value = idCliente;
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter codigoResultado = CrearSalida(comando, "@CodigoResultado", SqlDbType.Int);
             SqlParameter mensajeResultado = CrearSalida(comando, "@MensajeResultado", SqlDbType.NVarChar, 250);
@@ -260,13 +268,15 @@ namespace Capa_Datos
         }
 
         // Reactiva un cliente que estaba dado de baja.
-        public ResultadoClienteDatos Reactivar(int idCliente)
+        public ResultadoClienteDatos Reactivar(int idCliente, int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = new SqlCommand("dbo.sp_Cliente_Reactivar", conexion);
             comando.CommandType = CommandType.StoredProcedure;
 
             comando.Parameters.Add("@id_cliente", SqlDbType.Int).Value = idCliente;
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter codigoResultado = CrearSalida(comando, "@CodigoResultado", SqlDbType.Int);
             SqlParameter mensajeResultado = CrearSalida(comando, "@MensajeResultado", SqlDbType.NVarChar, 250);

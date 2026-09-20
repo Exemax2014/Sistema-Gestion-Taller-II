@@ -25,6 +25,7 @@ namespace Capa_Vistas
         private readonly int idVenta;
         private readonly TipoHistorialVentas tipoOrigen;
         private readonly int idReferencia;
+        private readonly bool consultaDesdeReportes;
 
         private VentaDetalleModelo? ventaActual;
 
@@ -61,7 +62,8 @@ namespace Capa_Vistas
             int idVenta,
             TipoHistorialVentas tipoOrigen,
             int idReferencia,
-            string nombreReferencia)
+            string nombreReferencia,
+            bool consultaDesdeReportes = false)
         {
             InitializeComponent();
 
@@ -87,11 +89,29 @@ namespace Capa_Vistas
             this.idReferencia =
                 idReferencia;
 
+            this.consultaDesdeReportes =
+                consultaDesdeReportes;
+
 
             ConfigurarGrillas();
             ConfigurarEventos();
 
             CargarDetalle();
+        }
+
+        // Abre un detalle desde Reportes y conserva la validación de alcance en VentaLogica.
+        public FormVentaDetalle(
+            FormPrincipal formPrincipal,
+            int idVenta)
+            : this(
+                formPrincipal,
+                OrigenHistorialVentas.Reportes,
+                idVenta,
+                TipoHistorialVentas.Vendedor,
+                SesionActual.IdUsuario,
+                string.Empty,
+                true)
+        {
         }
 
 
@@ -269,7 +289,11 @@ namespace Capa_Vistas
             ResultadoDetalleVenta resultado;
 
 
-            if (tipoOrigen == TipoHistorialVentas.Vendedor)
+            if (consultaDesdeReportes)
+            {
+                resultado = ventaLogica.ObtenerDetalleParaReporte(idVenta);
+            }
+            else if (tipoOrigen == TipoHistorialVentas.Vendedor)
             {
                 resultado =
                     ventaLogica.ObtenerDetallePorVendedor(
@@ -428,6 +452,15 @@ namespace Capa_Vistas
             {
                 Close();
 
+                return;
+            }
+
+            if (origenHistorial == OrigenHistorialVentas.Reportes)
+            {
+                formPrincipal.AbrirFormularioEnPanel(
+                    new FormReportesGeneral(formPrincipal),
+                    formPrincipal.BotonReportes
+                );
                 return;
             }
 

@@ -399,6 +399,7 @@ namespace Capa_Vistas
                 Si Ventas está abierto, se vuelve a crear para que
                 tome inmediatamente el nuevo contexto de sucursal.
             */
+            // Mantiene Inicio sincronizado con el alcance que se acaba de seleccionar.
             if (
                 formularioActivo is FormVentas
                 &&
@@ -411,6 +412,14 @@ namespace Capa_Vistas
                     ),
                     btnVentas
                 );
+            }
+
+            if (
+                formularioActivo is FormInicio inicio
+                &&
+                sucursalAnterior != SesionActual.IdSucursalOperativa)
+            {
+                inicio.ActualizarPorSucursalOperativa();
             }
         }
 
@@ -818,6 +827,7 @@ namespace Capa_Vistas
         // PERMISOS
         // =========================================================
 
+        // Habilita cada módulo según sus capacidades de consulta o acción.
         private void AplicarPermisosMenu()
         {
             ConfigurarPermisoBoton(
@@ -828,9 +838,8 @@ namespace Capa_Vistas
 
             ConfigurarPermisoBoton(
                 btnVentas,
-                SesionActual.TienePermiso(
-                    "VENTAS_VER"
-                )
+                SesionActual.TienePermiso("VENTAS_VER")
+                || SesionActual.TienePermiso("VENTAS_REALIZAR")
             );
 
 
@@ -844,17 +853,15 @@ namespace Capa_Vistas
 
             ConfigurarPermisoBoton(
                 btnProductos,
-                SesionActual.TienePermiso(
-                    "PRODUCTOS_VER"
-                )
+                SesionActual.TienePermiso("PRODUCTOS_VER")
+                || SesionActual.TienePermiso("CATEGORIAS_VER")
+                || SesionActual.TienePermiso("MARCAS_VER")
             );
 
 
             ConfigurarPermisoBoton(
                 btnUsuarios,
-                SesionActual.TienePermiso(
-                    "USUARIOS_VER"
-                )
+                PuedeAccederUsuarios()
             );
 
 
@@ -1209,6 +1216,28 @@ namespace Capa_Vistas
         }
 
 
+        // Permite entrar al contenedor Usuarios si se autorizó alguna de sus vistas internas.
+        private bool PuedeAccederUsuarios()
+        {
+            return SesionActual.TienePermiso("USUARIOS_VER")
+                || SesionActual.TienePermiso("USUARIOS_ALTA")
+                || SesionActual.TienePermiso("USUARIOS_MODIFICAR")
+                || SesionActual.TienePermiso("USUARIOS_BAJA")
+                || SesionActual.TienePermiso("PERMISOS_GESTIONAR")
+                || SesionActual.TienePermiso("SUCURSALES_VER");
+        }
+
+
+        // Permite que el detalle abierto desde Reportes conserve seleccionado su módulo de origen.
+        public Button BotonReportes
+        {
+            get
+            {
+                return btnReportes;
+            }
+        }
+
+
         // =========================================================
         // INICIO
         // =========================================================
@@ -1225,14 +1254,14 @@ namespace Capa_Vistas
         // VENTAS
         // =========================================================
 
+        // Abre Ventas si la sesión puede consultar el módulo o registrar operaciones.
         private void BtnVentas_Click(
             object? sender,
             EventArgs e)
         {
             if (
-                !SesionActual.TienePermiso(
-                    "VENTAS_VER"
-                ))
+                !SesionActual.TienePermiso("VENTAS_VER")
+                && !SesionActual.TienePermiso("VENTAS_REALIZAR"))
             {
                 return;
             }
@@ -1291,10 +1320,9 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            if (
-                !SesionActual.TienePermiso(
-                    "PRODUCTOS_VER"
-                ))
+            if (!SesionActual.TienePermiso("PRODUCTOS_VER")
+                && !SesionActual.TienePermiso("CATEGORIAS_VER")
+                && !SesionActual.TienePermiso("MARCAS_VER"))
             {
                 return;
             }
@@ -1329,10 +1357,7 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            if (
-                !SesionActual.TienePermiso(
-                    "USUARIOS_VER"
-                ))
+            if (!PuedeAccederUsuarios())
             {
                 return;
             }
@@ -1349,10 +1374,16 @@ namespace Capa_Vistas
         // REPORTES
         // =========================================================
 
+        // Revalida el acceso al módulo aunque el evento se invoque fuera del menú.
         private void BtnReportes_Click(
             object? sender,
             EventArgs e)
         {
+            if (!SesionActual.TienePermiso("REPORTES_VER"))
+            {
+                return;
+            }
+
             FormReportesGeneral reportes =
                 new FormReportesGeneral(this);
 

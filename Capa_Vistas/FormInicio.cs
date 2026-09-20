@@ -10,6 +10,7 @@ namespace Capa_Vistas
         private readonly DashboardLogica dashboardLogica = new DashboardLogica();
         private List<DashboardSerieModelo> serieSemanal = new();
         private List<DashboardProductoModelo> productosMasVendidos = new();
+        private bool puedePublicarAvisos;
 
         // Inicializa la vista con el principal como dueño de la navegación y de los mensajes.
         public FormInicio(FormPrincipal formPrincipal)
@@ -39,7 +40,14 @@ namespace Capa_Vistas
         private void ConfigurarGrillas()
         {
             ConfigurarGrilla(dgvActividad, new[] { "Fecha", "Cliente", "Vendedor", "Total" });
-            ConfigurarGrilla(dgvAvisos, new[] { "Fecha", "Título", "Mensaje", "Autor", "Destino" });
+            ConfigurarGrilla(dgvAvisos, new[] { "Fecha", "Título", "Mensaje", "Autor", "Alcance" });
+            dgvAvisos.AutoSizeRowsMode = DataGridViewAutoSizeRowsMode.AllCells;
+            dgvAvisos.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+            dgvAvisos.Columns[0].FillWeight = 65;
+            dgvAvisos.Columns[1].FillWeight = 100;
+            dgvAvisos.Columns[2].FillWeight = 230;
+            dgvAvisos.Columns[3].FillWeight = 100;
+            dgvAvisos.Columns[4].FillWeight = 135;
             lblActividadPlaceholder.Visible = false;
         }
 
@@ -60,10 +68,23 @@ namespace Capa_Vistas
         {
             lblBienvenida.Text = $"Bienvenido, {SesionActual.Nombre}";
             lblPerfilSucursal.Text = ObtenerDescripcionSesion();
-            btnNuevaVenta.Enabled = SesionActual.TienePermiso("VENTAS_REALIZAR");
-            btnProductos.Enabled = SesionActual.TienePermiso("PRODUCTOS_VER");
-            btnClientes.Enabled = SesionActual.TienePermiso("CLIENTES_VER");
+            btnNuevaVenta.Visible = SesionActual.TienePermiso("VENTAS_REALIZAR");
+            btnProductos.Visible = SesionActual.TienePermiso("PRODUCTOS_VER");
+            btnClientes.Visible = SesionActual.TienePermiso("CLIENTES_VER");
+            AjustarAccesosRapidos();
             CargarDashboard();
+        }
+
+        // Reacomoda únicamente los accesos autorizados para no dejar huecos al ocultar acciones.
+        private void AjustarAccesosRapidos()
+        {
+            int x = 18;
+            foreach (Button boton in new[] { btnNuevaVenta, btnProductos, btnClientes })
+            {
+                if (!boton.Visible) continue;
+                boton.Location = new Point(x, boton.Location.Y);
+                x += boton.Width + 17;
+            }
         }
 
         // Consulta la fachada lógica y conserva tarjetas sin datos cuando la sesión no está autorizada.
@@ -80,7 +101,7 @@ namespace Capa_Vistas
                 lblProductosValor.Text = puedeProductos ? resumen.ProductosActivos.ToString() : "—";
                 serieSemanal = dashboardLogica.ObtenerSerieSemanal();
                 productosMasVendidos = dashboardLogica.ObtenerProductosMasVendidos();
-                CargarActividad(); CargarAvisos(); CargarDestinosAviso();
+                CargarActividad(); CargarAvisos(); ConfigurarAlcanceAviso();
                 pnlGraficoVentas.Invalidate(); pnlGraficoIngresos.Invalidate(); pnlGraficoProductos.Invalidate();
             }
             catch (Exception)
@@ -97,26 +118,57 @@ namespace Capa_Vistas
                 dgvActividad.Rows.Add(venta.FechaHora.ToString("dd/MM HH:mm"), venta.Cliente, venta.Vendedor, venta.Total.ToString("C2", CultureInfo.CurrentCulture));
         }
 
-        // Muestra únicamente los avisos que SQL asocia al perfil y sucursal del usuario actual.
+        // Muestra los avisos que SQL autoriza para el permiso y alcance actuales de la sesión.
         private void CargarAvisos()
         {
             dgvAvisos.Rows.Clear();
-            foreach (AvisoModelo aviso in dashboardLogica.ListarAvisos())
-                dgvAvisos.Rows.Add(aviso.FechaCreacion.ToString("dd/MM HH:mm"), aviso.Titulo, aviso.Mensaje, aviso.Autor, aviso.Destino);
+            List<AvisoModelo> avisos = dashboardLogica.ListarAvisos();
+
+            foreach (AvisoModelo aviso in avisos)
+            {
+                dgvAvisos.Rows.Add(
+                    aviso.FechaCreacion.ToString("dd/MM HH:mm"),
+                    aviso.Titulo,
+                    aviso.Mensaje,
+                    aviso.Autor,
+                    aviso.Alcance
+                );
+            }
+
+            dgvAvisos.Visible = avisos.Count > 0;
+            lblAvisosVacio.Visible = avisos.Count == 0;
         }
 
-        // Carga perfiles destino autorizados y permite seleccionar varios para un mismo aviso.
-        private void CargarDestinosAviso()
+        // Configura el alcance publicable según la sucursal fija o el alcance global de la sesión.
+        private void ConfigurarAlcanceAviso()
         {
-            List<AvisoDestinoModelo> destinos = dashboardLogica.ListarDestinosAviso();
-            clbAvisoDestinos.DataSource = destinos;
-            clbAvisoDestinos.DisplayMember = nameof(AvisoDestinoModelo.Nombre);
-            clbAvisoDestinos.ValueMember = nameof(AvisoDestinoModelo.IdPerfil);
-            bool puedePublicar = SesionActual.TienePermiso("AVISOS_PUBLICAR") && destinos.Count > 0;
-            txtAvisoTitulo.Visible = puedePublicar;
-            txtAvisoMensaje.Visible = puedePublicar;
-            clbAvisoDestinos.Visible = puedePublicar;
-            btnPublicarAviso.Visible = puedePublicar;
+            bool alcanceGlobal = !SesionActual.IdSucursal.HasValue;
+            puedePublicarAvisos = dashboardLogica.PuedePublicarAvisos();
+
+            List<SucursalAvisoModelo> opciones = new()
+            {
+                new SucursalAvisoModelo { IdSucursal = null, Nombre = "Todas las sucursales" }
+            };
+
+            if (puedePublicarAvisos && alcanceGlobal)
+            {
+                opciones.AddRange(dashboardLogica.ObtenerSucursalesParaAviso());
+                cmbAvisoSucursal.DataSource = opciones;
+                cmbAvisoSucursal.DisplayMember = nameof(SucursalAvisoModelo.Nombre);
+                cmbAvisoSucursal.ValueMember = nameof(SucursalAvisoModelo.IdSucursal);
+                cmbAvisoSucursal.SelectedIndex = opciones.FindIndex(opcion => opcion.IdSucursal == SesionActual.IdSucursalOperativa);
+                if (cmbAvisoSucursal.SelectedIndex < 0) cmbAvisoSucursal.SelectedIndex = 0;
+            }
+
+            txtAvisoTitulo.Visible = puedePublicarAvisos;
+            txtAvisoMensaje.Visible = puedePublicarAvisos;
+            lblAvisoMensaje.Visible = puedePublicarAvisos;
+            lblAvisoAlcance.Visible = puedePublicarAvisos && alcanceGlobal;
+            cmbAvisoSucursal.Visible = puedePublicarAvisos && alcanceGlobal;
+            lblAvisoSucursalFija.Visible = puedePublicarAvisos && !alcanceGlobal;
+            lblAvisoSucursalFija.Text = $"Sucursal: {SesionActual.Sucursal}";
+            btnPublicarAviso.Visible = puedePublicarAvisos;
+            AjustarLayoutResponsive();
         }
 
         // Describe el alcance realmente seleccionado, sin inferirlo desde el nombre del perfil.
@@ -146,8 +198,57 @@ namespace Capa_Vistas
             for (int i = 0; i < graficos.Length; i++) graficos[i].SetBounds((i % columnasGraficos) * (anchoGrafico + separacion), (i / columnasGraficos) * 185, anchoGrafico, 170);
             y += pnlGraficos.Height + 20;
             pnlActividad.SetBounds(margen, y, ancho, 270); y += 290;
-            pnlAvisos.SetBounds(margen, y, ancho, 300);
-            pnlPrincipal.AutoScrollMinSize = new Size(0, y + 325);
+            int altoAvisos = puedePublicarAvisos ? 465 : 330;
+            pnlAvisos.SetBounds(margen, y, ancho, altoAvisos);
+            AjustarLayoutAvisos();
+            pnlPrincipal.AutoScrollMinSize = new Size(0, y + altoAvisos + 25);
+        }
+
+        // Reorganiza publicación y avisos recibidos para aprovechar el ancho sin ocultar información relevante.
+        private void AjustarLayoutAvisos()
+        {
+            int margen = 18;
+            int ancho = Math.Max(280, pnlAvisos.ClientSize.Width - (margen * 2));
+            int yContenido = 48;
+
+            if (puedePublicarAvisos)
+            {
+                if (ancho >= 760)
+                {
+                    int anchoPublicacion = (int)(ancho * 0.63);
+                    int xAlcance = margen + anchoPublicacion + 16;
+                    int anchoAlcance = ancho - anchoPublicacion - 16;
+
+                    txtAvisoTitulo.SetBounds(margen, 48, anchoPublicacion, 27);
+                    lblAvisoMensaje.SetBounds(margen, 84, 220, 20);
+                    txtAvisoMensaje.SetBounds(margen, 106, anchoPublicacion, 100);
+                    lblAvisoAlcance.SetBounds(xAlcance, 48, anchoAlcance, 20);
+                    cmbAvisoSucursal.SetBounds(xAlcance, 70, anchoAlcance, 28);
+                    lblAvisoSucursalFija.SetBounds(xAlcance, 70, anchoAlcance, 28);
+                    btnPublicarAviso.SetBounds(
+                        Math.Max(xAlcance, xAlcance + anchoAlcance - 150),
+                        116,
+                        150,
+                        36
+                    );
+                    yContenido = 280;
+                }
+                else
+                {
+                    txtAvisoTitulo.SetBounds(margen, 48, ancho, 27);
+                    lblAvisoMensaje.SetBounds(margen, 84, ancho, 20);
+                    txtAvisoMensaje.SetBounds(margen, 106, ancho, 100);
+                    lblAvisoAlcance.SetBounds(margen, 216, ancho, 20);
+                    cmbAvisoSucursal.SetBounds(margen, 238, ancho, 28);
+                    lblAvisoSucursalFija.SetBounds(margen, 238, ancho, 28);
+                    btnPublicarAviso.SetBounds(Math.Max(margen, ancho - 132 + margen), 280, 132, 36);
+                    yContenido = 335;
+                }
+            }
+
+            int altoListado = Math.Max(120, pnlAvisos.ClientSize.Height - yContenido - 18);
+            dgvAvisos.SetBounds(margen, yContenido, ancho, altoListado);
+            lblAvisosVacio.SetBounds(margen, yContenido, ancho, altoListado);
         }
 
         // Dibuja barras de ventas con la misma escala para el período semanal.
@@ -178,35 +279,51 @@ namespace Capa_Vistas
             }
         }
 
-        // Impide abrir ventas sin sucursal operativa y centra el aviso en el formulario principal.
+        // Revalida permiso y sucursal operativa antes de iniciar una venta desde Inicio.
         private void BtnNuevaVenta_Click(object? sender, EventArgs e)
         {
+            if (!SesionActual.TienePermiso("VENTAS_REALIZAR")) return;
             if (!SesionActual.IdSucursalOperativa.HasValue) { MostrarMensaje("Sucursal operativa requerida", "Para realizar una venta primero seleccioná una sucursal operativa."); return; }
             formPrincipal.AbrirFormularioEnPanel(new FormVentas(), formPrincipal.BotonVentas);
         }
 
         // Navega al módulo de productos desde el acceso rápido autorizado.
-        private void BtnProductos_Click(object? sender, EventArgs e) => formPrincipal.AbrirFormularioEnPanel(new FormProductos(formPrincipal), formPrincipal.BotonProductos);
+        private void BtnProductos_Click(object? sender, EventArgs e)
+        {
+            if (!SesionActual.TienePermiso("PRODUCTOS_VER")) return;
+            formPrincipal.AbrirFormularioEnPanel(new FormProductos(formPrincipal), formPrincipal.BotonProductos);
+        }
 
         // Navega al módulo de clientes desde el acceso rápido autorizado.
-        private void BtnClientes_Click(object? sender, EventArgs e) => formPrincipal.AbrirFormularioEnPanel(new FormClientes(formPrincipal), formPrincipal.BotonClientes);
+        private void BtnClientes_Click(object? sender, EventArgs e)
+        {
+            if (!SesionActual.TienePermiso("CLIENTES_VER")) return;
+            formPrincipal.AbrirFormularioEnPanel(new FormClientes(formPrincipal), formPrincipal.BotonClientes);
+        }
 
-        // Publica para todos los perfiles seleccionados tras validar la autorización en Lógica y SQL.
+        // Publica el aviso para el alcance seleccionado tras validar la autorización en Lógica y SQL.
         private void BtnPublicarAviso_Click(object? sender, EventArgs e)
         {
             try
             {
-                List<int> destinos = clbAvisoDestinos.CheckedItems
-                    .OfType<AvisoDestinoModelo>()
-                    .Select(destino => destino.IdPerfil)
-                    .ToList();
-                dashboardLogica.PublicarAviso(destinos, txtAvisoTitulo.Text, txtAvisoMensaje.Text);
-                txtAvisoTitulo.Clear(); txtAvisoMensaje.Clear(); CargarAvisos();
+                int? idSucursal = cmbAvisoSucursal.SelectedItem is SucursalAvisoModelo opcion
+                    ? opcion.IdSucursal
+                    : null;
+                dashboardLogica.PublicarAviso(idSucursal, txtAvisoTitulo.Text, txtAvisoMensaje.Text);
+                txtAvisoTitulo.Clear();
+                txtAvisoMensaje.Clear();
+                CargarAvisos();
             }
             catch (Exception ex) { MostrarMensaje("No se pudo publicar el aviso", ex.Message); }
         }
 
-        // Ajusta el diseño cuando la vista ya dispone de su tamaño final.
+        // Recarga avisos y alcance de publicación cuando FormPrincipal cambia la sucursal operativa.
+        public void ActualizarPorSucursalOperativa()
+        {
+            CargarAvisos();
+            ConfigurarAlcanceAviso();
+        }
+
         private void FormInicio_Load(object? sender, EventArgs e) => AjustarLayoutResponsive();
 
         // Recalcula el diseño al cambiar el tamaño del contenido principal.

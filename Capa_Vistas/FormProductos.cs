@@ -269,6 +269,9 @@ namespace Capa_Vistas
             btnLimpiarFiltros.Click +=
                 BtnLimpiarFiltros_Click;
 
+            btnCategorias.Click += BtnCategorias_Click;
+            btnMarcas.Click += BtnMarcas_Click;
+
 
             txtBuscar.KeyDown +=
                 TxtBuscar_KeyDown;
@@ -293,6 +296,12 @@ namespace Capa_Vistas
             // Solamente consulta la regla definida en Lógica.
             btnNuevoProducto.Visible =
                 productoLogica.PuedeCrearProducto();
+            btnCategorias.Visible = SesionActual.TienePermiso("CATEGORIAS_VER");
+            btnMarcas.Visible = SesionActual.TienePermiso("MARCAS_VER");
+            bool puedeVerProductos = productoLogica.PuedeVerProductos();
+            pnlFiltros.Visible = puedeVerProductos;
+            lblCantidad.Visible = puedeVerProductos;
+            dgvProductos.Visible = puedeVerProductos;
         }
 
 
@@ -485,6 +494,22 @@ namespace Capa_Vistas
                 ),
                 formPrincipal.BotonProductos
             );
+        }
+
+
+        // Abre la gestión de categorías dentro del panel principal.
+        private void BtnCategorias_Click(object? sender, EventArgs e)
+        {
+            if (!SesionActual.TienePermiso("CATEGORIAS_VER")) return;
+            formPrincipal.AbrirFormularioEnPanel(new FormCategorias(formPrincipal), formPrincipal.BotonProductos);
+        }
+
+
+        // Abre la gestión de marcas dentro del panel principal.
+        private void BtnMarcas_Click(object? sender, EventArgs e)
+        {
+            if (!SesionActual.TienePermiso("MARCAS_VER")) return;
+            formPrincipal.AbrirFormularioEnPanel(new FormMarcas(formPrincipal), formPrincipal.BotonProductos);
         }
 
 

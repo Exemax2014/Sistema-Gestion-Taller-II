@@ -64,18 +64,14 @@ namespace Capa_Logica
         // BUSCAR
         // ========================================================
 
+        // Busca productos vendibles de la sucursal indicada; una búsqueda vacía
+        // equivale a listar todos los que tienen stock disponible.
         public List<ProductoInfo> Buscar(
             string texto,
             int idSucursal)
         {
-            if (string.IsNullOrWhiteSpace(texto))
-            {
-                return new List<ProductoInfo>();
-            }
-
-
             return productoDatos.Buscar(
-                texto.Trim(),
+                (texto ?? string.Empty).Trim(),
                 idSucursal
             );
         }
@@ -237,6 +233,20 @@ namespace Capa_Logica
         }
 
 
+        // Filtra las marcas del producto según la categoría seleccionada.
+        public List<OpcionProductoModelo> ObtenerMarcasPorCategoria(int idCategoria)
+        {
+            if (idCategoria <= 0)
+            {
+                return new List<OpcionProductoModelo>();
+            }
+
+            return productoDatos.ObtenerMarcasPorCategoria(idCategoria)
+                .Select(m => new OpcionProductoModelo { Id = m.IdMarca, Nombre = m.Nombre })
+                .ToList();
+        }
+
+
         // ========================================================
         // VALIDAR PRODUCTO
         // ========================================================
@@ -356,13 +366,12 @@ namespace Capa_Logica
                     descripcion,
                     precioCosto,
                     porcentajeGanancia,
-                    activo
+                    activo,
+                    SesionActual.IdUsuario,
+                    SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa
                 );
 
-
-            return ConvertirResultado(
-                resultado
-            );
+            return ConvertirResultado(resultado);
         }
 
 
@@ -418,8 +427,7 @@ namespace Capa_Logica
                 return new ResultadoProducto { Codigo = 3, Mensaje = error };
             }
 
-            return ConvertirResultado(
-                productoDatos.Modificar(
+            return ConvertirResultado(productoDatos.Modificar(
                     idProducto,
                     idCategoria,
                     idMarca,
@@ -428,9 +436,9 @@ namespace Capa_Logica
                     descripcion,
                     precioCosto,
                     porcentajeGanancia,
-                    activo
-                )
-            );
+                    activo,
+                    SesionActual.IdUsuario,
+                    SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa));
         }
 
 
@@ -465,11 +473,8 @@ namespace Capa_Logica
             }
 
 
-            return ConvertirResultado(
-                productoDatos.Baja(
-                    idProducto
-                )
-            );
+            return ConvertirResultado(productoDatos.Baja(idProducto, SesionActual.IdUsuario,
+                SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa));
         }
 
 

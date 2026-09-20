@@ -27,12 +27,20 @@ BEGIN TRY
         (N'Gerente',N'Acceso a funciones de gestion y reportes',0),
         (N'Vendedor',N'Acceso principalmente a ventas y atencion de clientes',0);
 
+    /*
+       Debe mantenerse sincronizada con el catálogo oficial de 02_DatosIniciales.sql.
+       FUNCIONALIDAD no distingue en el esquema las claves oficiales de las de prueba;
+       por eso esta lista explícita es necesaria para retirar únicamente las extras.
+    */
     DECLARE @FuncionesIniciales TABLE(codigo NVARCHAR(50) PRIMARY KEY);
     INSERT INTO @FuncionesIniciales VALUES
         (N'USUARIOS_VER'),(N'USUARIOS_ALTA'),(N'USUARIOS_BAJA'),(N'USUARIOS_MODIFICAR'),
         (N'PERMISOS_GESTIONAR'),(N'BACKUP_REALIZAR'),(N'VENTAS_VER'),(N'VENTAS_REALIZAR'),
         (N'CLIENTES_VER'),(N'CLIENTES_ALTA'),(N'CLIENTES_BAJA'),(N'CLIENTES_MODIFICAR'),
         (N'PRODUCTOS_VER'),(N'PRODUCTOS_ALTA'),(N'PRODUCTOS_BAJA'),(N'PRODUCTOS_MODIFICAR'),
+        (N'CATEGORIAS_VER'),(N'CATEGORIAS_ALTA'),(N'CATEGORIAS_MODIFICAR'),(N'CATEGORIAS_BAJA'),
+        (N'MARCAS_VER'),(N'MARCAS_ALTA'),(N'MARCAS_MODIFICAR'),(N'MARCAS_BAJA'),
+        (N'SUCURSALES_VER'),(N'SUCURSALES_ALTA'),(N'SUCURSALES_MODIFICAR'),(N'SUCURSALES_BAJA'),
         (N'REPORTES_ADMINISTRADOR'),(N'REPORTES_GERENTE'),(N'REPORTES_VENDEDOR'),
         (N'REPORTES_VER'),(N'REPORTES_VENTAS'),(N'REPORTES_RECAUDACION'),
         (N'REPORTES_PRODUCTOS'),(N'REPORTES_STOCK'),(N'REPORTES_RENDIMIENTO_VENDEDORES'),
@@ -47,16 +55,17 @@ BEGIN TRY
     /* -----------------------------------------------------
        1. Eliminar datos operativos en orden de dependencias.
        ----------------------------------------------------- */
+    DELETE FROM dbo.AUDITORIA;
     DELETE FROM dbo.PAGO;
     DELETE mp
     FROM dbo.METODO_PAGO AS mp
     WHERE NOT EXISTS (SELECT 1 FROM @MetodosIniciales AS mi WHERE mi.nombre = mp.nombre);
     DELETE FROM dbo.DETALLE_VENTA;
     DELETE FROM dbo.VENTA;
-    DELETE FROM dbo.AVISO_PERFIL_DESTINO;
     DELETE FROM dbo.AVISO;
     DELETE FROM dbo.INVENTARIO;
     DELETE FROM dbo.PRODUCTO;
+    DELETE FROM dbo.MARCA_CATEGORIA;
     DELETE FROM dbo.CLIENTE;
 
     /* Los usuarios de testing son todos excepto el administrador inicial. */
@@ -72,9 +81,8 @@ BEGIN TRY
     INNER JOIN dbo.PERFIL AS p ON p.nombre = N'Administrador'
     WHERE u.nombre_usuario = N'admin';
 
-    /* Las relaciones se reconstruyen desde las reglas de 02 y 03. */
+    /* Las funcionalidades iniciales se reconstruyen desde las reglas de 02 y 03. */
     DELETE FROM dbo.PERFIL_FUNCIONALIDAD;
-    DELETE FROM dbo.PERFIL_AVISO_DESTINO;
 
     DELETE p
     FROM dbo.PERFIL AS p
@@ -144,12 +152,6 @@ BEGIN TRY
     FROM @PermisosNoGlobales AS png
     INNER JOIN dbo.PERFIL AS p ON p.nombre = png.perfil
     INNER JOIN dbo.FUNCIONALIDAD AS f ON f.codigo = png.codigo;
-
-    INSERT INTO dbo.PERFIL_AVISO_DESTINO(id_perfil_emisor,id_perfil_destino)
-    SELECT emisor.id_perfil,destino.id_perfil
-    FROM (VALUES(N'Administrador',N'Gerente'),(N'Gerente',N'Vendedor')) x(emisor,destino)
-    INNER JOIN dbo.PERFIL emisor ON emisor.nombre=x.emisor
-    INNER JOIN dbo.PERFIL destino ON destino.nombre=x.destino;
 
     /* 03 define la regla autoritativa: el perfil global recibe todas
        las funcionalidades activas, salvo los alcances incompatibles. */

@@ -33,6 +33,10 @@ namespace Capa_Vistas
         private bool cargandoDatos =
             true;
 
+        private bool cargandoCombos;
+
+        private bool requiereMarcaPorCambioCategoria;
+
 
         private bool hayCambios =
             false;
@@ -288,11 +292,11 @@ namespace Capa_Vistas
 
 
             cmbCategoria.SelectedIndexChanged +=
-                CampoCambiado;
+                CmbCategoria_SelectedIndexChanged;
 
 
             cmbMarca.SelectedIndexChanged +=
-                CampoCambiado;
+                CmbMarca_SelectedIndexChanged;
 
 
             chkActivo.CheckedChanged +=
@@ -461,8 +465,10 @@ namespace Capa_Vistas
         // COMBOS
         // ========================================================
 
+        // Carga categorías activas y prepara marcas compatibles con la categoría inicial.
         private void CargarCombos()
         {
+            cargandoCombos = true;
             cmbCategoria.DataSource =
                 productoLogica.ObtenerCategorias();
 
@@ -479,34 +485,54 @@ namespace Capa_Vistas
                 );
 
 
-            List<OpcionProductoModelo> marcas =
-                productoLogica.ObtenerMarcas();
+            CargarMarcasParaCategoria(null, 0);
+            cargandoCombos = false;
+        }
 
 
-            marcas.Insert(
-                0,
-                new OpcionProductoModelo
-                {
-                    Id = 0,
-                    Nombre = "Sin marca"
-                }
-            );
+        // Recarga marcas válidas para la categoría y descarta una selección incompatible.
+        private void CmbCategoria_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            CampoCambiado(sender, e);
+            if (cargandoCombos || cmbCategoria.SelectedValue is not int idCategoria)
+            {
+                return;
+            }
+
+            int idAnterior = ObtenerIdSeleccionado(cmbMarca) ?? 0;
+            if (!cargandoDatos && idAnterior > 0
+                && !productoLogica.ObtenerMarcasPorCategoria(idCategoria).Any(m => m.Id == idAnterior))
+            {
+                requiereMarcaPorCambioCategoria = true;
+            }
+            CargarMarcasParaCategoria(idCategoria, idAnterior);
+        }
 
 
-            cmbMarca.DataSource =
-                marcas;
+        // Libera la validación pendiente cuando se elige una marca compatible.
+        private void CmbMarca_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            CampoCambiado(sender, e);
+            if (!cargandoCombos && (ObtenerIdSeleccionado(cmbMarca) ?? 0) > 0)
+            {
+                requiereMarcaPorCambioCategoria = false;
+            }
+        }
 
 
-            cmbMarca.DisplayMember =
-                nameof(
-                    OpcionProductoModelo.Nombre
-                );
-
-
-            cmbMarca.ValueMember =
-                nameof(
-                    OpcionProductoModelo.Id
-                );
+        // Configura el combo con marcas activas de la categoría seleccionada.
+        private void CargarMarcasParaCategoria(int? idCategoria, int idConservar)
+        {
+            cargandoCombos = true;
+            List<OpcionProductoModelo> marcas = idCategoria.HasValue
+                ? productoLogica.ObtenerMarcasPorCategoria(idCategoria.Value)
+                : new List<OpcionProductoModelo>();
+            marcas.Insert(0, new OpcionProductoModelo { Id = 0, Nombre = "Sin marca" });
+            cmbMarca.DataSource = marcas;
+            cmbMarca.DisplayMember = nameof(OpcionProductoModelo.Nombre);
+            cmbMarca.ValueMember = nameof(OpcionProductoModelo.Id);
+            cmbMarca.SelectedValue = marcas.Any(m => m.Id == idConservar) ? idConservar : 0;
+            cargandoCombos = false;
         }
 
 
@@ -514,6 +540,7 @@ namespace Capa_Vistas
         // PRODUCTO
         // ========================================================
 
+        // Carga el producto y sus marcas válidas antes de permitir modificarlo.
         private void CargarProducto()
         {
             if (!idProducto.HasValue)
@@ -545,10 +572,7 @@ namespace Capa_Vistas
             cmbCategoria.SelectedValue =
                 producto.IdCategoria;
 
-
-            cmbMarca.SelectedValue =
-                producto.IdMarca
-                ?? 0;
+            CargarMarcasParaCategoria(producto.IdCategoria, producto.IdMarca ?? 0);
 
 
             txtCodigoBarra.Text =
@@ -962,6 +986,12 @@ namespace Capa_Vistas
             {
                 idMarca =
                     null;
+            }
+
+            if (requiereMarcaPorCambioCategoria && !idMarca.HasValue)
+            {
+                MostrarMensaje("Producto", "La marca anterior no corresponde a la categoría seleccionada. Elegí una marca válida para continuar.");
+                return;
             }
 
 

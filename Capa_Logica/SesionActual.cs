@@ -28,6 +28,7 @@
         // Gerente/Vendedor:
         //     ID de su sucursal asignada.
         public static int? IdSucursal { get; private set; }
+        public static bool AlcanceGlobal { get; private set; }
 
 
         // ========================================================
@@ -111,11 +112,13 @@
             string nombreUsuario,
             string perfil,
             string sucursal,
-            IEnumerable<string>? funcionalidadesPermitidas = null)
+            IEnumerable<string>? funcionalidadesPermitidas = null,
+            bool alcanceGlobal = false)
         {
             IdUsuario = idUsuario;
             IdPerfil = idPerfil;
             IdSucursal = idSucursal;
+            AlcanceGlobal = alcanceGlobal;
 
             Nombre = nombre;
             Apellido = apellido;
@@ -324,6 +327,7 @@
             IdPerfil = 0;
 
             IdSucursal = null;
+            AlcanceGlobal = false;
             IdSucursalOperativa = null;
 
             Nombre = string.Empty;

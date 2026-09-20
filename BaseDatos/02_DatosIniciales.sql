@@ -97,6 +97,15 @@ INNER JOIN
         (N'PRODUCTOS_BAJA',          N'Baja de productos',               N'Permite realizar la baja lógica de productos'),
         (N'PRODUCTOS_MODIFICAR',     N'Modificar productos',             N'Permite modificar productos'),
 
+        (N'CATEGORIAS_VER',          N'Ver categorías',                   N'Permite consultar el catálogo de categorías'),
+        (N'CATEGORIAS_ALTA',         N'Alta de categorías',               N'Permite registrar categorías'),
+        (N'CATEGORIAS_MODIFICAR',    N'Modificar categorías',             N'Permite modificar categorías'),
+        (N'CATEGORIAS_BAJA',         N'Baja de categorías',               N'Permite dar de baja o reactivar categorías'),
+        (N'MARCAS_VER',              N'Ver marcas',                       N'Permite consultar el catálogo de marcas'),
+        (N'MARCAS_ALTA',             N'Alta de marcas',                   N'Permite registrar marcas'),
+        (N'MARCAS_MODIFICAR',        N'Modificar marcas',                 N'Permite modificar marcas y sus categorías'),
+        (N'MARCAS_BAJA',             N'Baja de marcas',                   N'Permite dar de baja o reactivar marcas'),
+
         (N'SUCURSALES_VER',          N'Ver sucursales',                  N'Permite consultar sucursales y sus usuarios por perfil'),
         (N'SUCURSALES_ALTA',         N'Alta de sucursales',              N'Permite registrar nuevas sucursales'),
         (N'SUCURSALES_MODIFICAR',    N'Modificar sucursales',            N'Permite modificar sucursales existentes'),
@@ -135,6 +144,15 @@ SELECT
 FROM
 (
     VALUES
+        (N'CATEGORIAS_VER',          N'Ver categorías',                   N'Permite consultar el catálogo de categorías'),
+        (N'CATEGORIAS_ALTA',         N'Alta de categorías',               N'Permite registrar categorías'),
+        (N'CATEGORIAS_MODIFICAR',    N'Modificar categorías',             N'Permite modificar categorías'),
+        (N'CATEGORIAS_BAJA',         N'Baja de categorías',               N'Permite dar de baja o reactivar categorías'),
+        (N'MARCAS_VER',              N'Ver marcas',                       N'Permite consultar el catálogo de marcas'),
+        (N'MARCAS_ALTA',             N'Alta de marcas',                   N'Permite registrar marcas'),
+        (N'MARCAS_MODIFICAR',        N'Modificar marcas',                 N'Permite modificar marcas y sus categorías'),
+        (N'MARCAS_BAJA',             N'Baja de marcas',                   N'Permite dar de baja o reactivar marcas'),
+
         (N'USUARIOS_VER',            N'Ver usuarios',                    N'Permite consultar usuarios del sistema'),
         (N'USUARIOS_ALTA',           N'Alta de usuarios',                N'Permite registrar nuevos usuarios'),
         (N'USUARIOS_BAJA',           N'Baja de usuarios',                N'Permite realizar la baja lógica de usuarios'),
@@ -422,7 +440,8 @@ SELECT
     f.id_funcionalidad
 FROM dbo.PERFIL AS p
 CROSS JOIN dbo.FUNCIONALIDAD AS f
-WHERE p.nombre = N'Administrador'
+WHERE p.alcance_global = 1
+  AND p.eliminado_en IS NULL
   AND f.codigo IN
   (
       N'USUARIOS_VER',
@@ -471,6 +490,27 @@ WHERE p.nombre = N'Administrador'
       WHERE pf.id_perfil = p.id_perfil
         AND pf.id_funcionalidad = f.id_funcionalidad
   );
+GO
+
+
+/* =========================================================
+   SINCRONIZACIÓN DEL PERFIL GLOBAL EN BASES EXISTENTES
+
+   En una instalación nueva este procedimiento todavía no existe,
+   porque se crea en 03_Procedimientos.sql. En una base actualizada,
+   incorpora inmediatamente las funcionalidades oficiales nuevas al
+   perfil identificado por alcance_global, sin depender de su nombre.
+   ========================================================= */
+
+IF OBJECT_ID(N'dbo.sp_Perfil_SincronizarAdministrador', N'P') IS NOT NULL
+BEGIN
+    DECLARE @CodigoResultadoSincronizacion INT;
+    DECLARE @MensajeResultadoSincronizacion NVARCHAR(250);
+
+    EXEC dbo.sp_Perfil_SincronizarAdministrador
+        @CodigoResultado = @CodigoResultadoSincronizacion OUTPUT,
+        @MensajeResultado = @MensajeResultadoSincronizacion OUTPUT;
+END;
 GO
 
 
@@ -524,6 +564,15 @@ GO
    PERMISOS - VENDEDOR
    ========================================================= */
 
+/* El perfil inicial de Ventas no accede al módulo administrativo Productos.
+   La consulta de artículos para vender se autoriza mediante VENTAS_REALIZAR. */
+DELETE pf
+FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+INNER JOIN dbo.PERFIL AS p ON p.id_perfil = pf.id_perfil
+INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+WHERE p.nombre = N'Vendedor'
+  AND f.codigo LIKE N'PRODUCTOS[_]%';
+
 INSERT INTO dbo.PERFIL_FUNCIONALIDAD
 (
     id_perfil,
@@ -564,26 +613,6 @@ WHERE p.nombre = N'Vendedor'
 GO
 
 
-/* Relaciones iniciales de avisos. El código de aplicación nunca depende de estos nombres. */
-INSERT INTO dbo.PERFIL_AVISO_DESTINO (id_perfil_emisor, id_perfil_destino)
-SELECT emisor.id_perfil, destino.id_perfil
-FROM
-(
-    VALUES (N'Administrador', N'Gerente'), (N'Gerente', N'Vendedor')
-) AS relaciones(nombre_emisor, nombre_destino)
-INNER JOIN dbo.PERFIL AS emisor
-    ON emisor.nombre = relaciones.nombre_emisor AND emisor.eliminado_en IS NULL
-INNER JOIN dbo.PERFIL AS destino
-    ON destino.nombre = relaciones.nombre_destino AND destino.eliminado_en IS NULL
-WHERE NOT EXISTS
-(
-    SELECT 1
-    FROM dbo.PERFIL_AVISO_DESTINO AS pad
-    WHERE pad.id_perfil_emisor = emisor.id_perfil
-      AND pad.id_perfil_destino = destino.id_perfil
-);
-GO
-
 
 /* =========================================================
    USUARIO ADMINISTRADOR INICIAL
@@ -606,8 +635,7 @@ BEGIN
         u.eliminado_en = NULL
     FROM dbo.USUARIO AS u
     INNER JOIN dbo.PERFIL AS p
-        ON p.nombre = N'Administrador'
-       AND p.alcance_global = 1
+        ON p.alcance_global = 1
        AND p.eliminado_en IS NULL
     WHERE u.nombre_usuario = N'admin';
 END
@@ -634,8 +662,7 @@ BEGIN
         N'100000.zpJ5ba3fjhu0UZQQlS0CSA==.aYlVb4EHb1iq2DDfmmZ/PYf/+s/KygiBFxj6yvyEmAI=',
         N'admin@sistemagestion.local'
     FROM dbo.PERFIL AS p
-    WHERE p.nombre = N'Administrador'
-      AND p.alcance_global = 1
+    WHERE p.alcance_global = 1
       AND p.eliminado_en IS NULL
       AND NOT EXISTS
       (

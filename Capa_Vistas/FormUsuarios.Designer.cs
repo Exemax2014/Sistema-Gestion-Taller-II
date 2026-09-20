@@ -50,9 +50,6 @@ namespace Capa_Vistas
         private Label lblPermisosTitulo;
         private Label lblPermisosDescripcion;
         private FlowLayoutPanel flpPermisos;
-        private Label lblDestinosAvisoTitulo;
-        private Label lblDestinosAvisoDescripcion;
-        private FlowLayoutPanel flpDestinosAviso;
         private Button btnGuardarPerfil;
         private Button btnEliminarPerfil;
 
@@ -138,9 +135,6 @@ namespace Capa_Vistas
             lblPermisosTitulo = new Label();
             lblPermisosDescripcion = new Label();
             flpPermisos = new FlowLayoutPanel();
-            lblDestinosAvisoTitulo = new Label();
-            lblDestinosAvisoDescripcion = new Label();
-            flpDestinosAviso = new FlowLayoutPanel();
             btnGuardarPerfil = new Button();
             btnEliminarPerfil = new Button();
 
@@ -498,6 +492,7 @@ namespace Capa_Vistas
             btnNuevoPerfil.UseVisualStyleBackColor = false;
 
             pnlDetallePerfil.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlDetallePerfil.AutoScroll = true;
             pnlDetallePerfil.BackColor = Color.White;
             pnlDetallePerfil.BorderStyle = BorderStyle.FixedSingle;
             pnlDetallePerfil.Controls.Add(lblDetallePerfilTitulo);
@@ -508,9 +503,6 @@ namespace Capa_Vistas
             pnlDetallePerfil.Controls.Add(lblPermisosTitulo);
             pnlDetallePerfil.Controls.Add(lblPermisosDescripcion);
             pnlDetallePerfil.Controls.Add(flpPermisos);
-            pnlDetallePerfil.Controls.Add(lblDestinosAvisoTitulo);
-            pnlDetallePerfil.Controls.Add(lblDestinosAvisoDescripcion);
-            pnlDetallePerfil.Controls.Add(flpDestinosAviso);
             pnlDetallePerfil.Controls.Add(btnGuardarPerfil);
             pnlDetallePerfil.Controls.Add(btnEliminarPerfil);
             pnlDetallePerfil.Location = new Point(367, 0);
@@ -575,7 +567,7 @@ namespace Capa_Vistas
             lblPermisosDescripcion.TabIndex = 6;
             lblPermisosDescripcion.Text = "Las opciones se cargarán dinámicamente desde la base.";
 
-            flpPermisos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            flpPermisos.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             flpPermisos.AutoScroll = true;
             flpPermisos.BackColor = Color.FromArgb(248, 249, 250);
             flpPermisos.BorderStyle = BorderStyle.FixedSingle;
@@ -587,33 +579,7 @@ namespace Capa_Vistas
             flpPermisos.TabIndex = 7;
             flpPermisos.WrapContents = false;
 
-            lblDestinosAvisoTitulo.AutoSize = true;
-            lblDestinosAvisoTitulo.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            lblDestinosAvisoTitulo.ForeColor = Color.FromArgb(55, 59, 64);
-            lblDestinosAvisoTitulo.Location = new Point(22, 404);
-            lblDestinosAvisoTitulo.Name = "lblDestinosAvisoTitulo";
-            lblDestinosAvisoTitulo.Text = "Puede enviar avisos a";
-
-            lblDestinosAvisoDescripcion.AutoSize = true;
-            lblDestinosAvisoDescripcion.Font = new Font("Segoe UI", 8F);
-            lblDestinosAvisoDescripcion.ForeColor = Color.FromArgb(105, 110, 116);
-            lblDestinosAvisoDescripcion.Location = new Point(190, 406);
-            lblDestinosAvisoDescripcion.Name = "lblDestinosAvisoDescripcion";
-            lblDestinosAvisoDescripcion.Text = "Perfiles destino configurables.";
-
-            flpDestinosAviso.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
-            flpDestinosAviso.AutoScroll = true;
-            flpDestinosAviso.BackColor = Color.FromArgb(248, 249, 250);
-            flpDestinosAviso.BorderStyle = BorderStyle.FixedSingle;
-            flpDestinosAviso.FlowDirection = FlowDirection.TopDown;
-            flpDestinosAviso.Location = new Point(22, 430);
-            flpDestinosAviso.Name = "flpDestinosAviso";
-            flpDestinosAviso.Padding = new Padding(8);
-            flpDestinosAviso.Size = new Size(831, 70);
-            flpDestinosAviso.TabIndex = 8;
-            flpDestinosAviso.WrapContents = false;
-
-            btnGuardarPerfil.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
+            btnGuardarPerfil.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnGuardarPerfil.BackColor = Color.FromArgb(190, 137, 45);
             btnGuardarPerfil.Cursor = Cursors.Hand;
             btnGuardarPerfil.FlatAppearance.BorderSize = 0;
@@ -626,7 +592,7 @@ namespace Capa_Vistas
             btnGuardarPerfil.Text = "Guardar cambios";
             btnGuardarPerfil.UseVisualStyleBackColor = false;
 
-            btnEliminarPerfil.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
+            btnEliminarPerfil.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnEliminarPerfil.BackColor = Color.White;
             btnEliminarPerfil.Cursor = Cursors.Hand;
             btnEliminarPerfil.FlatAppearance.BorderColor = Color.FromArgb(170, 75, 75);

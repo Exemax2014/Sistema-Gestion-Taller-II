@@ -54,6 +54,7 @@ BEGIN
         u.nombre_usuario,
         u.contrasena_hash,
         p.nombre AS perfil,
+        p.alcance_global,
         ISNULL(s.nombre, N'Todas las sucursales') AS sucursal
 
     FROM dbo.USUARIO AS u
@@ -163,7 +164,6 @@ BEGIN
 END;
 GO
 
-
 /* ============================================================
    Procedimiento: sp_Usuario_Alta
 
@@ -184,6 +184,8 @@ GO
 CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Alta
     @idPerfil INT,
     @idSucursal INT = NULL,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
 
     @nombre NVARCHAR(100),
     @apellido NVARCHAR(100),
@@ -202,6 +204,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Alta
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @alcanceGlobal BIT;
 
@@ -211,6 +214,9 @@ BEGIN
 
 
     BEGIN TRY
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
 
         SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
         SET @apellido = LTRIM(RTRIM(ISNULL(@apellido, N'')));
@@ -384,6 +390,7 @@ BEGIN
            Registrar usuario
            ----------------------------------------------------- */
 
+        BEGIN TRANSACTION;
         INSERT INTO dbo.USUARIO
         (
             id_perfil,
@@ -425,6 +432,14 @@ BEGIN
         SET @IdGenerado =
             CAST(SCOPE_IDENTITY() AS INT);
 
+        DECLARE @detalleAuditoriaUsuario NVARCHAR(300) = CONCAT(N'Usuario registrado: ', @nombreUsuario, N'.');
+        DECLARE @sucursalAuditoriaUsuario INT = COALESCE(@idSucursal, @idSucursalAuditoria);
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'ALTA', @entidad = N'USUARIO',
+            @idEntidad = @IdGenerado, @detalle = @detalleAuditoriaUsuario,
+            @idSucursal = @sucursalAuditoriaUsuario;
+        COMMIT TRANSACTION;
+
         SET @CodigoResultado = 0;
         SET @MensajeResultado =
             N'Usuario registrado correctamente.';
@@ -434,6 +449,9 @@ BEGIN
 
     BEGIN CATCH
 
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
+
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
 
@@ -442,6 +460,13 @@ BEGIN
 END;
 GO
 
+/* Retira rutas históricas para que el guardado atómico sea el único flujo de perfiles. */
+DROP PROCEDURE IF EXISTS dbo.sp_Perfil_Alta;
+DROP PROCEDURE IF EXISTS dbo.sp_Perfil_Modificar;
+DROP PROCEDURE IF EXISTS dbo.sp_Perfil_GuardarFuncionalidades;
+DROP PROCEDURE IF EXISTS dbo.sp_Perfil_AsignarFuncionalidad;
+DROP PROCEDURE IF EXISTS dbo.sp_Perfil_QuitarFuncionalidad;
+GO
 
 /* ============================================================
    Procedimiento: sp_Usuario_Modificar
@@ -464,6 +489,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Modificar
     @idUsuario INT,
     @idPerfil INT,
     @idSucursal INT = NULL,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
 
     @nombre NVARCHAR(100),
     @apellido NVARCHAR(100),
@@ -480,6 +507,7 @@ CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Modificar
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     DECLARE @alcanceGlobal BIT;
 
@@ -487,6 +515,9 @@ BEGIN
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
 
         SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
         SET @apellido = LTRIM(RTRIM(ISNULL(@apellido, N'')));
@@ -674,6 +705,7 @@ BEGIN
            Modificar usuario
            ----------------------------------------------------- */
 
+        BEGIN TRANSACTION;
         UPDATE dbo.USUARIO
         SET
             id_perfil = @idPerfil,
@@ -690,6 +722,14 @@ BEGIN
         WHERE id_usuario = @idUsuario
           AND eliminado_en IS NULL;
 
+        DECLARE @detalleAuditoriaUsuario NVARCHAR(300) = CONCAT(N'Usuario actualizado: ', @nombreUsuario, N'.');
+        DECLARE @sucursalAuditoriaUsuario INT = COALESCE(@idSucursal, @idSucursalAuditoria);
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'MODIFICACION', @entidad = N'USUARIO',
+            @idEntidad = @idUsuario, @detalle = @detalleAuditoriaUsuario,
+            @idSucursal = @sucursalAuditoriaUsuario;
+        COMMIT TRANSACTION;
+
 
         SET @CodigoResultado = 0;
         SET @MensajeResultado =
@@ -699,6 +739,9 @@ BEGIN
     END TRY
 
     BEGIN CATCH
+
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
 
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
@@ -711,16 +754,22 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Baja
     @idUsuario INT,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
 
         IF NOT EXISTS
         (
@@ -735,16 +784,28 @@ BEGIN
             RETURN;
         END;
 
+        DECLARE @idSucursalObjetivo INT;
+        SELECT @idSucursalObjetivo = id_sucursal FROM dbo.USUARIO WHERE id_usuario = @idUsuario;
+        DECLARE @sucursalAuditoriaUsuario INT = COALESCE(@idSucursalObjetivo, @idSucursalAuditoria);
+        BEGIN TRANSACTION;
         UPDATE dbo.USUARIO
         SET eliminado_en = SYSDATETIME()
         WHERE id_usuario = @idUsuario
           AND eliminado_en IS NULL;
+
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'BAJA', @entidad = N'USUARIO',
+            @idEntidad = @idUsuario, @detalle = N'Usuario dado de baja.',
+            @idSucursal = @sucursalAuditoriaUsuario;
+        COMMIT TRANSACTION;
 
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Usuario dado de baja correctamente.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
     END CATCH;
@@ -755,16 +816,22 @@ GO
 -- Reactiva un usuario dado de baja sin alterar su perfil ni sucursal asignada.
 CREATE OR ALTER PROCEDURE dbo.sp_Usuario_Reactivar
     @idUsuario INT,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
 
         IF NOT EXISTS
         (
@@ -791,15 +858,27 @@ BEGIN
             RETURN;
         END;
 
+        DECLARE @idSucursalObjetivo INT;
+        SELECT @idSucursalObjetivo = id_sucursal FROM dbo.USUARIO WHERE id_usuario = @idUsuario;
+        DECLARE @sucursalAuditoriaUsuario INT = COALESCE(@idSucursalObjetivo, @idSucursalAuditoria);
+        BEGIN TRANSACTION;
         UPDATE dbo.USUARIO
         SET eliminado_en = NULL
         WHERE id_usuario = @idUsuario
           AND eliminado_en IS NOT NULL;
 
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'REACTIVACION', @entidad = N'USUARIO',
+            @idEntidad = @idUsuario, @detalle = N'Usuario reactivado.',
+            @idSucursal = @sucursalAuditoriaUsuario;
+        COMMIT TRANSACTION;
+
         SET @MensajeResultado = N'Usuario dado de alta correctamente.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
     END CATCH;
@@ -948,553 +1027,6 @@ END;
 GO
 
 
--- Compatibilidad histórica: la aplicación guarda perfiles y permisos con sp_Perfil_Guardar.
-CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Alta
-    @nombre NVARCHAR(50),
-    @descripcion NVARCHAR(200) = NULL,
-
-    @IdGenerado INT OUTPUT,
-    @CodigoResultado INT OUTPUT,
-    @MensajeResultado NVARCHAR(250) OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SET @IdGenerado = 0;
-    SET @CodigoResultado = 0;
-    SET @MensajeResultado = N'Operación realizada correctamente.';
-
-    BEGIN TRY
-
-        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
-        SET @descripcion = NULLIF(LTRIM(RTRIM(@descripcion)), N'');
-
-        WHILE CHARINDEX(N'  ', @nombre) > 0
-            SET @nombre = REPLACE(@nombre, N'  ', N' ');
-
-        IF @nombre LIKE N'%' + CHAR(9) + N'%'
-           OR @nombre LIKE N'%' + CHAR(10) + N'%'
-           OR @nombre LIKE N'%' + CHAR(13) + N'%'
-           OR (@descripcion IS NOT NULL AND
-               (@descripcion LIKE N'%' + CHAR(9) + N'%'
-                OR @descripcion LIKE N'%' + CHAR(10) + N'%'
-                OR @descripcion LIKE N'%' + CHAR(13) + N'%'))
-        BEGIN
-            SET @CodigoResultado = 3;
-            SET @MensajeResultado = N'El nombre y la descripción no pueden contener caracteres de control.';
-            RETURN;
-        END;
-
-
-        IF @nombre = N''
-        BEGIN
-            SET @CodigoResultado = 3;
-            SET @MensajeResultado =
-                N'El nombre del tipo de usuario es obligatorio.';
-            RETURN;
-        END;
-
-
-        IF EXISTS
-        (
-            SELECT 1
-            FROM dbo.PERFIL
-            WHERE UPPER(nombre) = UPPER(@nombre)
-        )
-        BEGIN
-            SET @CodigoResultado = 2;
-            SET @MensajeResultado =
-                N'Ya existe un tipo de usuario con ese nombre.';
-            RETURN;
-        END;
-
-
-        INSERT INTO dbo.PERFIL
-        (
-            nombre,
-            descripcion,
-            alcance_global
-        )
-        VALUES
-        (
-            @nombre,
-            @descripcion,
-            0
-        );
-
-
-        SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
-        SET @CodigoResultado = 0;
-        SET @MensajeResultado =
-            N'Tipo de usuario registrado correctamente.';
-
-    END TRY
-    BEGIN CATCH
-
-        SET @IdGenerado = 0;
-        SET @CodigoResultado = 500;
-        SET @MensajeResultado = ERROR_MESSAGE();
-
-    END CATCH;
-END;
-GO
-
-
--- Compatibilidad histórica: la aplicación guarda perfiles y permisos con sp_Perfil_Guardar.
-CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Modificar
-    @idPerfil INT,
-    @nombre NVARCHAR(50),
-    @descripcion NVARCHAR(200) = NULL,
-
-    @CodigoResultado INT OUTPUT,
-    @MensajeResultado NVARCHAR(250) OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SET @CodigoResultado = 0;
-    SET @MensajeResultado = N'Operación realizada correctamente.';
-
-    BEGIN TRY
-
-        DECLARE @alcanceGlobal BIT;
-
-
-        SELECT
-            @alcanceGlobal = p.alcance_global
-        FROM dbo.PERFIL AS p
-        WHERE p.id_perfil = @idPerfil
-          AND p.eliminado_en IS NULL;
-
-
-        IF @alcanceGlobal IS NULL
-        BEGIN
-            SET @CodigoResultado = 1;
-            SET @MensajeResultado =
-                N'El tipo de usuario no existe o fue dado de baja.';
-            RETURN;
-        END;
-
-
-        IF @alcanceGlobal = 1
-        BEGIN
-            SET @CodigoResultado = 5;
-            SET @MensajeResultado =
-                N'El perfil global del sistema no puede modificarse.';
-            RETURN;
-        END;
-
-
-        SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
-        SET @descripcion = NULLIF(LTRIM(RTRIM(@descripcion)), N'');
-
-        WHILE CHARINDEX(N'  ', @nombre) > 0
-            SET @nombre = REPLACE(@nombre, N'  ', N' ');
-
-        IF @nombre LIKE N'%' + CHAR(9) + N'%'
-           OR @nombre LIKE N'%' + CHAR(10) + N'%'
-           OR @nombre LIKE N'%' + CHAR(13) + N'%'
-           OR (@descripcion IS NOT NULL AND
-               (@descripcion LIKE N'%' + CHAR(9) + N'%'
-                OR @descripcion LIKE N'%' + CHAR(10) + N'%'
-                OR @descripcion LIKE N'%' + CHAR(13) + N'%'))
-        BEGIN
-            SET @CodigoResultado = 3;
-            SET @MensajeResultado = N'El nombre y la descripción no pueden contener caracteres de control.';
-            RETURN;
-        END;
-
-
-        IF @nombre = N''
-        BEGIN
-            SET @CodigoResultado = 3;
-            SET @MensajeResultado =
-                N'El nombre del tipo de usuario es obligatorio.';
-            RETURN;
-        END;
-
-
-        IF EXISTS
-        (
-            SELECT 1
-            FROM dbo.PERFIL
-            WHERE UPPER(nombre) = UPPER(@nombre)
-              AND id_perfil <> @idPerfil
-        )
-        BEGIN
-            SET @CodigoResultado = 2;
-            SET @MensajeResultado =
-                N'Ya existe otro tipo de usuario con ese nombre.';
-            RETURN;
-        END;
-
-
-        UPDATE dbo.PERFIL
-        SET
-            nombre = @nombre,
-            descripcion = @descripcion
-        WHERE id_perfil = @idPerfil
-          AND eliminado_en IS NULL;
-
-
-        SET @CodigoResultado = 0;
-        SET @MensajeResultado =
-            N'Tipo de usuario modificado correctamente.';
-
-    END TRY
-    BEGIN CATCH
-
-        SET @CodigoResultado = 500;
-        SET @MensajeResultado = ERROR_MESSAGE();
-
-    END CATCH;
-END;
-GO
-
-
-CREATE OR ALTER PROCEDURE dbo.sp_Perfil_AsignarFuncionalidad
-    @idPerfil INT,
-    @idFuncionalidad INT,
-
-    @CodigoResultado INT OUTPUT,
-    @MensajeResultado NVARCHAR(250) OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SET @CodigoResultado = 0;
-    SET @MensajeResultado = N'Operación realizada correctamente.';
-
-    BEGIN TRY
-
-        DECLARE @alcanceGlobal BIT;
-        DECLARE @codigoFuncionalidad NVARCHAR(50);
-
-
-        SELECT
-            @alcanceGlobal = p.alcance_global
-        FROM dbo.PERFIL AS p
-        WHERE p.id_perfil = @idPerfil
-          AND p.eliminado_en IS NULL;
-
-
-        IF @alcanceGlobal IS NULL
-        BEGIN
-            SET @CodigoResultado = 1;
-            SET @MensajeResultado =
-                N'El tipo de usuario no existe o está inactivo.';
-            RETURN;
-        END;
-
-
-        SELECT
-            @codigoFuncionalidad = f.codigo
-        FROM dbo.FUNCIONALIDAD AS f
-        WHERE f.id_funcionalidad = @idFuncionalidad
-          AND f.eliminado_en IS NULL;
-
-
-        IF @codigoFuncionalidad IS NULL
-        BEGIN
-            SET @CodigoResultado = 1;
-            SET @MensajeResultado =
-                N'La funcionalidad indicada no existe o está inactiva.';
-            RETURN;
-        END;
-
-
-        IF @codigoFuncionalidad = N'PERMISOS_GESTIONAR'
-           AND @alcanceGlobal = 0
-        BEGIN
-            SET @CodigoResultado = 5;
-            SET @MensajeResultado =
-                N'La administración de permisos es exclusiva del perfil global.';
-            RETURN;
-        END;
-
-
-        IF NOT EXISTS
-        (
-            SELECT 1
-            FROM dbo.PERFIL_FUNCIONALIDAD
-            WHERE id_perfil = @idPerfil
-              AND id_funcionalidad = @idFuncionalidad
-        )
-        BEGIN
-            INSERT INTO dbo.PERFIL_FUNCIONALIDAD
-            (
-                id_perfil,
-                id_funcionalidad
-            )
-            VALUES
-            (
-                @idPerfil,
-                @idFuncionalidad
-            );
-        END;
-
-
-        SET @CodigoResultado = 0;
-        SET @MensajeResultado =
-            N'Permiso asignado correctamente.';
-
-    END TRY
-    BEGIN CATCH
-
-        SET @CodigoResultado = 500;
-        SET @MensajeResultado = ERROR_MESSAGE();
-
-    END CATCH;
-END;
-GO
-
-
-CREATE OR ALTER PROCEDURE dbo.sp_Perfil_QuitarFuncionalidad
-    @idPerfil INT,
-    @idFuncionalidad INT,
-
-    @CodigoResultado INT OUTPUT,
-    @MensajeResultado NVARCHAR(250) OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SET @CodigoResultado = 0;
-    SET @MensajeResultado = N'Operación realizada correctamente.';
-
-    BEGIN TRY
-
-        DECLARE @alcanceGlobal BIT;
-
-
-        SELECT
-            @alcanceGlobal = p.alcance_global
-        FROM dbo.PERFIL AS p
-        WHERE p.id_perfil = @idPerfil
-          AND p.eliminado_en IS NULL;
-
-
-        IF @alcanceGlobal IS NULL
-        BEGIN
-            SET @CodigoResultado = 1;
-            SET @MensajeResultado =
-                N'El tipo de usuario no existe o está inactivo.';
-            RETURN;
-        END;
-
-
-        IF @alcanceGlobal = 1
-        BEGIN
-            SET @CodigoResultado = 5;
-            SET @MensajeResultado =
-                N'Los permisos del perfil global son obligatorios y no pueden quitarse.';
-            RETURN;
-        END;
-
-
-        IF NOT EXISTS
-        (
-            SELECT 1
-            FROM dbo.FUNCIONALIDAD
-            WHERE id_funcionalidad = @idFuncionalidad
-              AND eliminado_en IS NULL
-        )
-        BEGIN
-            SET @CodigoResultado = 1;
-            SET @MensajeResultado =
-                N'La funcionalidad indicada no existe o está inactiva.';
-            RETURN;
-        END;
-
-
-        DELETE FROM dbo.PERFIL_FUNCIONALIDAD
-        WHERE id_perfil = @idPerfil
-          AND id_funcionalidad = @idFuncionalidad;
-
-
-        SET @CodigoResultado = 0;
-        SET @MensajeResultado =
-            N'Permiso quitado correctamente.';
-
-    END TRY
-    BEGIN CATCH
-
-        SET @CodigoResultado = 500;
-        SET @MensajeResultado = ERROR_MESSAGE();
-
-    END CATCH;
-END;
-GO
-
-
--- Compatibilidad histórica: la aplicación guarda perfiles y permisos con sp_Perfil_Guardar.
-CREATE OR ALTER PROCEDURE dbo.sp_Perfil_GuardarFuncionalidades
-    @idPerfil INT,
-    @idsFuncionalidades NVARCHAR(MAX),
-
-    @CodigoResultado INT OUTPUT,
-    @MensajeResultado NVARCHAR(250) OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
-
-    SET @CodigoResultado = 0;
-    SET @MensajeResultado = N'Operación realizada correctamente.';
-
-    BEGIN TRY
-
-        DECLARE @alcanceGlobal BIT;
-
-        DECLARE @Seleccion TABLE
-        (
-            id_funcionalidad INT NOT NULL PRIMARY KEY
-        );
-
-
-        SELECT
-            @alcanceGlobal = p.alcance_global
-        FROM dbo.PERFIL AS p
-        WHERE p.id_perfil = @idPerfil
-          AND p.eliminado_en IS NULL;
-
-
-        IF @alcanceGlobal IS NULL
-        BEGIN
-            SET @CodigoResultado = 1;
-            SET @MensajeResultado =
-                N'El tipo de usuario no existe o está inactivo.';
-            RETURN;
-        END;
-
-
-        IF @alcanceGlobal = 1
-        BEGIN
-            SET @CodigoResultado = 5;
-            SET @MensajeResultado =
-                N'Los permisos del perfil global no pueden modificarse manualmente.';
-            RETURN;
-        END;
-
-
-        SET @idsFuncionalidades =
-            LTRIM(RTRIM(ISNULL(@idsFuncionalidades, N'')));
-
-
-        IF @idsFuncionalidades <> N''
-        BEGIN
-
-            IF EXISTS
-            (
-                SELECT 1
-                FROM STRING_SPLIT(@idsFuncionalidades, N',')
-                WHERE TRY_CONVERT(INT, LTRIM(RTRIM(value))) IS NULL
-                   OR TRY_CONVERT(INT, LTRIM(RTRIM(value))) <= 0
-            )
-            BEGIN
-                SET @CodigoResultado = 3;
-                SET @MensajeResultado =
-                    N'La lista de funcionalidades contiene valores no válidos.';
-                RETURN;
-            END;
-
-
-            INSERT INTO @Seleccion
-            (
-                id_funcionalidad
-            )
-            SELECT DISTINCT
-                TRY_CONVERT(
-                    INT,
-                    LTRIM(RTRIM(value))
-                )
-            FROM STRING_SPLIT(
-                @idsFuncionalidades,
-                N','
-            );
-
-        END;
-
-
-        IF EXISTS
-        (
-            SELECT 1
-            FROM @Seleccion AS seleccion
-            LEFT JOIN dbo.FUNCIONALIDAD AS f
-                ON f.id_funcionalidad =
-                    seleccion.id_funcionalidad
-               AND f.eliminado_en IS NULL
-            WHERE f.id_funcionalidad IS NULL
-        )
-        BEGIN
-            SET @CodigoResultado = 3;
-            SET @MensajeResultado =
-                N'Se seleccionó una funcionalidad inexistente o inactiva.';
-            RETURN;
-        END;
-
-
-        IF EXISTS
-        (
-            SELECT 1
-            FROM @Seleccion AS seleccion
-            INNER JOIN dbo.FUNCIONALIDAD AS f
-                ON f.id_funcionalidad =
-                    seleccion.id_funcionalidad
-            WHERE f.codigo = N'PERMISOS_GESTIONAR'
-              AND f.eliminado_en IS NULL
-        )
-        BEGIN
-            SET @CodigoResultado = 5;
-            SET @MensajeResultado =
-                N'La administración de permisos es exclusiva del perfil global.';
-            RETURN;
-        END;
-
-
-        BEGIN TRANSACTION;
-
-
-        DELETE FROM dbo.PERFIL_FUNCIONALIDAD
-        WHERE id_perfil = @idPerfil;
-
-
-        INSERT INTO dbo.PERFIL_FUNCIONALIDAD
-        (
-            id_perfil,
-            id_funcionalidad
-        )
-        SELECT
-            @idPerfil,
-            seleccion.id_funcionalidad
-        FROM @Seleccion AS seleccion;
-
-
-        COMMIT TRANSACTION;
-
-
-        SET @CodigoResultado = 0;
-        SET @MensajeResultado =
-            N'Permisos actualizados correctamente.';
-
-    END TRY
-    BEGIN CATCH
-
-        IF @@TRANCOUNT > 0
-        BEGIN
-            ROLLBACK TRANSACTION;
-        END;
-
-
-        SET @CodigoResultado = 500;
-        SET @MensajeResultado =
-            LEFT(ERROR_MESSAGE(), 250);
-
-    END CATCH;
-END;
-GO
-
-
 /* ============================================================
    Procedimiento: sp_Perfil_Guardar
 
@@ -1507,6 +1039,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Guardar
     @nombre NVARCHAR(50),
     @descripcion NVARCHAR(200) = NULL,
     @idsFuncionalidades NVARCHAR(MAX) = N'',
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
 
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
@@ -1753,6 +1287,13 @@ BEGIN
             seleccion.id_funcionalidad
         FROM @Seleccion AS seleccion;
 
+        DECLARE @accionAuditoriaPerfil NVARCHAR(50) = CASE WHEN @esAlta = 1 THEN N'ALTA' ELSE N'MODIFICACION' END;
+        DECLARE @detalleAuditoriaPerfil NVARCHAR(300) = CONCAT(N'Tipo de usuario guardado: ', @nombre, N'.');
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = @accionAuditoriaPerfil, @entidad = N'PERFIL',
+            @idEntidad = @idPerfil, @detalle = @detalleAuditoriaPerfil,
+            @idSucursal = @idSucursalAuditoria;
+
         COMMIT TRANSACTION;
 
         SET @IdGenerado = @idPerfil;
@@ -1770,6 +1311,7 @@ BEGIN
         SET @IdGenerado = 0;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = LEFT(ERROR_MESSAGE(), 250);
+        THROW;
 
     END CATCH;
 END;
@@ -1778,17 +1320,23 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Perfil_Baja
     @idPerfil INT,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
 
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
 
         DECLARE @alcanceGlobal BIT;
 
@@ -1833,10 +1381,20 @@ BEGIN
         END;
 
 
+        BEGIN TRANSACTION;
         UPDATE dbo.PERFIL
         SET eliminado_en = SYSDATETIME()
         WHERE id_perfil = @idPerfil
           AND eliminado_en IS NULL;
+
+        DECLARE @nombrePerfilAuditoria NVARCHAR(50);
+        SELECT @nombrePerfilAuditoria = nombre FROM dbo.PERFIL WHERE id_perfil = @idPerfil;
+        DECLARE @detalleAuditoriaPerfilBaja NVARCHAR(300) = CONCAT(N'Tipo de usuario dado de baja: ', @nombrePerfilAuditoria, N'.');
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'BAJA', @entidad = N'PERFIL',
+            @idEntidad = @idPerfil, @detalle = @detalleAuditoriaPerfilBaja,
+            @idSucursal = @idSucursalAuditoria;
+        COMMIT TRANSACTION;
 
 
         SET @CodigoResultado = 0;
@@ -1845,9 +1403,8 @@ BEGIN
 
     END TRY
     BEGIN CATCH
-
-        SET @CodigoResultado = 500;
-        SET @MensajeResultado = ERROR_MESSAGE();
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
 
     END CATCH;
 END;
@@ -2263,6 +1820,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Alta
     @correo NVARCHAR(150) = NULL,
     @telefono NVARCHAR(30) = NULL,
     @idDireccion INT = NULL,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
 
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
@@ -2336,6 +1895,7 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         INSERT INTO dbo.CLIENTE
         (
             nombre,
@@ -2356,13 +1916,21 @@ BEGIN
         );
 
         SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
+        DECLARE @detalleAuditoria NVARCHAR(300) = CONCAT(N'Cliente registrado: ', @nombre, N' ', @apellido);
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'ALTA', @entidad = N'CLIENTE',
+            @idEntidad = @IdGenerado, @detalle = @detalleAuditoria,
+            @idSucursal = @idSucursalAuditoria;
+        COMMIT TRANSACTION;
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Cliente registrado correctamente.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
+        THROW;
     END CATCH;
 END;
 GO
@@ -2376,6 +1944,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Modificar
     @correo NVARCHAR(150) = NULL,
     @telefono NVARCHAR(30) = NULL,
     @idDireccion INT = NULL,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
 
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
@@ -2461,6 +2031,7 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         UPDATE dbo.CLIENTE
         SET
             nombre = @nombre,
@@ -2472,13 +2043,22 @@ BEGIN
         WHERE id_cliente = @idCliente
           AND eliminado_en IS NULL;
 
+        DECLARE @detalleAuditoria NVARCHAR(300) = CONCAT(N'Cliente actualizado: ', @nombre, N' ', @apellido);
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'MODIFICACION', @entidad = N'CLIENTE',
+            @idEntidad = @idCliente, @detalle = @detalleAuditoria,
+            @idSucursal = @idSucursalAuditoria;
+        COMMIT TRANSACTION;
+
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Cliente modificado correctamente.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
+        THROW;
     END CATCH;
 END;
 GO
@@ -2486,6 +2066,8 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Baja
     @id_cliente INT,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
@@ -2510,16 +2092,24 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         UPDATE dbo.CLIENTE
         SET eliminado_en = SYSDATETIME()
         WHERE id_cliente = @id_cliente
           AND eliminado_en IS NULL;
+
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'BAJA', @entidad = N'CLIENTE',
+            @idEntidad = @id_cliente, @detalle = N'Cliente dado de baja.',
+            @idSucursal = @idSucursalAuditoria;
+        COMMIT TRANSACTION;
 
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Cliente dado de baja correctamente.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
     END CATCH;
@@ -2588,6 +2178,8 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Cliente_Reactivar
     @id_cliente INT,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
@@ -2611,14 +2203,22 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         UPDATE dbo.CLIENTE
         SET eliminado_en = NULL
         WHERE id_cliente = @id_cliente
           AND eliminado_en IS NOT NULL;
 
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'REACTIVACION', @entidad = N'CLIENTE',
+            @idEntidad = @id_cliente, @detalle = N'Cliente reactivado.',
+            @idSucursal = @idSucursalAuditoria;
+        COMMIT TRANSACTION;
+
         SET @MensajeResultado = N'Cliente dado de alta correctamente.';
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
     END CATCH;
@@ -2640,6 +2240,105 @@ BEGIN
 END;
 GO
 
+CREATE OR ALTER PROCEDURE dbo.sp_Categoria_ListarGestion
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT c.id_categoria, c.nombre, c.descripcion,
+           CONVERT(BIT, CASE WHEN c.eliminado_en IS NULL THEN 1 ELSE 0 END) AS activo,
+           COUNT(p.id_producto) AS cantidad_productos
+    FROM dbo.CATEGORIA c
+    LEFT JOIN dbo.PRODUCTO p ON p.id_categoria=c.id_categoria
+    GROUP BY c.id_categoria,c.nombre,c.descripcion,c.eliminado_en
+    ORDER BY c.nombre;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Categoria_Guardar
+    @idCategoria INT,
+    @nombre NVARCHAR(100),
+    @descripcion NVARCHAR(200)=NULL,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT=NULL,
+    @IdGenerado INT OUTPUT,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON; SET XACT_ABORT ON;
+    SET @CodigoResultado=0; SET @MensajeResultado=N'Categoría guardada.'; SET @IdGenerado=0;
+    SET @nombre=LTRIM(RTRIM(ISNULL(@nombre,N'')));
+    WHILE CHARINDEX(N'  ',@nombre)>0 SET @nombre=REPLACE(@nombre,N'  ',N' ');
+    SET @descripcion=NULLIF(LTRIM(RTRIM(@descripcion)),N'');
+    DECLARE @permiso NVARCHAR(50)=CASE WHEN @idCategoria=0 THEN N'CATEGORIAS_ALTA' ELSE N'CATEGORIAS_MODIFICAR' END;
+    IF @nombre=N'' OR LEN(@nombre)>100 BEGIN SET @CodigoResultado=1; SET @MensajeResultado=N'El nombre de categoría es obligatorio y admite hasta 100 caracteres.'; RETURN; END;
+    IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO u JOIN dbo.PERFIL p ON p.id_perfil=u.id_perfil JOIN dbo.PERFIL_FUNCIONALIDAD pf ON pf.id_perfil=p.id_perfil JOIN dbo.FUNCIONALIDAD f ON f.id_funcionalidad=pf.id_funcionalidad WHERE u.id_usuario=@idUsuarioEjecutor AND u.eliminado_en IS NULL AND p.eliminado_en IS NULL AND f.codigo=@permiso AND f.eliminado_en IS NULL)
+        THROW 51000,'El usuario no está activo o no tiene permiso para gestionar categorías.',1;
+    IF EXISTS (SELECT 1 FROM dbo.CATEGORIA WHERE UPPER(LTRIM(RTRIM(nombre)))=UPPER(@nombre) AND id_categoria<>@idCategoria)
+    BEGIN SET @CodigoResultado=2; SET @MensajeResultado=N'Ya existe una categoría con ese nombre.'; RETURN; END;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        IF @idCategoria=0
+        BEGIN
+            INSERT dbo.CATEGORIA(nombre,descripcion) VALUES(@nombre,@descripcion);
+            SET @IdGenerado=CONVERT(INT,SCOPE_IDENTITY());
+        END
+        ELSE
+        BEGIN
+            UPDATE dbo.CATEGORIA SET nombre=@nombre,descripcion=@descripcion WHERE id_categoria=@idCategoria AND eliminado_en IS NULL;
+            IF @@ROWCOUNT=0 THROW 51001,'La categoría no existe o está inactiva.',1;
+            SET @IdGenerado=@idCategoria;
+        END;
+        DECLARE @accion NVARCHAR(50)=CASE WHEN @idCategoria=0 THEN N'ALTA' ELSE N'MODIFICACION' END;
+        DECLARE @detalle NVARCHAR(500)=CONCAT(N'Categoría ',LOWER(@accion),N': ',@nombre,N'.');
+        EXEC dbo.sp_Auditoria_Registrar @idUsuario=@idUsuarioEjecutor,@accion=@accion,@entidad=N'CATEGORIA',@idEntidad=@IdGenerado,@detalle=@detalle,@idSucursal=@idSucursalAuditoria;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Categoria_Baja
+    @idCategoria INT,@idUsuarioEjecutor INT,@idSucursalAuditoria INT=NULL,
+    @CodigoResultado INT OUTPUT,@MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON; SET XACT_ABORT ON; SET @CodigoResultado=0;
+    IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO u JOIN dbo.PERFIL p ON p.id_perfil=u.id_perfil JOIN dbo.PERFIL_FUNCIONALIDAD pf ON pf.id_perfil=p.id_perfil JOIN dbo.FUNCIONALIDAD f ON f.id_funcionalidad=pf.id_funcionalidad WHERE u.id_usuario=@idUsuarioEjecutor AND u.eliminado_en IS NULL AND p.eliminado_en IS NULL AND f.codigo=N'CATEGORIAS_BAJA' AND f.eliminado_en IS NULL) THROW 51000,'El usuario no está activo o no tiene permiso para dar de baja categorías.',1;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        UPDATE dbo.CATEGORIA SET eliminado_en=SYSDATETIME() WHERE id_categoria=@idCategoria AND eliminado_en IS NULL;
+        IF @@ROWCOUNT=0 THROW 51001,'La categoría no existe o ya está inactiva.',1;
+        DECLARE @nombre NVARCHAR(100); SELECT @nombre=nombre FROM dbo.CATEGORIA WHERE id_categoria=@idCategoria;
+        DECLARE @detalle NVARCHAR(500)=CONCAT(N'Categoría dada de baja: ',@nombre,N'.');
+        EXEC dbo.sp_Auditoria_Registrar @idUsuario=@idUsuarioEjecutor,@accion=N'BAJA',@entidad=N'CATEGORIA',@idEntidad=@idCategoria,@detalle=@detalle,@idSucursal=@idSucursalAuditoria;
+        COMMIT TRANSACTION; SET @MensajeResultado=N'Categoría dada de baja.';
+    END TRY BEGIN CATCH IF XACT_STATE()<>0 ROLLBACK TRANSACTION; THROW; END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Categoria_Reactivar
+    @idCategoria INT,@idUsuarioEjecutor INT,@idSucursalAuditoria INT=NULL,
+    @CodigoResultado INT OUTPUT,@MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON; SET XACT_ABORT ON; SET @CodigoResultado=0;
+    IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO u JOIN dbo.PERFIL p ON p.id_perfil=u.id_perfil JOIN dbo.PERFIL_FUNCIONALIDAD pf ON pf.id_perfil=p.id_perfil JOIN dbo.FUNCIONALIDAD f ON f.id_funcionalidad=pf.id_funcionalidad WHERE u.id_usuario=@idUsuarioEjecutor AND u.eliminado_en IS NULL AND p.eliminado_en IS NULL AND f.codigo=N'CATEGORIAS_BAJA' AND f.eliminado_en IS NULL) THROW 51000,'El usuario no está activo o no tiene permiso para reactivar categorías.',1;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        UPDATE dbo.CATEGORIA SET eliminado_en=NULL WHERE id_categoria=@idCategoria AND eliminado_en IS NOT NULL;
+        IF @@ROWCOUNT=0 THROW 51001,'La categoría no existe o ya está activa.',1;
+        DECLARE @nombre NVARCHAR(100); SELECT @nombre=nombre FROM dbo.CATEGORIA WHERE id_categoria=@idCategoria;
+        DECLARE @detalle NVARCHAR(500)=CONCAT(N'Categoría reactivada: ',@nombre,N'.');
+        EXEC dbo.sp_Auditoria_Registrar @idUsuario=@idUsuarioEjecutor,@accion=N'REACTIVACION',@entidad=N'CATEGORIA',@idEntidad=@idCategoria,@detalle=@detalle,@idSucursal=@idSucursalAuditoria;
+        COMMIT TRANSACTION; SET @MensajeResultado=N'Categoría reactivada.';
+    END TRY BEGIN CATCH IF XACT_STATE()<>0 ROLLBACK TRANSACTION; THROW; END CATCH;
+END;
+GO
+
 
 -- ============================================================
 -- MARCAS
@@ -2656,6 +2355,113 @@ BEGIN
     FROM dbo.MARCA
     WHERE eliminado_en IS NULL
     ORDER BY nombre;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Marca_ListarPorCategoria @idCategoria INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT m.id_marca,m.nombre FROM dbo.MARCA_CATEGORIA mc
+    JOIN dbo.MARCA m ON m.id_marca=mc.id_marca
+    JOIN dbo.CATEGORIA c ON c.id_categoria=mc.id_categoria
+    WHERE mc.id_categoria=@idCategoria AND m.eliminado_en IS NULL AND c.eliminado_en IS NULL
+    ORDER BY m.nombre;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Marca_ListarGestion
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT m.id_marca,m.nombre,CONVERT(BIT,CASE WHEN m.eliminado_en IS NULL THEN 1 ELSE 0 END) activo,
+           COUNT(mc.id_categoria) cantidad_categorias
+    FROM dbo.MARCA m LEFT JOIN dbo.MARCA_CATEGORIA mc ON mc.id_marca=m.id_marca
+    GROUP BY m.id_marca,m.nombre,m.eliminado_en ORDER BY m.nombre;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Marca_CategoriasObtener @idMarca INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SELECT id_categoria FROM dbo.MARCA_CATEGORIA WHERE id_marca=@idMarca ORDER BY id_categoria;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Marca_Guardar
+    @idMarca INT,@nombre NVARCHAR(100),@categorias NVARCHAR(MAX),@idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT=NULL,@IdGenerado INT OUTPUT,@CodigoResultado INT OUTPUT,@MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON; SET XACT_ABORT ON; SET @IdGenerado=0; SET @CodigoResultado=0; SET @MensajeResultado=N'Marca guardada.';
+    SET @nombre=LTRIM(RTRIM(ISNULL(@nombre,N'')));
+    WHILE CHARINDEX(N'  ',@nombre)>0 SET @nombre=REPLACE(@nombre,N'  ',N' ');
+    DECLARE @permiso NVARCHAR(50)=CASE WHEN @idMarca=0 THEN N'MARCAS_ALTA' ELSE N'MARCAS_MODIFICAR' END;
+    IF @nombre=N'' OR LEN(@nombre)>100 BEGIN SET @CodigoResultado=1; SET @MensajeResultado=N'El nombre de marca es obligatorio y admite hasta 100 caracteres.'; RETURN; END;
+    IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO u JOIN dbo.PERFIL p ON p.id_perfil=u.id_perfil JOIN dbo.PERFIL_FUNCIONALIDAD pf ON pf.id_perfil=p.id_perfil JOIN dbo.FUNCIONALIDAD f ON f.id_funcionalidad=pf.id_funcionalidad WHERE u.id_usuario=@idUsuarioEjecutor AND u.eliminado_en IS NULL AND p.eliminado_en IS NULL AND f.codigo=@permiso AND f.eliminado_en IS NULL) THROW 51000,'El usuario no está activo o no tiene permiso para gestionar marcas.',1;
+    IF EXISTS (SELECT 1 FROM dbo.MARCA WHERE UPPER(LTRIM(RTRIM(nombre)))=UPPER(@nombre) AND id_marca<>@idMarca)
+    BEGIN SET @CodigoResultado=2; SET @MensajeResultado=N'Ya existe una marca con ese nombre.'; RETURN; END;
+    DECLARE @Ids TABLE(id_categoria INT PRIMARY KEY);
+    BEGIN TRY
+        INSERT @Ids(id_categoria) SELECT TRY_CONVERT(INT,value) FROM STRING_SPLIT(ISNULL(@categorias,N''),N',');
+    END TRY BEGIN CATCH SET @CodigoResultado=1; SET @MensajeResultado=N'La selección de categorías contiene valores duplicados o inválidos.'; RETURN; END CATCH;
+    IF NOT EXISTS(SELECT 1 FROM @Ids) OR EXISTS(SELECT 1 FROM @Ids i LEFT JOIN dbo.CATEGORIA c ON c.id_categoria=i.id_categoria AND c.eliminado_en IS NULL WHERE c.id_categoria IS NULL)
+    BEGIN SET @CodigoResultado=1; SET @MensajeResultado=N'Seleccioná al menos una categoría activa válida.'; RETURN; END;
+    IF @idMarca>0 AND EXISTS
+    (
+        SELECT 1 FROM dbo.PRODUCTO p
+        WHERE p.id_marca=@idMarca
+          AND NOT EXISTS(SELECT 1 FROM @Ids i WHERE i.id_categoria=p.id_categoria)
+    )
+    BEGIN SET @CodigoResultado=1; SET @MensajeResultado=N'No se pueden quitar categorías utilizadas por productos existentes.'; RETURN; END;
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        IF @idMarca=0 BEGIN INSERT dbo.MARCA(nombre) VALUES(@nombre); SET @IdGenerado=CONVERT(INT,SCOPE_IDENTITY()); END
+        ELSE BEGIN UPDATE dbo.MARCA SET nombre=@nombre WHERE id_marca=@idMarca AND eliminado_en IS NULL; IF @@ROWCOUNT=0 THROW 51001,'La marca no existe o está inactiva.',1; SET @IdGenerado=@idMarca; END;
+        DELETE FROM dbo.MARCA_CATEGORIA WHERE id_marca=@IdGenerado;
+        INSERT dbo.MARCA_CATEGORIA(id_marca,id_categoria) SELECT @IdGenerado,id_categoria FROM @Ids;
+        DECLARE @accion NVARCHAR(50)=CASE WHEN @idMarca=0 THEN N'ALTA' ELSE N'MODIFICACION' END;
+        DECLARE @cantidadCategorias INT=(SELECT COUNT(*) FROM @Ids);
+        DECLARE @detalle NVARCHAR(500)=CONCAT(N'Marca ',LOWER(@accion),N': ',@nombre,N' (categorías vinculadas: ',@cantidadCategorias,N').');
+        EXEC dbo.sp_Auditoria_Registrar @idUsuario=@idUsuarioEjecutor,@accion=@accion,@entidad=N'MARCA',@idEntidad=@IdGenerado,@detalle=@detalle,@idSucursal=@idSucursalAuditoria;
+        COMMIT TRANSACTION;
+    END TRY BEGIN CATCH IF XACT_STATE()<>0 ROLLBACK TRANSACTION; THROW; END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Marca_Baja
+    @idMarca INT,@idUsuarioEjecutor INT,@idSucursalAuditoria INT=NULL,@CodigoResultado INT OUTPUT,@MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON; SET XACT_ABORT ON; SET @CodigoResultado=0;
+    IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO u JOIN dbo.PERFIL p ON p.id_perfil=u.id_perfil JOIN dbo.PERFIL_FUNCIONALIDAD pf ON pf.id_perfil=p.id_perfil JOIN dbo.FUNCIONALIDAD f ON f.id_funcionalidad=pf.id_funcionalidad WHERE u.id_usuario=@idUsuarioEjecutor AND u.eliminado_en IS NULL AND p.eliminado_en IS NULL AND f.codigo=N'MARCAS_BAJA' AND f.eliminado_en IS NULL) THROW 51000,'El usuario no está activo o no tiene permiso para dar de baja marcas.',1;
+    BEGIN TRY BEGIN TRANSACTION;
+        UPDATE dbo.MARCA SET eliminado_en=SYSDATETIME() WHERE id_marca=@idMarca AND eliminado_en IS NULL;
+        IF @@ROWCOUNT=0 THROW 51001,'La marca no existe o ya está inactiva.',1;
+        DECLARE @nombre NVARCHAR(100); SELECT @nombre=nombre FROM dbo.MARCA WHERE id_marca=@idMarca;
+        DECLARE @detalle NVARCHAR(500)=CONCAT(N'Marca dada de baja: ',@nombre,N'.');
+        EXEC dbo.sp_Auditoria_Registrar @idUsuario=@idUsuarioEjecutor,@accion=N'BAJA',@entidad=N'MARCA',@idEntidad=@idMarca,@detalle=@detalle,@idSucursal=@idSucursalAuditoria;
+        COMMIT TRANSACTION; SET @MensajeResultado=N'Marca dada de baja.';
+    END TRY BEGIN CATCH IF XACT_STATE()<>0 ROLLBACK TRANSACTION; THROW; END CATCH;
+END;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.sp_Marca_Reactivar
+    @idMarca INT,@idUsuarioEjecutor INT,@idSucursalAuditoria INT=NULL,@CodigoResultado INT OUTPUT,@MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON; SET XACT_ABORT ON; SET @CodigoResultado=0;
+    IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO u JOIN dbo.PERFIL p ON p.id_perfil=u.id_perfil JOIN dbo.PERFIL_FUNCIONALIDAD pf ON pf.id_perfil=p.id_perfil JOIN dbo.FUNCIONALIDAD f ON f.id_funcionalidad=pf.id_funcionalidad WHERE u.id_usuario=@idUsuarioEjecutor AND u.eliminado_en IS NULL AND p.eliminado_en IS NULL AND f.codigo=N'MARCAS_BAJA' AND f.eliminado_en IS NULL) THROW 51000,'El usuario no está activo o no tiene permiso para reactivar marcas.',1;
+    IF NOT EXISTS(SELECT 1 FROM dbo.MARCA_CATEGORIA mc JOIN dbo.CATEGORIA c ON c.id_categoria=mc.id_categoria AND c.eliminado_en IS NULL WHERE mc.id_marca=@idMarca) BEGIN SET @CodigoResultado=1; SET @MensajeResultado=N'La marca necesita al menos una categoría activa para reactivarse.'; RETURN; END;
+    BEGIN TRY BEGIN TRANSACTION;
+        UPDATE dbo.MARCA SET eliminado_en=NULL WHERE id_marca=@idMarca AND eliminado_en IS NOT NULL;
+        IF @@ROWCOUNT=0 THROW 51001,'La marca no existe o ya está activa.',1;
+        DECLARE @nombre NVARCHAR(100); SELECT @nombre=nombre FROM dbo.MARCA WHERE id_marca=@idMarca;
+        DECLARE @detalle NVARCHAR(500)=CONCAT(N'Marca reactivada: ',@nombre,N'.');
+        EXEC dbo.sp_Auditoria_Registrar @idUsuario=@idUsuarioEjecutor,@accion=N'REACTIVACION',@entidad=N'MARCA',@idEntidad=@idMarca,@detalle=@detalle,@idSucursal=@idSucursalAuditoria;
+        COMMIT TRANSACTION; SET @MensajeResultado=N'Marca reactivada.';
+    END TRY BEGIN CATCH IF XACT_STATE()<>0 ROLLBACK TRANSACTION; THROW; END CATCH;
 END;
 GO
 
@@ -2691,10 +2497,14 @@ BEGIN
     LEFT JOIN dbo.MARCA AS m
         ON m.id_marca = p.id_marca
        AND m.eliminado_en IS NULL
-    LEFT JOIN dbo.INVENTARIO AS i
+    INNER JOIN dbo.INVENTARIO AS i
         ON i.id_producto = p.id_producto
        AND i.id_sucursal = @idSucursal
        AND i.eliminado_en IS NULL
+       AND i.stock > 0
+    INNER JOIN dbo.SUCURSAL AS s
+        ON s.id_sucursal = i.id_sucursal
+       AND s.eliminado_en IS NULL
     WHERE p.eliminado_en IS NULL
       AND p.activo = 1
       AND
@@ -2778,6 +2588,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Producto_Alta
     @precioCosto DECIMAL(18,2),
     @porcentajeGanancia DECIMAL(5,2),
     @activo BIT = 1,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
 
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
@@ -2785,12 +2597,16 @@ CREATE OR ALTER PROCEDURE dbo.sp_Producto_Alta
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
 
         SET @codigoBarra = NULLIF(LTRIM(RTRIM(@codigoBarra)), N'');
         SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
@@ -2811,10 +2627,10 @@ BEGIN
         IF @idMarca IS NOT NULL
            AND NOT EXISTS
            (
-               SELECT 1
-               FROM dbo.MARCA
-               WHERE id_marca = @idMarca
-                 AND eliminado_en IS NULL
+               SELECT 1 FROM dbo.MARCA_CATEGORIA mc
+               INNER JOIN dbo.MARCA m ON m.id_marca=mc.id_marca AND m.eliminado_en IS NULL
+               INNER JOIN dbo.CATEGORIA c ON c.id_categoria=mc.id_categoria AND c.eliminado_en IS NULL
+               WHERE mc.id_marca=@idMarca AND mc.id_categoria=@idCategoria
            )
         BEGIN
             SET @CodigoResultado = 1;
@@ -2846,6 +2662,7 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         INSERT INTO dbo.PRODUCTO
         (
             id_categoria,
@@ -2870,11 +2687,19 @@ BEGIN
         );
 
         SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
+        DECLARE @detalleAuditoriaProducto NVARCHAR(300) = CONCAT(N'Producto registrado: ', @nombre, N'.');
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'ALTA', @entidad = N'PRODUCTO',
+            @idEntidad = @IdGenerado, @detalle = @detalleAuditoriaProducto,
+            @idSucursal = @idSucursalAuditoria;
+        COMMIT TRANSACTION;
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Producto registrado correctamente.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
     END CATCH;
@@ -2892,28 +2717,33 @@ CREATE OR ALTER PROCEDURE dbo.sp_Producto_Modificar
     @precioCosto DECIMAL(18,2),
     @porcentajeGanancia DECIMAL(5,2),
     @activo BIT,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
 
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    DECLARE @activoAnterior BIT;
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
 
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
+
         SET @codigoBarra = NULLIF(LTRIM(RTRIM(@codigoBarra)), N'');
         SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
 
-        IF NOT EXISTS
-        (
-            SELECT 1
-            FROM dbo.PRODUCTO
-            WHERE id_producto = @idProducto
-              AND eliminado_en IS NULL
-        )
+        SELECT @activoAnterior = activo
+        FROM dbo.PRODUCTO
+        WHERE id_producto = @idProducto AND eliminado_en IS NULL;
+
+        IF @activoAnterior IS NULL
         BEGIN
             SET @CodigoResultado = 1;
             SET @MensajeResultado = N'El producto no existe o fue dado de baja.';
@@ -2936,10 +2766,10 @@ BEGIN
         IF @idMarca IS NOT NULL
            AND NOT EXISTS
            (
-               SELECT 1
-               FROM dbo.MARCA
-               WHERE id_marca = @idMarca
-                 AND eliminado_en IS NULL
+               SELECT 1 FROM dbo.MARCA_CATEGORIA mc
+               INNER JOIN dbo.MARCA m ON m.id_marca=mc.id_marca AND m.eliminado_en IS NULL
+               INNER JOIN dbo.CATEGORIA c ON c.id_categoria=mc.id_categoria AND c.eliminado_en IS NULL
+               WHERE mc.id_marca=@idMarca AND mc.id_categoria=@idCategoria
            )
         BEGIN
             SET @CodigoResultado = 1;
@@ -2972,6 +2802,7 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         UPDATE dbo.PRODUCTO
         SET
             id_categoria = @idCategoria,
@@ -2985,11 +2816,24 @@ BEGIN
         WHERE id_producto = @idProducto
           AND eliminado_en IS NULL;
 
+        DECLARE @accionAuditoriaProducto NVARCHAR(50) =
+            CASE WHEN @activoAnterior = 0 AND @activo = 1 THEN N'REACTIVACION'
+                 WHEN @activoAnterior = 1 AND @activo = 0 THEN N'BAJA'
+                 ELSE N'MODIFICACION' END;
+        DECLARE @detalleAuditoriaProducto NVARCHAR(300) = CONCAT(N'Producto actualizado: ', @nombre, N'.');
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = @accionAuditoriaProducto, @entidad = N'PRODUCTO',
+            @idEntidad = @idProducto, @detalle = @detalleAuditoriaProducto,
+            @idSucursal = @idSucursalAuditoria;
+        COMMIT TRANSACTION;
+
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Producto modificado correctamente.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
     END CATCH;
@@ -2999,16 +2843,22 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Producto_Baja
     @idProducto INT,
+    @idUsuarioEjecutor INT,
+    @idSucursalAuditoria INT = NULL,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
 
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
 
         IF NOT EXISTS
         (
@@ -3023,16 +2873,25 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         UPDATE dbo.PRODUCTO
         SET eliminado_en = SYSDATETIME()
         WHERE id_producto = @idProducto
           AND eliminado_en IS NULL;
+
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'BAJA', @entidad = N'PRODUCTO',
+            @idEntidad = @idProducto, @detalle = N'Producto dado de baja.',
+            @idSucursal = @idSucursalAuditoria;
+        COMMIT TRANSACTION;
 
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Producto dado de baja correctamente.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
     END CATCH;
@@ -3231,6 +3090,14 @@ BEGIN
             RETURN;
         END;
 
+        DECLARE @stockAnterior INT;
+        SELECT @stockAnterior = stock
+        FROM dbo.INVENTARIO
+        WHERE id_producto = @idProducto
+          AND id_sucursal = @idSucursal;
+
+        BEGIN TRANSACTION;
+
         IF EXISTS
         (
             SELECT 1
@@ -3265,11 +3132,25 @@ BEGIN
             );
         END;
 
+        DECLARE @detalleAuditoria NVARCHAR(300);
+        SET @detalleAuditoria = CONCAT(N'Stock actualizado de ', COALESCE(CONVERT(NVARCHAR(20), @stockAnterior), N'0'), N' a ', @stock, N'.');
+
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuario,
+            @accion = N'MODIFICACION',
+            @entidad = N'INVENTARIO',
+            @idEntidad = @idProducto,
+            @detalle = @detalleAuditoria,
+            @idSucursal = @idSucursal;
+
+        COMMIT TRANSACTION;
+
         SET @CodigoResultado = 0;
         SET @MensajeResultado = N'Stock actualizado correctamente para la sucursal indicada.';
 
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
     END CATCH;
@@ -4082,6 +3963,17 @@ BEGIN
         END;
 
 
+        DECLARE @detalleAuditoria NVARCHAR(300);
+        SET @detalleAuditoria = CONCAT(N'Venta registrada por $', CONVERT(NVARCHAR(30), @Total), N'.');
+
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuario,
+            @accion = N'ALTA',
+            @entidad = N'VENTA',
+            @idEntidad = @IdGenerado,
+            @detalle = @detalleAuditoria,
+            @idSucursal = @idSucursal;
+
         COMMIT TRANSACTION;
 
 
@@ -4106,6 +3998,177 @@ BEGIN
             LEFT(ERROR_MESSAGE(), 250);
 
     END CATCH;
+END;
+GO
+
+
+-- ============================================================
+-- AUDITORÍA
+-- ============================================================
+
+-- Inserta un evento breve sin almacenar contraseñas ni valores sensibles.
+CREATE OR ALTER PROCEDURE dbo.sp_Auditoria_Registrar
+    @idUsuario INT,
+    @accion NVARCHAR(50),
+    @entidad NVARCHAR(50),
+    @idEntidad INT = NULL,
+    @detalle NVARCHAR(300) = NULL,
+    @idSucursal INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+
+    IF @idUsuario IS NULL OR NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.USUARIO AS u
+        INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil
+        WHERE u.id_usuario = @idUsuario
+          AND u.eliminado_en IS NULL
+          AND p.eliminado_en IS NULL
+    )
+        THROW 51000, 'El usuario auditor no está activo.', 1;
+
+    IF LEN(LTRIM(RTRIM(ISNULL(@accion, N'')))) = 0
+       OR LEN(LTRIM(RTRIM(ISNULL(@entidad, N'')))) = 0
+        THROW 51000, 'La acción y la entidad de auditoría son obligatorias.', 1;
+
+    IF @idSucursal IS NOT NULL AND NOT EXISTS
+    (
+        SELECT 1 FROM dbo.SUCURSAL
+        WHERE id_sucursal = @idSucursal
+    )
+        THROW 51000, 'La sucursal de auditoría no existe.', 1;
+
+    INSERT INTO dbo.AUDITORIA
+    (
+        id_usuario, accion, entidad, id_entidad, detalle, id_sucursal
+    )
+    VALUES
+    (
+        @idUsuario,
+        LEFT(LTRIM(RTRIM(@accion)), 50),
+        LEFT(LTRIM(RTRIM(@entidad)), 50),
+        @idEntidad,
+        NULLIF(LEFT(LTRIM(RTRIM(ISNULL(@detalle, N''))), 300), N''),
+        @idSucursal
+    );
+END;
+GO
+
+
+-- Lista actividad administrativa aplicando el permiso y el alcance efectivo del solicitante.
+CREATE OR ALTER PROCEDURE dbo.sp_Auditoria_Listar
+    @idUsuarioSolicitante INT,
+    @desde DATE,
+    @hasta DATE,
+    @idSucursal INT = NULL,
+    @idUsuario INT = NULL
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    DECLARE @alcanceGlobal BIT, @sucursalAsignada INT, @perfil INT;
+
+    SELECT
+        @perfil = u.id_perfil,
+        @alcanceGlobal = p.alcance_global,
+        @sucursalAsignada = u.id_sucursal
+    FROM dbo.USUARIO AS u
+    INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil
+    WHERE u.id_usuario = @idUsuarioSolicitante
+      AND u.eliminado_en IS NULL
+      AND p.eliminado_en IS NULL;
+
+    IF @perfil IS NULL
+        THROW 51000, 'El usuario solicitante no está activo.', 1;
+
+    IF @desde IS NULL OR @hasta IS NULL OR @desde > @hasta
+        THROW 51000, 'El período indicado no es válido.', 1;
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+        INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+        WHERE pf.id_perfil = @perfil
+          AND f.codigo = N'REPORTES_VER'
+          AND f.eliminado_en IS NULL
+    )
+        THROW 51000, 'No tiene permiso para acceder a Reportes.', 1;
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+        INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+        WHERE pf.id_perfil = @perfil
+          AND f.codigo = N'REPORTES_RENDIMIENTO_VENDEDORES'
+          AND f.eliminado_en IS NULL
+    )
+        THROW 51000, 'No tiene permiso para consultar actividad por usuario.', 1;
+
+    IF @alcanceGlobal = 1
+    BEGIN
+        IF NOT EXISTS
+        (
+            SELECT 1
+            FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+            INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+            WHERE pf.id_perfil = @perfil
+              AND f.codigo = N'REPORTES_ALCANCE_GLOBAL'
+              AND f.eliminado_en IS NULL
+        )
+            THROW 51000, 'El perfil no posee alcance global de Reportes.', 1;
+    END
+    ELSE IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+        INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+        WHERE pf.id_perfil = @perfil
+          AND f.codigo = N'REPORTES_ALCANCE_SUCURSAL'
+          AND f.eliminado_en IS NULL
+    )
+    BEGIN
+        IF @sucursalAsignada IS NULL
+           OR NOT EXISTS
+              (SELECT 1 FROM dbo.SUCURSAL WHERE id_sucursal = @sucursalAsignada AND eliminado_en IS NULL)
+            THROW 51000, 'El perfil requiere una sucursal fija activa para consultar este alcance.', 1;
+
+        SET @idSucursal = @sucursalAsignada;
+        SET @idUsuario = NULL;
+    END
+    ELSE IF EXISTS
+    (
+        SELECT 1
+        FROM dbo.PERFIL_FUNCIONALIDAD AS pf
+        INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+        WHERE pf.id_perfil = @perfil
+          AND f.codigo = N'REPORTES_ALCANCE_PROPIO'
+          AND f.eliminado_en IS NULL
+    )
+    BEGIN
+        SET @idUsuario = @idUsuarioSolicitante;
+        SET @idSucursal = NULL;
+    END
+    ELSE
+        THROW 51000, 'El perfil no posee un alcance válido de Reportes.', 1;
+
+    SELECT
+        a.fecha,
+        a.accion,
+        a.entidad,
+        a.detalle,
+        s.nombre AS sucursal
+    FROM dbo.AUDITORIA AS a
+    LEFT JOIN dbo.SUCURSAL AS s ON s.id_sucursal = a.id_sucursal
+    WHERE a.fecha >= @desde
+      AND a.fecha < DATEADD(DAY, 1, @hasta)
+      AND (@idUsuario IS NULL OR a.id_usuario = @idUsuario)
+      AND (@idSucursal IS NULL OR a.id_sucursal = @idSucursal)
+    ORDER BY a.fecha DESC, a.id_auditoria DESC;
 END;
 GO
 
@@ -4237,16 +4300,18 @@ GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Reporte_StockBajo @idSucursal INT = NULL
 AS BEGIN SET NOCOUNT ON;
- SELECT p.nombre producto,s.nombre sucursal,i.stock,i.stock_minimo FROM dbo.INVENTARIO i
- INNER JOIN dbo.PRODUCTO p ON p.id_producto=i.id_producto INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=i.id_sucursal
+ SELECT p.id_producto,s.id_sucursal,p.codigo_barra,p.nombre producto,c.nombre categoria,s.nombre sucursal,i.stock,i.stock_minimo FROM dbo.INVENTARIO i
+ INNER JOIN dbo.PRODUCTO p ON p.id_producto=i.id_producto INNER JOIN dbo.CATEGORIA c ON c.id_categoria=p.id_categoria INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=i.id_sucursal
  WHERE i.eliminado_en IS NULL AND p.eliminado_en IS NULL AND p.activo=1 AND s.eliminado_en IS NULL AND i.stock<=i.stock_minimo
  AND (@idSucursal IS NULL OR i.id_sucursal=@idSucursal) ORDER BY s.nombre,p.nombre; END;
 GO
 
 CREATE OR ALTER PROCEDURE dbo.sp_Reporte_DetalleVentas @desde DATE, @hasta DATE, @idSucursal INT = NULL, @idUsuario INT = NULL
 AS BEGIN SET NOCOUNT ON;
- SELECT v.id_venta,v.fecha_hora,CONCAT(c.nombre,N' ',c.apellido) cliente,CONCAT(u.nombre,N' ',u.apellido) vendedor,s.nombre sucursal,v.subtotal,v.descuento,v.total
+ SELECT v.id_venta,v.fecha_hora,CONCAT(c.nombre,N' ',c.apellido) cliente,CONCAT(u.nombre,N' ',u.apellido) vendedor,s.nombre sucursal,v.subtotal,v.descuento,v.total,
+        pagos.metodos_pago
  FROM dbo.VENTA v INNER JOIN dbo.CLIENTE c ON c.id_cliente=v.id_cliente INNER JOIN dbo.USUARIO u ON u.id_usuario=v.id_usuario INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=v.id_sucursal
+ OUTER APPLY (SELECT STRING_AGG(mp.nombre,N', ') metodos_pago FROM dbo.PAGO p INNER JOIN dbo.METODO_PAGO mp ON mp.id_metodo_pago=p.id_metodo_pago WHERE p.id_venta=v.id_venta AND p.eliminado_en IS NULL) pagos
  WHERE v.eliminado_en IS NULL AND v.fecha_hora>=@desde AND v.fecha_hora<DATEADD(DAY,1,@hasta)
  AND (@idSucursal IS NULL OR v.id_sucursal=@idSucursal) AND (@idUsuario IS NULL OR v.id_usuario=@idUsuario) ORDER BY v.fecha_hora DESC; END;
 GO
@@ -4328,12 +4393,14 @@ CREATE OR ALTER PROCEDURE dbo.sp_Sucursal_Alta
     @nombre NVARCHAR(100),
     @idLocalidad INT,
     @calle NVARCHAR(150),
+    @idUsuarioEjecutor INT,
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
@@ -4344,6 +4411,8 @@ BEGIN
     WHILE CHARINDEX(N'  ', @calle) > 0 SET @calle = REPLACE(@calle, N'  ', N' ');
 
     BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
         IF @nombre = N'' OR LEN(@nombre) > 100
         BEGIN
             SET @CodigoResultado = 3;
@@ -4384,6 +4453,12 @@ BEGIN
 
         SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
 
+        DECLARE @detalleAuditoriaSucursal NVARCHAR(300) = CONCAT(N'Sucursal registrada: ', @nombre, N'.');
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'ALTA', @entidad = N'SUCURSAL',
+            @idEntidad = @IdGenerado, @detalle = @detalleAuditoriaSucursal,
+            @idSucursal = @IdGenerado;
+
         COMMIT TRANSACTION;
         SET @MensajeResultado = N'Sucursal registrada correctamente.';
     END TRY
@@ -4391,6 +4466,7 @@ BEGIN
         IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
+        THROW;
     END CATCH;
 END;
 GO
@@ -4402,12 +4478,14 @@ CREATE OR ALTER PROCEDURE dbo.sp_Sucursal_Modificar
     @nombre NVARCHAR(100),
     @idLocalidad INT,
     @calle NVARCHAR(150),
+    @idUsuarioEjecutor INT,
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
@@ -4418,6 +4496,8 @@ BEGIN
     WHILE CHARINDEX(N'  ', @calle) > 0 SET @calle = REPLACE(@calle, N'  ', N' ');
 
     BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
         IF NOT EXISTS (SELECT 1 FROM dbo.SUCURSAL WHERE id_sucursal = @idSucursal AND eliminado_en IS NULL)
         BEGIN
             SET @CodigoResultado = 1;
@@ -4466,6 +4546,12 @@ BEGIN
 
         UPDATE dbo.SUCURSAL SET nombre = @nombre WHERE id_sucursal = @idSucursal;
 
+        DECLARE @detalleAuditoriaSucursal NVARCHAR(300) = CONCAT(N'Sucursal actualizada: ', @nombre, N'.');
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'MODIFICACION', @entidad = N'SUCURSAL',
+            @idEntidad = @idSucursal, @detalle = @detalleAuditoriaSucursal,
+            @idSucursal = @idSucursal;
+
         COMMIT TRANSACTION;
         SET @IdGenerado = @idSucursal;
         SET @MensajeResultado = N'Sucursal actualizada correctamente.';
@@ -4474,6 +4560,7 @@ BEGIN
         IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
+        THROW;
     END CATCH;
 END;
 GO
@@ -4482,17 +4569,21 @@ GO
 -- Realiza baja lógica sin desactivar una sucursal que todavía tenga usuarios activos asignados.
 CREATE OR ALTER PROCEDURE dbo.sp_Sucursal_Baja
     @idSucursal INT,
+    @idUsuarioEjecutor INT,
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
         IF NOT EXISTS (SELECT 1 FROM dbo.SUCURSAL WHERE id_sucursal = @idSucursal AND eliminado_en IS NULL)
         BEGIN
             SET @CodigoResultado = 1;
@@ -4507,13 +4598,21 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         UPDATE dbo.SUCURSAL SET eliminado_en = SYSDATETIME() WHERE id_sucursal = @idSucursal;
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'BAJA', @entidad = N'SUCURSAL',
+            @idEntidad = @idSucursal, @detalle = N'Sucursal dada de baja.',
+            @idSucursal = @idSucursal;
+        COMMIT TRANSACTION;
         SET @IdGenerado = @idSucursal;
         SET @MensajeResultado = N'Sucursal dada de baja correctamente.';
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
+        THROW;
     END CATCH;
 END;
 GO
@@ -4522,17 +4621,21 @@ GO
 -- Reactiva una sucursal previamente dada de baja sin crear un registro duplicado.
 CREATE OR ALTER PROCEDURE dbo.sp_Sucursal_Reactivar
     @idSucursal INT,
+    @idUsuarioEjecutor INT,
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET XACT_ABORT ON;
     SET @IdGenerado = 0;
     SET @CodigoResultado = 0;
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+        IF NOT EXISTS (SELECT 1 FROM dbo.USUARIO WHERE id_usuario = @idUsuarioEjecutor AND eliminado_en IS NULL)
+            THROW 51000, 'El usuario ejecutor no está activo.', 1;
         IF NOT EXISTS (SELECT 1 FROM dbo.SUCURSAL WHERE id_sucursal = @idSucursal AND eliminado_en IS NOT NULL)
         BEGIN
             SET @CodigoResultado = 1;
@@ -4540,13 +4643,21 @@ BEGIN
             RETURN;
         END;
 
+        BEGIN TRANSACTION;
         UPDATE dbo.SUCURSAL SET eliminado_en = NULL WHERE id_sucursal = @idSucursal;
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuarioEjecutor, @accion = N'REACTIVACION', @entidad = N'SUCURSAL',
+            @idEntidad = @idSucursal, @detalle = N'Sucursal reactivada.',
+            @idSucursal = @idSucursal;
+        COMMIT TRANSACTION;
         SET @IdGenerado = @idSucursal;
         SET @MensajeResultado = N'Sucursal reactivada correctamente.';
     END TRY
     BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
         SET @CodigoResultado = 500;
         SET @MensajeResultado = ERROR_MESSAGE();
+        THROW;
     END CATCH;
 END;
 GO
@@ -4671,87 +4782,18 @@ GO
 
 -- ============================================================
 -- AVISOS INTERNOS
--- El destino se basa en funcionalidades para no depender de
--- nombres de perfiles ni de identificadores fijos.
+-- La visibilidad se determina por AVISOS_VER y por el alcance
+-- global o de sucursal, sin destinatarios configurados por perfil.
 -- ============================================================
 
--- Lista perfiles activos y marca las relaciones configuradas para el emisor seleccionado.
-CREATE OR ALTER PROCEDURE dbo.sp_Perfil_AvisoDestino_Listar
-    @idPerfil INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SELECT destino.id_perfil,destino.nombre,
-           CAST(CASE WHEN pad.id_perfil_destino IS NULL THEN 0 ELSE 1 END AS BIT) AS asignado
-    FROM dbo.PERFIL AS destino
-    LEFT JOIN dbo.PERFIL_AVISO_DESTINO AS pad
-        ON pad.id_perfil_emisor = @idPerfil AND pad.id_perfil_destino = destino.id_perfil
-    WHERE destino.eliminado_en IS NULL AND destino.id_perfil <> @idPerfil
-    ORDER BY destino.nombre;
-END;
+DROP PROCEDURE IF EXISTS dbo.sp_Perfil_AvisoDestino_Listar;
+DROP PROCEDURE IF EXISTS dbo.sp_Perfil_AvisoDestino_Guardar;
+DROP PROCEDURE IF EXISTS dbo.sp_Aviso_ListarDestinos;
 GO
 
-
--- Reemplaza destinos de un perfil verificando perfiles activos y evitando autorelaciones.
-CREATE OR ALTER PROCEDURE dbo.sp_Perfil_AvisoDestino_Guardar
-    @idPerfil INT,
-    @idsPerfilesDestino NVARCHAR(MAX),
-    @CodigoResultado INT OUTPUT,
-    @MensajeResultado NVARCHAR(250) OUTPUT
-AS
-BEGIN
-    SET NOCOUNT ON;
-    SET XACT_ABORT ON;
-    SET @CodigoResultado = 0;
-    SET @MensajeResultado = N'Destinos de avisos actualizados correctamente.';
-    DECLARE @Destinos TABLE(id_perfil INT PRIMARY KEY);
-    BEGIN TRY
-        IF NOT EXISTS (SELECT 1 FROM dbo.PERFIL WHERE id_perfil = @idPerfil AND eliminado_en IS NULL)
-        BEGIN SET @CodigoResultado = 1; SET @MensajeResultado = N'El perfil emisor no existe o está inactivo.'; RETURN; END;
-        INSERT INTO @Destinos
-        SELECT DISTINCT TRY_CONVERT(INT,LTRIM(RTRIM(value)))
-        FROM STRING_SPLIT(ISNULL(@idsPerfilesDestino,N''),N',')
-        WHERE TRY_CONVERT(INT,LTRIM(RTRIM(value))) IS NOT NULL AND TRY_CONVERT(INT,LTRIM(RTRIM(value))) > 0;
-        IF EXISTS (SELECT 1 FROM @Destinos d LEFT JOIN dbo.PERFIL p ON p.id_perfil=d.id_perfil AND p.eliminado_en IS NULL WHERE p.id_perfil IS NULL OR d.id_perfil=@idPerfil)
-        BEGIN SET @CodigoResultado = 3; SET @MensajeResultado = N'La lista de perfiles destino contiene valores no válidos.'; RETURN; END;
-        BEGIN TRANSACTION;
-        DELETE FROM dbo.PERFIL_AVISO_DESTINO WHERE id_perfil_emisor=@idPerfil;
-        INSERT INTO dbo.PERFIL_AVISO_DESTINO(id_perfil_emisor,id_perfil_destino)
-        SELECT @idPerfil,id_perfil FROM @Destinos;
-        COMMIT TRANSACTION;
-    END TRY
-    BEGIN CATCH
-        IF XACT_STATE()<>0 ROLLBACK TRANSACTION;
-        SET @CodigoResultado=500; SET @MensajeResultado=LEFT(ERROR_MESSAGE(),250);
-    END CATCH;
-END;
-GO
-
--- Devuelve exclusivamente los perfiles destino configurados para un autor habilitado.
-CREATE OR ALTER PROCEDURE dbo.sp_Aviso_ListarDestinos
-    @idUsuario INT
-AS
-BEGIN
-    SET NOCOUNT ON;
-
-    SELECT destino.id_perfil, destino.nombre
-    FROM dbo.USUARIO AS u
-    INNER JOIN dbo.PERFIL AS emisor ON emisor.id_perfil = u.id_perfil AND emisor.eliminado_en IS NULL
-    INNER JOIN dbo.PERFIL_FUNCIONALIDAD AS pf ON pf.id_perfil = emisor.id_perfil
-    INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad AND f.codigo = N'AVISOS_PUBLICAR' AND f.eliminado_en IS NULL
-    INNER JOIN dbo.PERFIL_AVISO_DESTINO AS pad ON pad.id_perfil_emisor = emisor.id_perfil
-    INNER JOIN dbo.PERFIL AS destino ON destino.id_perfil = pad.id_perfil_destino AND destino.eliminado_en IS NULL
-    WHERE u.id_usuario = @idUsuario AND u.eliminado_en IS NULL
-      AND EXISTS (SELECT 1 FROM dbo.PERFIL_FUNCIONALIDAD AS pdf INNER JOIN dbo.FUNCIONALIDAD AS df ON df.id_funcionalidad = pdf.id_funcionalidad WHERE pdf.id_perfil = destino.id_perfil AND df.codigo = N'AVISOS_VER' AND df.eliminado_en IS NULL)
-    ORDER BY destino.nombre;
-END;
-GO
-
-
--- Publica un aviso para varios perfiles validando permisos, relación configurable y alcance de sucursal.
+-- Publica un aviso global o de sucursal validando el permiso y el alcance real del autor.
 CREATE OR ALTER PROCEDURE dbo.sp_Aviso_Publicar
     @idUsuario INT,
-    @idsPerfilesDestino NVARCHAR(MAX),
     @idSucursal INT = NULL,
     @titulo NVARCHAR(100),
     @mensaje NVARCHAR(500)
@@ -4761,7 +4803,6 @@ BEGIN
     SET XACT_ABORT ON;
 
     DECLARE @idPerfilEmisor INT, @alcanceGlobal BIT, @idSucursalFija INT;
-    DECLARE @Destinos TABLE (id_perfil INT PRIMARY KEY);
 
     SELECT @idPerfilEmisor = u.id_perfil, @alcanceGlobal = p.alcance_global, @idSucursalFija = u.id_sucursal
     FROM dbo.USUARIO AS u INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil
@@ -4773,75 +4814,70 @@ BEGIN
     IF LEN(LTRIM(RTRIM(ISNULL(@titulo,N'')))) = 0 OR LEN(LTRIM(RTRIM(ISNULL(@mensaje,N'')))) = 0 OR LEN(@titulo) > 100 OR LEN(@mensaje) > 500
         THROW 51000, 'El título y el mensaje del aviso son obligatorios y deben respetar su longitud máxima.', 1;
 
-    INSERT INTO @Destinos(id_perfil)
-    SELECT DISTINCT TRY_CONVERT(INT, LTRIM(RTRIM(value))) FROM STRING_SPLIT(ISNULL(@idsPerfilesDestino,N''),N',')
-    WHERE TRY_CONVERT(INT, LTRIM(RTRIM(value))) IS NOT NULL AND TRY_CONVERT(INT, LTRIM(RTRIM(value))) > 0;
-
-    IF NOT EXISTS (SELECT 1 FROM @Destinos) THROW 51000, 'Debe seleccionar al menos un perfil destinatario.', 1;
-    IF EXISTS
-    (
-        SELECT 1 FROM @Destinos d
-        LEFT JOIN dbo.PERFIL destino ON destino.id_perfil = d.id_perfil AND destino.eliminado_en IS NULL
-        LEFT JOIN dbo.PERFIL_AVISO_DESTINO pad ON pad.id_perfil_emisor = @idPerfilEmisor AND pad.id_perfil_destino = d.id_perfil
-        WHERE destino.id_perfil IS NULL OR pad.id_perfil_destino IS NULL
-           OR NOT EXISTS (SELECT 1 FROM dbo.PERFIL_FUNCIONALIDAD pdf INNER JOIN dbo.FUNCIONALIDAD df ON df.id_funcionalidad = pdf.id_funcionalidad WHERE pdf.id_perfil = d.id_perfil AND df.codigo = N'AVISOS_VER' AND df.eliminado_en IS NULL)
-    ) THROW 51000, 'Uno o más perfiles destino no están autorizados para este emisor.', 1;
-
     IF @alcanceGlobal = 0
     BEGIN
-        IF @idSucursalFija IS NULL OR @idSucursal IS NULL OR @idSucursal <> @idSucursalFija
+        IF @idSucursalFija IS NULL OR (@idSucursal IS NOT NULL AND @idSucursal <> @idSucursalFija)
             THROW 51000, 'El aviso debe utilizar la sucursal asignada al autor.', 1;
+        SET @idSucursal = @idSucursalFija;
     END;
 
     IF @idSucursal IS NOT NULL AND NOT EXISTS (SELECT 1 FROM dbo.SUCURSAL WHERE id_sucursal = @idSucursal AND eliminado_en IS NULL)
         THROW 51000, 'La sucursal indicada no existe o está inactiva.', 1;
 
-    IF @idSucursal IS NOT NULL AND EXISTS
-    (
-        SELECT 1 FROM @Destinos d
-        WHERE NOT EXISTS
-        (
-            SELECT 1 FROM dbo.USUARIO receptor
-            WHERE receptor.id_perfil = d.id_perfil
-              AND receptor.id_sucursal = @idSucursal
-              AND receptor.eliminado_en IS NULL
-        )
-    ) THROW 51000, 'Cada perfil destinatario debe tener usuarios activos en la sucursal del aviso.', 1;
+    BEGIN TRY
+        BEGIN TRANSACTION;
 
-    BEGIN TRANSACTION;
-    INSERT INTO dbo.AVISO(titulo,mensaje,id_usuario_autor,id_sucursal,activo)
-    VALUES(LTRIM(RTRIM(@titulo)),LTRIM(RTRIM(@mensaje)),@idUsuario,@idSucursal,1);
+        INSERT INTO dbo.AVISO(titulo,mensaje,id_usuario_autor,id_sucursal,activo)
+        VALUES(LTRIM(RTRIM(@titulo)),LTRIM(RTRIM(@mensaje)),@idUsuario,@idSucursal,1);
 
-    DECLARE @idAviso INT = CAST(SCOPE_IDENTITY() AS INT);
-    INSERT INTO dbo.AVISO_PERFIL_DESTINO(id_aviso,id_perfil)
-    SELECT @idAviso,id_perfil FROM @Destinos;
-    COMMIT TRANSACTION;
+        DECLARE @idAviso INT = CAST(SCOPE_IDENTITY() AS INT);
+
+        DECLARE @detalleAuditoria NVARCHAR(300);
+        SET @detalleAuditoria = CONCAT(N'Aviso publicado: ', LEFT(LTRIM(RTRIM(@titulo)), 200));
+
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuario,
+            @accion = N'ALTA',
+            @entidad = N'AVISO',
+            @idEntidad = @idAviso,
+            @detalle = @detalleAuditoria,
+            @idSucursal = @idSucursal;
+
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
 END;
 GO
 
 
--- Lista avisos que el perfil receptor puede ver dentro de su sucursal o alcance global.
+-- Lista avisos autorizados por AVISOS_VER y por el alcance vigente del receptor.
 CREATE OR ALTER PROCEDURE dbo.sp_Aviso_ListarParaUsuario
-    @idUsuario INT
+    @idUsuario INT,
+    @idSucursalOperativa INT = NULL
 AS
 BEGIN
     SET NOCOUNT ON;
 
     SELECT a.id_aviso,a.titulo,a.mensaje,a.fecha_creacion,
            CONCAT(autor.nombre,N' ',autor.apellido) AS autor,
-           STRING_AGG(destino.nombre,N', ') AS destino
+           COALESCE(s.nombre,N'Todas las sucursales') AS alcance
     FROM dbo.AVISO a
     INNER JOIN dbo.USUARIO u ON u.id_usuario = @idUsuario AND u.eliminado_en IS NULL
     INNER JOIN dbo.PERFIL receptor ON receptor.id_perfil = u.id_perfil AND receptor.eliminado_en IS NULL
     INNER JOIN dbo.PERFIL_FUNCIONALIDAD pf ON pf.id_perfil = receptor.id_perfil
     INNER JOIN dbo.FUNCIONALIDAD f ON f.id_funcionalidad = pf.id_funcionalidad AND f.codigo = N'AVISOS_VER' AND f.eliminado_en IS NULL
-    INNER JOIN dbo.AVISO_PERFIL_DESTINO apd ON apd.id_aviso = a.id_aviso AND apd.id_perfil = receptor.id_perfil
-    INNER JOIN dbo.USUARIO autor ON autor.id_usuario = a.id_usuario_autor
-    INNER JOIN dbo.AVISO_PERFIL_DESTINO todos ON todos.id_aviso = a.id_aviso
-    INNER JOIN dbo.PERFIL destino ON destino.id_perfil = todos.id_perfil
+    INNER JOIN dbo.USUARIO autor ON autor.id_usuario = a.id_usuario_autor AND autor.eliminado_en IS NULL
+    LEFT JOIN dbo.SUCURSAL s ON s.id_sucursal = a.id_sucursal
     WHERE a.activo = 1 AND a.eliminado_en IS NULL
-      AND (a.id_sucursal IS NULL OR a.id_sucursal = u.id_sucursal)
-    GROUP BY a.id_aviso,a.titulo,a.mensaje,a.fecha_creacion,autor.nombre,autor.apellido
+      AND
+      (
+          a.id_sucursal IS NULL
+          OR (receptor.alcance_global = 0 AND a.id_sucursal = u.id_sucursal)
+          OR (receptor.alcance_global = 1 AND (@idSucursalOperativa IS NULL OR a.id_sucursal = @idSucursalOperativa))
+      )
     ORDER BY a.fecha_creacion DESC;
 END;
 GO

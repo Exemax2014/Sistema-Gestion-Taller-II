@@ -11,11 +11,13 @@ namespace Capa_Logica
     }
 
     public class ReporteDiaModelo { public DateTime Fecha { get; set; } public int Ventas { get; set; } public decimal Recaudacion { get; set; } }
+    public class AuditoriaReporteModelo { public DateTime Fecha { get; set; } public string Accion { get; set; } = string.Empty; public string Entidad { get; set; } = string.Empty; public string Detalle { get; set; } = string.Empty; public string Sucursal { get; set; } = string.Empty; }
 
     // Centraliza las capacidades del módulo Reportes sin depender de nombres de perfiles.
     public class ReporteLogica
     {
         private readonly ReporteDatos reporteDatos = new ReporteDatos();
+        private readonly AuditoriaDatos auditoriaDatos = new AuditoriaDatos();
         // Indica si el usuario puede ingresar al módulo Reportes.
         public bool PuedeVerReportes()
         {
@@ -80,6 +82,13 @@ namespace Capa_Logica
             );
         }
 
+        // Indica si la acción visual puede derivar el producto al flujo existente de inventario para esa sucursal.
+        public bool PuedeGestionarStockSucursal(int idSucursal)
+        {
+            if (idSucursal <= 0 || !SesionActual.TienePermiso("PRODUCTOS_MODIFICAR")) return false;
+            return !SesionActual.IdSucursal.HasValue || SesionActual.IdSucursal == idSucursal;
+        }
+
         // Resuelve el único alcance efectivo a partir de permisos y del alcance global cargado en sesión.
         public AlcanceReportes ObtenerAlcanceReportes()
         {
@@ -88,9 +97,7 @@ namespace Capa_Logica
                 return AlcanceReportes.Ninguno;
             }
 
-            // La sesión sólo deja IdSucursal nulo a perfiles cuyo PERFIL.alcance_global es verdadero.
-            bool perfilGlobal =
-                !SesionActual.IdSucursal.HasValue;
+            bool perfilGlobal = SesionActual.AlcanceGlobal;
 
             if (perfilGlobal)
             {
@@ -99,6 +106,12 @@ namespace Capa_Logica
                 )
                     ? AlcanceReportes.Global
                     : AlcanceReportes.Ninguno;
+            }
+
+            if (SesionActual.TienePermiso("REPORTES_ALCANCE_SUCURSAL")
+                && (!SesionActual.IdSucursal.HasValue || SesionActual.IdSucursal.Value <= 0))
+            {
+                return AlcanceReportes.Ninguno;
             }
 
             if (
@@ -171,6 +184,27 @@ namespace Capa_Logica
         {
             ValidarConsulta(desde, hasta, sucursal, vendedor, "REPORTES_DETALLE_VENTAS");
             return reporteDatos.ObtenerDetalle(desde, hasta, ResolverSucursal(sucursal), ResolverUsuario(vendedor));
+        }
+
+        // Devuelve actividad administrativa persistida con el mismo permiso y alcance del reporte por usuario.
+        public List<AuditoriaReporteModelo> ObtenerActividadUsuario(DateTime desde, DateTime hasta, int? sucursal, int? usuario)
+        {
+            ValidarConsulta(desde, hasta, sucursal, usuario, "REPORTES_RENDIMIENTO_VENDEDORES");
+            return auditoriaDatos.Listar(
+                SesionActual.IdUsuario,
+                desde,
+                hasta,
+                ResolverSucursal(sucursal),
+                ResolverUsuario(usuario))
+                .Select(a => new AuditoriaReporteModelo
+                {
+                    Fecha = a.Fecha,
+                    Accion = a.Accion,
+                    Entidad = a.Entidad,
+                    Detalle = a.Detalle,
+                    Sucursal = a.Sucursal
+                })
+                .ToList();
         }
 
         // Lista opciones de vendedor sólo para alcances que pueden seleccionarlo.

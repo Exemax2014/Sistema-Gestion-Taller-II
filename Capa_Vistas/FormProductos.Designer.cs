@@ -22,6 +22,10 @@ namespace Capa_Vistas
 
         private Button btnNuevoProducto;
 
+        private Button btnCategorias;
+
+        private Button btnMarcas;
+
 
         private Panel pnlFiltros;
 
@@ -83,6 +87,8 @@ namespace Capa_Vistas
             lblSubtitulo = new Label();
             pnlLineaTitulo = new Panel();
             btnNuevoProducto = new Button();
+            btnCategorias = new Button();
+            btnMarcas = new Button();
             pnlFiltros = new Panel();
             tlpFiltros = new TableLayoutPanel();
             lblBuscar = new Label();
@@ -129,11 +135,15 @@ namespace Capa_Vistas
             // 
             // tlpCabecera
             // 
-            tlpCabecera.ColumnCount = 2;
+            tlpCabecera.ColumnCount = 4;
             tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 256F));
+            tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
+            tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105F));
+            tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190F));
             tlpCabecera.Controls.Add(pnlTitulo, 0, 0);
-            tlpCabecera.Controls.Add(btnNuevoProducto, 1, 0);
+            tlpCabecera.Controls.Add(btnCategorias, 1, 0);
+            tlpCabecera.Controls.Add(btnMarcas, 2, 0);
+            tlpCabecera.Controls.Add(btnNuevoProducto, 3, 0);
             tlpCabecera.Dock = DockStyle.Fill;
             tlpCabecera.Location = new Point(32, 20);
             tlpCabecera.Margin = new Padding(0);
@@ -186,6 +196,30 @@ namespace Capa_Vistas
             pnlLineaTitulo.TabIndex = 2;
             // 
             // btnNuevoProducto
+            //
+            btnCategorias.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnCategorias.BackColor = Color.FromArgb(82, 88, 94);
+            btnCategorias.FlatStyle = FlatStyle.Flat;
+            btnCategorias.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            btnCategorias.ForeColor = Color.White;
+            btnCategorias.Location = new Point(800, 17);
+            btnCategorias.Margin = new Padding(4, 17, 4, 0);
+            btnCategorias.Name = "btnCategorias";
+            btnCategorias.Size = new Size(112, 42);
+            btnCategorias.Text = "Categorías";
+            btnCategorias.UseVisualStyleBackColor = false;
+            //
+            btnMarcas.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnMarcas.BackColor = Color.FromArgb(82, 88, 94);
+            btnMarcas.FlatStyle = FlatStyle.Flat;
+            btnMarcas.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            btnMarcas.ForeColor = Color.White;
+            btnMarcas.Location = new Point(920, 17);
+            btnMarcas.Margin = new Padding(4, 17, 4, 0);
+            btnMarcas.Name = "btnMarcas";
+            btnMarcas.Size = new Size(97, 42);
+            btnMarcas.Text = "Marcas";
+            btnMarcas.UseVisualStyleBackColor = false;
             // 
             btnNuevoProducto.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnNuevoProducto.BackColor = Color.FromArgb(190, 137, 45);
@@ -195,10 +229,10 @@ namespace Capa_Vistas
             btnNuevoProducto.FlatStyle = FlatStyle.Flat;
             btnNuevoProducto.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnNuevoProducto.ForeColor = Color.White;
-            btnNuevoProducto.Location = new Point(931, 17);
+            btnNuevoProducto.Location = new Point(927, 17);
             btnNuevoProducto.Margin = new Padding(10, 17, 0, 0);
             btnNuevoProducto.Name = "btnNuevoProducto";
-            btnNuevoProducto.Size = new Size(185, 42);
+            btnNuevoProducto.Size = new Size(179, 42);
             btnNuevoProducto.TabIndex = 1;
             btnNuevoProducto.Text = "+ Nuevo producto";
             btnNuevoProducto.UseVisualStyleBackColor = false;

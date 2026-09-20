@@ -306,8 +306,8 @@ namespace Capa_Logica
                 return new ResultadoCliente { Codigo = direccion.Codigo, Mensaje = direccion.Mensaje };
             }
 
-            return ConvertirResultado(
-                clienteDatos.Alta(nombre, apellido, documento, correo, telefono, direccion.IdGenerado));
+            return ConvertirResultado(clienteDatos.Alta(nombre, apellido, documento, correo, telefono, direccion.IdGenerado,
+                SesionActual.IdUsuario, SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa));
         }
 
         // ========================================================
@@ -360,8 +360,8 @@ namespace Capa_Logica
                 idDireccion = direccion.IdGenerado;
             }
 
-            return ConvertirResultado(
-                clienteDatos.Modificar(idCliente, nombre, apellido, documento, correo, telefono, idDireccion));
+            return ConvertirResultado(clienteDatos.Modificar(idCliente, nombre, apellido, documento, correo, telefono, idDireccion,
+                SesionActual.IdUsuario, SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa));
         }
 
         // ========================================================
@@ -380,7 +380,8 @@ namespace Capa_Logica
                 return new ResultadoCliente { Codigo = 3, Mensaje = "El cliente indicado no es válido." };
             }
 
-            return ConvertirResultado(clienteDatos.Baja(idCliente));
+            return ConvertirResultado(clienteDatos.Baja(idCliente, SesionActual.IdUsuario,
+                SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa));
         }
 
         // ========================================================
@@ -399,7 +400,8 @@ namespace Capa_Logica
                 return new ResultadoCliente { Codigo = 3, Mensaje = "El cliente indicado no es válido." };
             }
 
-            return ConvertirResultado(clienteDatos.Reactivar(idCliente));
+            return ConvertirResultado(clienteDatos.Reactivar(idCliente, SesionActual.IdUsuario,
+                SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa));
         }
 
         // ========================================================

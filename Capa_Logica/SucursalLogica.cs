@@ -217,7 +217,7 @@ namespace Capa_Logica
             }
 
             return ConvertirResultado(sucursalDatos.Alta(
-                NormalizarEspacios(nombre), idLocalidad!.Value, NormalizarEspacios(calle)));
+                NormalizarEspacios(nombre), idLocalidad!.Value, NormalizarEspacios(calle), SesionActual.IdUsuario));
         }
 
         // Actualiza una sucursal aplicando las mismas validaciones que el alta.
@@ -240,7 +240,7 @@ namespace Capa_Logica
             }
 
             return ConvertirResultado(sucursalDatos.Modificar(
-                idSucursal, NormalizarEspacios(nombre), idLocalidad!.Value, NormalizarEspacios(calle)));
+                idSucursal, NormalizarEspacios(nombre), idLocalidad!.Value, NormalizarEspacios(calle), SesionActual.IdUsuario));
         }
 
         // Realiza una baja lógica sin permitir que una sucursal inválida llegue a Datos.
@@ -252,7 +252,7 @@ namespace Capa_Logica
             }
 
             return idSucursal > 0
-                ? ConvertirResultado(sucursalDatos.Baja(idSucursal))
+                ? ConvertirResultado(sucursalDatos.Baja(idSucursal, SesionActual.IdUsuario))
                 : ResultadoInvalido("La sucursal indicada no es válida.");
         }
 
@@ -265,7 +265,7 @@ namespace Capa_Logica
             }
 
             return idSucursal > 0
-                ? ConvertirResultado(sucursalDatos.Reactivar(idSucursal))
+                ? ConvertirResultado(sucursalDatos.Reactivar(idSucursal, SesionActual.IdUsuario))
                 : ResultadoInvalido("La sucursal indicada no es válida.");
         }
 

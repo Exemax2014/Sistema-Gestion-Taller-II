@@ -12,6 +12,7 @@ namespace Capa_Datos
         public int IdUsuario { get; set; }
         public int IdPerfil { get; set; }
         public int? IdSucursal { get; set; }
+        public bool AlcanceGlobal { get; set; }
 
         public string Nombre { get; set; } = string.Empty;
         public string Apellido { get; set; } = string.Empty;
@@ -200,7 +201,10 @@ namespace Capa_Datos
 
                 Sucursal =
                     lector["sucursal"].ToString()
-                    ?? string.Empty
+                    ?? string.Empty,
+
+                AlcanceGlobal =
+                    Convert.ToBoolean(lector["alcance_global"])
             };
         }
 
@@ -546,7 +550,7 @@ namespace Capa_Datos
         // ========================================================
 
         public ResultadoUsuarioDatos Alta(
-            UsuarioGuardarDatos usuario)
+            UsuarioGuardarDatos usuario, int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -565,6 +569,8 @@ namespace Capa_Datos
                 usuario,
                 incluirContrasena: true
             );
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter idGenerado =
                 comando.Parameters.Add(
@@ -627,7 +633,7 @@ namespace Capa_Datos
 
         public ResultadoUsuarioDatos Modificar(
             int idUsuario,
-            UsuarioGuardarDatos usuario)
+            UsuarioGuardarDatos usuario, int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -652,6 +658,8 @@ namespace Capa_Datos
                 usuario,
                 incluirContrasena: false
             );
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter codigoResultado =
                 comando.Parameters.Add(
@@ -697,7 +705,7 @@ namespace Capa_Datos
         // ========================================================
 
         public ResultadoUsuarioDatos Baja(
-            int idUsuario)
+            int idUsuario, int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -716,6 +724,8 @@ namespace Capa_Datos
                 SqlDbType.Int
             ).Value =
                 idUsuario;
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter codigoResultado =
                 comando.Parameters.Add(
@@ -761,7 +771,7 @@ namespace Capa_Datos
         // ========================================================
 
         public ResultadoUsuarioDatos Reactivar(
-            int idUsuario)
+            int idUsuario, int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -780,6 +790,8 @@ namespace Capa_Datos
                 SqlDbType.Int
             ).Value =
                 idUsuario;
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
 
             SqlParameter codigoResultado =

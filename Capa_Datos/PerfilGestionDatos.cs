@@ -42,15 +42,6 @@ namespace Capa_Datos
             Codigo == 0;
     }
 
-    // Representa un perfil disponible para configurar destinos de avisos.
-    public class PerfilAvisoDestinoDatos
-    {
-        public int IdPerfil { get; set; }
-        public string Nombre { get; set; } = string.Empty;
-        public bool Asignado { get; set; }
-    }
-
-
     // ============================================================
     // Clase: PerfilGestionDatos
     //
@@ -64,45 +55,14 @@ namespace Capa_Datos
 
     public class PerfilGestionDatos
     {
-        // Lista perfiles activos indicando cuáles puede recibir avisos del perfil consultado.
-        public List<PerfilAvisoDestinoDatos> ListarDestinosAviso(int idPerfil)
-        {
-            List<PerfilAvisoDestinoDatos> destinos = new();
-            using SqlConnection conexion = Conexion.CrearConexion();
-            using SqlCommand comando = new SqlCommand("dbo.sp_Perfil_AvisoDestino_Listar", conexion);
-            comando.CommandType = CommandType.StoredProcedure;
-            comando.Parameters.Add("@idPerfil", SqlDbType.Int).Value = idPerfil;
-            conexion.Open();
-            using SqlDataReader lector = comando.ExecuteReader();
-            while (lector.Read()) destinos.Add(new PerfilAvisoDestinoDatos
-            {
-                IdPerfil = Convert.ToInt32(lector["id_perfil"]),
-                Nombre = lector["nombre"].ToString() ?? string.Empty,
-                Asignado = Convert.ToBoolean(lector["asignado"])
-            });
-            return destinos;
-        }
-
-        // Reemplaza los destinos configurados del perfil mediante un procedimiento validado.
-        public ResultadoPerfilDatos GuardarDestinosAviso(int idPerfil, IEnumerable<int> idsDestinos)
-        {
-            using SqlConnection conexion = Conexion.CrearConexion();
-            using SqlCommand comando = new SqlCommand("dbo.sp_Perfil_AvisoDestino_Guardar", conexion);
-            comando.CommandType = CommandType.StoredProcedure;
-            comando.Parameters.Add("@idPerfil", SqlDbType.Int).Value = idPerfil;
-            comando.Parameters.Add("@idsPerfilesDestino", SqlDbType.NVarChar, -1).Value = string.Join(",", idsDestinos ?? Enumerable.Empty<int>());
-            SqlParameter codigo = comando.Parameters.Add("@CodigoResultado", SqlDbType.Int); codigo.Direction = ParameterDirection.Output;
-            SqlParameter mensaje = comando.Parameters.Add("@MensajeResultado", SqlDbType.NVarChar, 250); mensaje.Direction = ParameterDirection.Output;
-            conexion.Open(); comando.ExecuteNonQuery();
-            return new ResultadoPerfilDatos { Codigo = Convert.ToInt32(codigo.Value), Mensaje = mensaje.Value?.ToString() ?? string.Empty, IdGenerado = idPerfil };
-        }
-
         // Guarda el perfil y sus funcionalidades mediante un único procedimiento transaccional.
         public ResultadoPerfilDatos Guardar(
             int? idPerfil,
             string nombre,
             string descripcion,
-            IEnumerable<int> idsFuncionalidades)
+            IEnumerable<int> idsFuncionalidades,
+            int idUsuarioEjecutor,
+            int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -115,6 +75,9 @@ namespace Capa_Datos
 
             comando.CommandType =
                 CommandType.StoredProcedure;
+
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             comando.Parameters.Add(
                 "@idPerfil",
@@ -456,244 +419,11 @@ namespace Capa_Datos
 
 
         // ========================================================
-        // ALTA DE PERFIL
-        // ========================================================
-
-        public ResultadoPerfilDatos Alta(
-            string nombre,
-            string descripcion)
-        {
-            using SqlConnection conexion =
-                Conexion.CrearConexion();
-
-            using SqlCommand comando =
-                new SqlCommand(
-                    "dbo.sp_Perfil_Alta",
-                    conexion
-                );
-
-            comando.CommandType =
-                CommandType.StoredProcedure;
-
-            comando.Parameters.Add(
-                "@nombre",
-                SqlDbType.NVarChar,
-                50
-            ).Value =
-                nombre.Trim();
-
-            comando.Parameters.Add(
-                "@descripcion",
-                SqlDbType.NVarChar,
-                200
-            ).Value =
-                string.IsNullOrWhiteSpace(
-                    descripcion)
-                        ? DBNull.Value
-                        : descripcion.Trim();
-
-            SqlParameter idGenerado =
-                comando.Parameters.Add(
-                    "@IdGenerado",
-                    SqlDbType.Int
-                );
-
-            idGenerado.Direction =
-                ParameterDirection.Output;
-
-            SqlParameter codigoResultado =
-                comando.Parameters.Add(
-                    "@CodigoResultado",
-                    SqlDbType.Int
-                );
-
-            codigoResultado.Direction =
-                ParameterDirection.Output;
-
-            SqlParameter mensajeResultado =
-                comando.Parameters.Add(
-                    "@MensajeResultado",
-                    SqlDbType.NVarChar,
-                    250
-                );
-
-            mensajeResultado.Direction =
-                ParameterDirection.Output;
-
-            conexion.Open();
-
-            comando.ExecuteNonQuery();
-
-            return new ResultadoPerfilDatos
-            {
-                IdGenerado =
-                    idGenerado.Value == DBNull.Value
-                        ? 0
-                        : Convert.ToInt32(
-                            idGenerado.Value
-                        ),
-
-                Codigo =
-                    codigoResultado.Value == DBNull.Value
-                        ? 500
-                        : Convert.ToInt32(
-                            codigoResultado.Value
-                        ),
-
-                Mensaje =
-                    mensajeResultado.Value?.ToString()
-                    ?? string.Empty
-            };
-        }
-
-
-        // ========================================================
-        // MODIFICACIÓN DE PERFIL
-        // ========================================================
-
-        public ResultadoPerfilDatos Modificar(
-            int idPerfil,
-            string nombre,
-            string descripcion)
-        {
-            using SqlConnection conexion =
-                Conexion.CrearConexion();
-
-            using SqlCommand comando =
-                new SqlCommand(
-                    "dbo.sp_Perfil_Modificar",
-                    conexion
-                );
-
-            comando.CommandType =
-                CommandType.StoredProcedure;
-
-            comando.Parameters.Add(
-                "@idPerfil",
-                SqlDbType.Int
-            ).Value =
-                idPerfil;
-
-            comando.Parameters.Add(
-                "@nombre",
-                SqlDbType.NVarChar,
-                50
-            ).Value =
-                nombre.Trim();
-
-            comando.Parameters.Add(
-                "@descripcion",
-                SqlDbType.NVarChar,
-                200
-            ).Value =
-                string.IsNullOrWhiteSpace(
-                    descripcion)
-                        ? DBNull.Value
-                        : descripcion.Trim();
-
-            return EjecutarResultado(
-                conexion,
-                comando
-            );
-        }
-
-
-        // ========================================================
-        // ASIGNAR FUNCIONALIDAD
-        // ========================================================
-
-        public ResultadoPerfilDatos AsignarFuncionalidad(
-            int idPerfil,
-            int idFuncionalidad)
-        {
-            return EjecutarCambioFuncionalidad(
-                "dbo.sp_Perfil_AsignarFuncionalidad",
-                idPerfil,
-                idFuncionalidad
-            );
-        }
-
-
-        // ========================================================
-        // QUITAR FUNCIONALIDAD
-        // ========================================================
-
-        public ResultadoPerfilDatos QuitarFuncionalidad(
-            int idPerfil,
-            int idFuncionalidad)
-        {
-            return EjecutarCambioFuncionalidad(
-                "dbo.sp_Perfil_QuitarFuncionalidad",
-                idPerfil,
-                idFuncionalidad
-            );
-        }
-
-
-        // ========================================================
-        // GUARDAR FUNCIONALIDADES DE FORMA ATÓMICA
-        // ========================================================
-
-        public ResultadoPerfilDatos GuardarFuncionalidades(
-            int idPerfil,
-            IEnumerable<int> idsFuncionalidades)
-        {
-            using SqlConnection conexion =
-                Conexion.CrearConexion();
-
-            using SqlCommand comando =
-                new SqlCommand(
-                    "dbo.sp_Perfil_GuardarFuncionalidades",
-                    conexion
-                );
-
-            comando.CommandType =
-                CommandType.StoredProcedure;
-
-
-            comando.Parameters.Add(
-                "@idPerfil",
-                SqlDbType.Int
-            ).Value =
-                idPerfil;
-
-
-            string ids =
-                string.Join(
-                    ",",
-                    (
-                        idsFuncionalidades
-                        ?? Enumerable.Empty<int>()
-                    )
-                    .Where(
-                        id =>
-                            id > 0
-                    )
-                    .Distinct()
-                );
-
-
-            comando.Parameters.Add(
-                "@idsFuncionalidades",
-                SqlDbType.NVarChar,
-                -1
-            ).Value =
-                ids;
-
-
-            return EjecutarResultado(
-                conexion,
-                comando
-            );
-        }
-
-
-        // ========================================================
         // BAJA LÓGICA
         // ========================================================
 
         public ResultadoPerfilDatos Baja(
-            int idPerfil)
+            int idPerfil, int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -706,6 +436,9 @@ namespace Capa_Datos
 
             comando.CommandType =
                 CommandType.StoredProcedure;
+
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             comando.Parameters.Add(
                 "@idPerfil",
@@ -748,43 +481,6 @@ namespace Capa_Datos
         // ========================================================
         // HELPERS
         // ========================================================
-
-        private static ResultadoPerfilDatos
-            EjecutarCambioFuncionalidad(
-                string procedimiento,
-                int idPerfil,
-                int idFuncionalidad)
-        {
-            using SqlConnection conexion =
-                Conexion.CrearConexion();
-
-            using SqlCommand comando =
-                new SqlCommand(
-                    procedimiento,
-                    conexion
-                );
-
-            comando.CommandType =
-                CommandType.StoredProcedure;
-
-            comando.Parameters.Add(
-                "@idPerfil",
-                SqlDbType.Int
-            ).Value =
-                idPerfil;
-
-            comando.Parameters.Add(
-                "@idFuncionalidad",
-                SqlDbType.Int
-            ).Value =
-                idFuncionalidad;
-
-            return EjecutarResultado(
-                conexion,
-                comando
-            );
-        }
-
 
         private static ResultadoPerfilDatos EjecutarResultado(
             SqlConnection conexion,

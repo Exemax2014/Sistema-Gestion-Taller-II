@@ -496,6 +496,30 @@ namespace Capa_Datos
         }
 
 
+        // Obtiene solamente las marcas activas asociadas a una categoría activa.
+        public List<MarcaInfo> ObtenerMarcasPorCategoria(int idCategoria)
+        {
+            List<MarcaInfo> marcas = new();
+            using SqlConnection conexion = Conexion.CrearConexion();
+            using SqlCommand comando = new("dbo.sp_Marca_ListarPorCategoria", conexion)
+            {
+                CommandType = CommandType.StoredProcedure
+            };
+            comando.Parameters.Add("@idCategoria", SqlDbType.Int).Value = idCategoria;
+            conexion.Open();
+            using SqlDataReader lector = comando.ExecuteReader();
+            while (lector.Read())
+            {
+                marcas.Add(new MarcaInfo
+                {
+                    IdMarca = Convert.ToInt32(lector["id_marca"]),
+                    Nombre = LeerTexto(lector, "nombre")
+                });
+            }
+            return marcas;
+        }
+
+
         public ResultadoProductoDatos Alta(
             int idCategoria,
             int? idMarca,
@@ -504,7 +528,9 @@ namespace Capa_Datos
             string? descripcion,
             decimal precioCosto,
             decimal porcentajeGanancia,
-            bool activo)
+            bool activo,
+            int idUsuarioEjecutor,
+            int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -532,6 +558,8 @@ namespace Capa_Datos
                 porcentajeGanancia,
                 activo
             );
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
 
             SqlParameter idGenerado =
@@ -595,7 +623,9 @@ namespace Capa_Datos
             string? descripcion,
             decimal precioCosto,
             decimal porcentajeGanancia,
-            bool activo)
+            bool activo,
+            int idUsuarioEjecutor,
+            int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -629,6 +659,8 @@ namespace Capa_Datos
                 porcentajeGanancia,
                 activo
             );
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
 
             SqlParameter codigoResultado =
@@ -669,7 +701,7 @@ namespace Capa_Datos
 
 
         public ResultadoProductoDatos Baja(
-            int idProducto)
+            int idProducto, int idUsuarioEjecutor, int? idSucursalAuditoria)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -690,6 +722,8 @@ namespace Capa_Datos
                 "@idProducto",
                 SqlDbType.Int
             ).Value = idProducto;
+            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
 
             SqlParameter codigoResultado =

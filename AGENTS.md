@@ -1,7 +1,7 @@
 # AGENTS.md — Sistema Hierro y Forja / Taller de Programación II
 
 Documento operativo del proyecto para integrantes del equipo y agentes de IA.
-Última actualización: 2026-09-19.
+Última actualización: 2026-09-20.
 
 ## 1. Contexto
 
@@ -56,7 +56,7 @@ La solución contiene únicamente `Capa_Datos`, `Capa_Logica` y `Capa_Vistas`.
 
 ## 4. Base de datos
 
-Base: `SistemaGestion`, con 19 tablas, incluidas `MARCA` y `AVISO`.
+Base: `SistemaGestion`, con 20 tablas, incluidas `MARCA`, `MARCA_CATEGORIA`, `AVISO` y `AUDITORIA`.
 
 Reglas: bajas mediante `eliminado_en`; no usar borrado físico cuando corresponda baja lógica; `PRODUCTO.precio_venta` se calcula desde costo + porcentaje; `DETALLE_VENTA.precio_unitario` conserva el precio histórico; inventario por producto+sucursal; permisos por PERFIL, FUNCIONALIDAD y PERFIL_FUNCIONALIDAD.
 
@@ -71,7 +71,7 @@ Scripts:
 
 Flujo oficial: producción `01 -> 02 -> 03`; testing `01 -> 02 -> 03 -> 05_ResetBasePruebas -> 04_DatosPrueba`; para volver al estado inicial ejecutar `05_ResetBasePruebas`.
 
-Las familias actuales de procedimientos cubren autenticación y usuarios; perfiles y funcionalidades; provincias/localidades y direcciones; clientes; categorías, marcas y productos; inventario; ventas, pagos y sus consultas; reportes; sucursales y métodos de pago. Convención: `sp_<Entidad>_<Accion>`.
+Las familias actuales de procedimientos cubren autenticación y usuarios; perfiles y funcionalidades; provincias/localidades y direcciones; clientes; categorías, marcas y productos; inventario; ventas, pagos y sus consultas; reportes; sucursales, avisos y auditoría. Convención: `sp_<Entidad>_<Accion>`.
 
 Todo procedimiento creado o modificado en SSMS debe actualizar también `03_Procedimientos.sql`.
 
@@ -134,19 +134,20 @@ Sí realizar cambios pequeños, reutilizar código, obtener datos dinámicos des
 ## 13. Estado completado
 
 - Solución funcional de tres capas, configuración externa, conexión SQL, autenticación PBKDF2 + SHA-256, SesionActual, permisos y selector de sucursal operativa.
-- Base `SistemaGestion` con 19 tablas, scripts de estructura/datos/pruebas y catálogo inicial; MARCA, AVISO e inventario por producto+sucursal.
+- Base `SistemaGestion` con 20 tablas y scripts de estructura/datos/pruebas; incluye MARCA_CATEGORIA, AVISO, AUDITORIA e inventario por producto+sucursal.
 - FormPrincipal, navegación embebida en `pnlContenido`, cierre de sesión y menú visible condicionado por permisos.
 - Clientes: listado/búsqueda por estado, alta, modificación, baja lógica, reactivación, historial de compras, dirección y provincias/localidades dinámicas; validaciones reforzadas en Vista, Lógica y SQL.
-- Productos: alta/modificación con validación autoritativa unificada; límites y prevención de formato para nombre, código, costo, ganancia, stock y stock mínimo.
+- Productos: alta/modificación con validación autoritativa unificada; límites y prevención para nombre, código, costo, ganancia y stock. Categorías y marcas tienen gestión dinámica con permisos propios y relación muchos-a-muchos; los productos existentes migran sus pares marca/categoría.
 - Usuarios: listado, filtros, alta, modificación, baja/reactivación y carga dinámica de perfiles/sucursales. `sp_Usuario_ObtenerPorId` devuelve `activo` y admite usuarios inactivos; detalle y mensajes corregidos.
 - Sucursales: consulta activa dentro de Usuarios, resumen dinámico de usuarios por perfil, alta con provincia/localidad/dirección y permisos `SUCURSALES_*`; perfiles nuevos aparecen sin cambios de código.
 - Perfiles y permisos: gestión dinámica desde SQL, validaciones reforzadas y guardado transaccional de perfil + funcionalidades; se conserva la protección global y `PERMISOS_GESTIONAR`.
 - Ventas: selección de cliente/productos, carrito, pagos, registro transaccional, actualización de stock, detalle/listado y aviso preventivo si falta sucursal operativa.
 - Inventario: validaciones de stock, permisos por sesión/alcance y autorización reforzada también en SQL.
-- Inicio / Dashboard: métricas reales por sucursal o negocio, actividad, gráficos breves y avisos persistentes por perfiles destino configurables (`AVISOS_VER` / `AVISOS_PUBLICAR`).
+- Inicio / Dashboard: métricas reales por sucursal o negocio, actividad, gráficos breves y avisos persistentes globales o por sucursal; `AVISOS_PUBLICAR` autoriza publicar y `AVISOS_VER` visualizar según alcance.
 - Auditoría de validaciones cerrada en Clientes, Productos, Ventas, Usuarios, Inventario y Perfiles/permisos: Vista, Lógica y SQL cubren los flujos actuales según corresponda.
 - Grillas de Usuarios, Clientes y Productos con estados, acciones, alineación y presentación visual unificadas.
 - Reportes: `FormReportesGeneral` es la única vista activa; permisos granulares `REPORTES_*`, alcance propio/sucursal/global, gráfico de ventas y recaudación, productos más vendidos, rendimiento de vendedores, stock bajo, detalle de ventas y exportación CSV. `FormReportesGerente` y `FormReportesVendedor` quedan fuera de navegación.
+- Auditoría: historial persistente de altas, modificaciones, bajas/reactivaciones, stock, ventas y avisos; Reportes por usuario muestra actividad administrativa real según alcance autorizado.
 - Los permisos heredados `REPORTES_ADMINISTRADOR`, `REPORTES_GERENTE` y `REPORTES_VENDEDOR` se conservan por compatibilidad, pero no forman parte de la lógica nueva de Reportes.
 
 ## 14. Pendiente y decisiones abiertas

@@ -47,6 +47,7 @@ namespace Capa_Vistas
             ConfigurarEventos();
             ConfigurarPermisos();
             MostrarVistaUsuarios();
+            AjustarDistribucionPerfil();
 
             CargarPerfiles();
             CargarEstados();
@@ -295,6 +296,12 @@ namespace Capa_Vistas
             flpSucursales.Resize +=
                 FlpSucursales_Resize;
 
+            pnlDetallePerfil.Resize +=
+                PnlDetallePerfil_Resize;
+
+            flpPermisos.Resize +=
+                FlpPermisos_Resize;
+
             lstPerfiles.SelectedIndexChanged +=
                 LstPerfiles_SelectedIndexChanged;
 
@@ -353,6 +360,9 @@ namespace Capa_Vistas
 
             bool puedeVerSucursales =
                 sucursalLogica.PuedeVerSucursales();
+
+            btnVistaSucursales.Visible =
+                puedeVerSucursales;
 
             btnVistaSucursales.Enabled =
                 puedeVerSucursales;
@@ -1048,7 +1058,6 @@ namespace Capa_Vistas
                     perfil
                 );
 
-                CargarDestinosAvisoPerfil(perfil);
             }
             catch (Exception ex)
             {
@@ -1063,145 +1072,156 @@ namespace Capa_Vistas
         }
 
 
+        // Carga las funcionalidades del perfil y las presenta agrupadas por el prefijo dinámico de su código.
         private void CargarPermisosPerfil(
             PerfilGestionModelo perfil)
         {
-            flpPermisos.Controls.Clear();
-
-
             List<FuncionalidadPerfilModelo> funcionalidades =
                 perfilLogica.ObtenerFuncionalidadesPerfil(
                     perfil.IdPerfil
                 );
 
-
-            foreach (FuncionalidadPerfilModelo funcionalidad
-                in funcionalidades)
-            {
-                CheckBox check =
-                    CrearCheckPermiso(
-                        funcionalidad
-                    );
-
-
-                /*
-                    El perfil global conserva todas las funcionalidades.
-                    Se muestran seleccionadas y bloqueadas.
-                */
-                if (perfil.AlcanceGlobal)
-                {
-                    check.Checked =
-                        true;
-
-                    check.Enabled =
-                        false;
-                }
-
-
-                flpPermisos.Controls.Add(
-                    check
-                );
-            }
+            RenderizarPermisosAgrupados(
+                funcionalidades,
+                perfil.AlcanceGlobal,
+                false
+            );
         }
 
 
+        // Prepara permisos vacíos para un perfil nuevo, conservando la restricción existente de gestión de permisos.
         private void CargarPermisosNuevoPerfil()
         {
+            List<FuncionalidadPerfilModelo> funcionalidades =
+                perfilLogica.ObtenerFuncionalidadesDisponibles();
+
+            foreach (FuncionalidadPerfilModelo funcionalidad in funcionalidades)
+            {
+                funcionalidad.Asignada = false;
+            }
+
+            RenderizarPermisosAgrupados(
+                funcionalidades,
+                false,
+                true
+            );
+
+        }
+
+
+        // Genera tarjetas por módulo sin mantener una lista fija de funcionalidades en la Vista.
+        private void RenderizarPermisosAgrupados(
+            IEnumerable<FuncionalidadPerfilModelo> funcionalidades,
+            bool bloquearPorPerfilGlobal,
+            bool esPerfilNuevo)
+        {
+            flpPermisos.SuspendLayout();
             flpPermisos.Controls.Clear();
 
-
-            List<FuncionalidadPerfilModelo> funcionalidades =
-                perfilLogica
-                    .ObtenerFuncionalidadesDisponibles();
-
-
-            foreach (FuncionalidadPerfilModelo funcionalidad
-                in funcionalidades)
+            foreach (IGrouping<string, FuncionalidadPerfilModelo> grupo in funcionalidades
+                .OrderBy(funcionalidad => funcionalidad.Codigo)
+                .GroupBy(funcionalidad => ObtenerGrupoFuncionalidad(funcionalidad.Codigo))
+                .OrderBy(grupo => grupo.Key))
             {
-                CheckBox check =
-                    CrearCheckPermiso(
-                        funcionalidad
-                    );
+                Panel tarjeta = CrearTarjetaPermisos(grupo.Key);
+                FlowLayoutPanel opciones = (FlowLayoutPanel)tarjeta.Tag!;
 
-
-                check.Checked =
-                    false;
-
-
-                /*
-                    PERMISOS_GESTIONAR es exclusivo del Administrador.
-                    Se muestra para que la matriz de permisos sea visible,
-                    pero no puede seleccionarse para perfiles nuevos.
-                */
-                if (
-                    funcionalidad.Codigo ==
-                    "PERMISOS_GESTIONAR")
+                foreach (FuncionalidadPerfilModelo funcionalidad in grupo)
                 {
-                    check.Enabled =
-                        false;
+                    CheckBox check = CrearCheckPermiso(funcionalidad);
+
+                    if (bloquearPorPerfilGlobal)
+                    {
+                        check.Checked = true;
+                        check.Enabled = false;
+                    }
+                    else if (esPerfilNuevo && funcionalidad.Codigo == "PERMISOS_GESTIONAR")
+                    {
+                        check.Enabled = false;
+                    }
+
+                    opciones.Controls.Add(check);
                 }
 
-
-                flpPermisos.Controls.Add(
-                    check
-                );
+                flpPermisos.Controls.Add(tarjeta);
             }
 
-            flpDestinosAviso.Controls.Clear();
+            flpPermisos.ResumeLayout();
+            AjustarGruposPermisos();
         }
 
 
-        // Carga perfiles destino configurables sin asumir roles ni nombres predefinidos.
-        private void CargarDestinosAvisoPerfil(PerfilGestionModelo perfil)
+        // Obtiene el módulo a partir del código para que permisos nuevos se agrupen sin cambios de código.
+        private static string ObtenerGrupoFuncionalidad(string codigo)
         {
-            flpDestinosAviso.Controls.Clear();
+            string prefijo = (codigo ?? string.Empty)
+                .Split('_', StringSplitOptions.RemoveEmptyEntries)
+                .FirstOrDefault() ?? "GENERAL";
 
-            foreach (PerfilAvisoDestinoModelo destino in perfilLogica.ObtenerDestinosAviso(perfil.IdPerfil))
-            {
-                flpDestinosAviso.Controls.Add(new CheckBox
-                {
-                    AutoSize = true,
-                    Font = new Font("Segoe UI", 8.5F),
-                    ForeColor = Color.FromArgb(55, 59, 64),
-                    Text = destino.Nombre,
-                    Tag = destino.IdPerfil,
-                    Checked = destino.Asignado,
-                    Enabled = !perfil.AlcanceGlobal,
-                    Margin = new Padding(4, 2, 4, 2)
-                });
-            }
+            return prefijo.Replace('_', ' ').ToUpperInvariant();
         }
 
 
+        // Crea el contenedor visual fijo de un grupo y deja sus opciones para la carga dinámica.
+        private static Panel CrearTarjetaPermisos(string nombreGrupo)
+        {
+            Panel encabezado = new Panel
+            {
+                BackColor = Color.FromArgb(82, 88, 94),
+                Location = new Point(0, 0),
+                Height = 34,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right
+            };
+
+            encabezado.Controls.Add(new Label
+            {
+                AutoEllipsis = true,
+                Dock = DockStyle.Fill,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = Color.White,
+                Padding = new Padding(12, 7, 8, 0),
+                Text = nombreGrupo,
+                TextAlign = ContentAlignment.MiddleLeft
+            });
+
+            FlowLayoutPanel opciones = new FlowLayoutPanel
+            {
+                BackColor = Color.White,
+                FlowDirection = FlowDirection.LeftToRight,
+                Location = new Point(8, 38),
+                Padding = new Padding(4),
+                WrapContents = true
+            };
+
+            Panel tarjeta = new Panel
+            {
+                BackColor = Color.White,
+                BorderStyle = BorderStyle.FixedSingle,
+                Margin = new Padding(0, 0, 0, 10),
+                Tag = opciones
+            };
+
+            tarjeta.Controls.Add(encabezado);
+            tarjeta.Controls.Add(opciones);
+            return tarjeta;
+        }
+
+
+        // Crea una opción compacta y conserva el ID dinámico para el guardado posterior del perfil.
         private CheckBox CrearCheckPermiso(
             FuncionalidadPerfilModelo funcionalidad)
         {
-            string texto =
-                funcionalidad.Nombre;
-
-
-            if (!string.IsNullOrWhiteSpace(
-                funcionalidad.Descripcion))
-            {
-                texto +=
-                    $" - {funcionalidad.Descripcion}";
-            }
-
-
             CheckBox check =
                 new CheckBox
                 {
                     AutoSize = false,
-                    Width = Math.Max(
-                        250,
-                        flpPermisos.ClientSize.Width - 45
-                    ),
-                    Height = 42,
+                    AutoEllipsis = true,
+                    Height = 30,
                     Margin = new Padding(
                         4,
-                        3,
+                        2,
                         4,
-                        3
+                        2
                     ),
                     Font =
                         new Font(
@@ -1214,8 +1234,9 @@ namespace Capa_Vistas
                             59,
                             64
                         ),
-                    Text =
-                        texto,
+                    Padding = new Padding(4, 0, 4, 0),
+                    Text = funcionalidad.Nombre,
+                    TextAlign = ContentAlignment.MiddleLeft,
                     Tag =
                         funcionalidad.IdFuncionalidad,
                     Checked =
@@ -1226,6 +1247,97 @@ namespace Capa_Vistas
 
 
             return check;
+        }
+
+
+        // Redistribuye las tarjetas al cambiar el tamaño y usa dos columnas solo cuando el ancho mejora la lectura.
+        private void FlpPermisos_Resize(object? sender, EventArgs e)
+        {
+            AjustarGruposPermisos();
+        }
+
+
+        // Reserva el alto restante para permisos y desplaza los destinos de Avisos dentro del scroll del detalle.
+        private void PnlDetallePerfil_Resize(object? sender, EventArgs e)
+        {
+            AjustarDistribucionPerfil();
+        }
+
+
+        // Mantiene el detalle adaptable sin trasladar cálculos de layout dinámico al Designer.
+        private void AjustarDistribucionPerfil()
+        {
+            if (pnlDetallePerfil.ClientSize.Width <= 0)
+            {
+                return;
+            }
+
+            int ancho = Math.Max(280, pnlDetallePerfil.ClientSize.Width - 44);
+            int altoDisponible = pnlDetallePerfil.ClientSize.Height - 340;
+            int altoPermisos = Math.Max(190, altoDisponible);
+
+            txtNombrePerfil.Width = ancho;
+            txtDescripcionPerfil.Width = ancho;
+            flpPermisos.Width = ancho;
+            flpPermisos.Height = altoPermisos;
+
+            int topAcciones = flpPermisos.Bottom + 16;
+            btnEliminarPerfil.Location = new Point(22, topAcciones);
+            btnGuardarPerfil.Location = new Point(
+                Math.Max(22, ancho - btnGuardarPerfil.Width + 22),
+                topAcciones
+            );
+
+            pnlDetallePerfil.AutoScrollMinSize = new Size(
+                0,
+                btnGuardarPerfil.Bottom + 20
+            );
+
+            AjustarGruposPermisos();
+        }
+
+
+        // Ajusta cada grupo y sus checkboxes sin recrearlos, para no perder la selección durante un Resize.
+        private void AjustarGruposPermisos()
+        {
+            if (flpPermisos.ClientSize.Width <= 0)
+            {
+                return;
+            }
+
+            int anchoTarjeta = Math.Max(
+                250,
+                flpPermisos.ClientSize.Width - flpPermisos.Padding.Horizontal - 8
+            );
+
+            int columnas = anchoTarjeta >= 620 ? 2 : 1;
+
+            foreach (Panel tarjeta in flpPermisos.Controls.OfType<Panel>())
+            {
+                if (tarjeta.Tag is not FlowLayoutPanel opciones)
+                {
+                    continue;
+                }
+
+                tarjeta.Width = anchoTarjeta;
+                int anchoOpcion = Math.Max(
+                    210,
+                    (anchoTarjeta - 24 - (columnas * 8)) / columnas
+                );
+
+                foreach (CheckBox check in opciones.Controls.OfType<CheckBox>())
+                {
+                    check.Width = anchoOpcion;
+                }
+
+                int filas = (int)Math.Ceiling(
+                    opciones.Controls.OfType<CheckBox>().Count() / (double)columnas
+                );
+
+                opciones.Width = anchoTarjeta - 18;
+                opciones.Height = Math.Max(38, (filas * 34) + 8);
+                tarjeta.Height = opciones.Bottom + 8;
+            }
         }
 
 
@@ -1352,18 +1464,6 @@ namespace Capa_Vistas
 
                     return;
                 }
-
-                ResultadoPerfil destinosAviso = perfilLogica.GuardarDestinosAviso(
-                    resultado.IdGenerado,
-                    ObtenerDestinosAvisoSeleccionados()
-                );
-
-                if (!destinosAviso.Exitoso)
-                {
-                    MostrarMensaje("No se pudieron guardar los destinos de avisos", destinosAviso.Mensaje);
-                    return;
-                }
-
 
                 int idPerfil = resultado.IdGenerado;
 
@@ -1525,42 +1625,32 @@ namespace Capa_Vistas
         }
 
 
+        // Reúne los permisos seleccionados desde las tarjetas agrupadas sin depender de su posición visual.
         private List<int> ObtenerPermisosSeleccionados()
         {
-            List<int> seleccionados =
-                new List<int>();
-
-
-            foreach (Control control
-                in flpPermisos.Controls)
-            {
-                if (
-                    control is CheckBox check
-                    &&
-                    check.Checked
-                    &&
-                    check.Tag is int idFuncionalidad)
-                {
-                    seleccionados.Add(
-                        idFuncionalidad
-                    );
-                }
-            }
-
-
-            return seleccionados;
-        }
-
-
-        // Reúne los perfiles destino seleccionados para persistir la matriz de avisos.
-        private List<int> ObtenerDestinosAvisoSeleccionados()
-        {
-            return flpDestinosAviso.Controls
-                .OfType<CheckBox>()
+            return ObtenerChecksPermisos(flpPermisos)
                 .Where(check => check.Checked)
                 .Select(check => check.Tag)
                 .OfType<int>()
                 .ToList();
+        }
+
+
+        // Recorre los contenedores de permisos para conservar el guardado aunque cambie la agrupación visual.
+        private static IEnumerable<CheckBox> ObtenerChecksPermisos(Control contenedor)
+        {
+            foreach (Control control in contenedor.Controls)
+            {
+                if (control is CheckBox check)
+                {
+                    yield return check;
+                }
+
+                foreach (CheckBox anidado in ObtenerChecksPermisos(control))
+                {
+                    yield return anidado;
+                }
+            }
         }
 
 
@@ -1586,8 +1676,6 @@ namespace Capa_Vistas
             txtDescripcionPerfil.Clear();
 
             flpPermisos.Controls.Clear();
-
-            flpDestinosAviso.Controls.Clear();
 
             btnEliminarPerfil.Visible =
                 false;

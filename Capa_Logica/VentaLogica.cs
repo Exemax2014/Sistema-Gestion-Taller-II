@@ -1041,6 +1041,31 @@ namespace Capa_Logica
         }
 
 
+        // Reutiliza el detalle de venta validando el permiso y alcance efectivo del módulo Reportes.
+        public ResultadoDetalleVenta ObtenerDetalleParaReporte(
+            int idVenta)
+        {
+            ReporteLogica reporteLogica = new ReporteLogica();
+            if (idVenta <= 0 || !reporteLogica.PuedeVerDetalleVentas())
+            {
+                return ErrorDetalle("No tiene permiso para consultar el detalle de esta venta.");
+            }
+
+            VentaDetalleDatos? datos = ventaDatos.ObtenerDetalle(idVenta);
+            if (datos == null) return ErrorDetalle("La venta indicada no existe.");
+
+            AlcanceReportes alcance = reporteLogica.ObtenerAlcanceReportes();
+            if (alcance == AlcanceReportes.Propio && datos.IdUsuario != SesionActual.IdUsuario)
+                return ErrorDetalle("El alcance propio solo permite consultar ventas propias.");
+            if (alcance == AlcanceReportes.Sucursal && datos.IdSucursal != SesionActual.IdSucursal)
+                return ErrorDetalle("La venta no pertenece a la sucursal autorizada.");
+            if (alcance == AlcanceReportes.Ninguno)
+                return ErrorDetalle(reporteLogica.ObtenerMensajeSinAlcance());
+
+            return new ResultadoDetalleVenta { Exitoso = true, Venta = MapearDetalle(datos) };
+        }
+
+
         // ========================================================
         // MAPEOS
         // ========================================================

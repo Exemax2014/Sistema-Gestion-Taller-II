@@ -13,8 +13,8 @@ namespace Capa_Logica
     public class DashboardSerieModelo { public DateTime Fecha { get; set; } public int Ventas { get; set; } public decimal Ingresos { get; set; } }
     public class DashboardProductoModelo { public string Producto { get; set; } = string.Empty; public int UnidadesVendidas { get; set; } }
     public class DashboardVentaRecienteModelo { public DateTime FechaHora { get; set; } public string Cliente { get; set; } = string.Empty; public string Vendedor { get; set; } = string.Empty; public decimal Total { get; set; } }
-    public class AvisoModelo { public int IdAviso { get; set; } public string Titulo { get; set; } = string.Empty; public string Mensaje { get; set; } = string.Empty; public DateTime FechaCreacion { get; set; } public string Autor { get; set; } = string.Empty; public string Destino { get; set; } = string.Empty; }
-    public class AvisoDestinoModelo { public int IdPerfil { get; set; } public string Nombre { get; set; } = string.Empty; }
+    public class AvisoModelo { public int IdAviso { get; set; } public string Titulo { get; set; } = string.Empty; public string Mensaje { get; set; } = string.Empty; public DateTime FechaCreacion { get; set; } public string Autor { get; set; } = string.Empty; public string Alcance { get; set; } = string.Empty; }
+    public class SucursalAvisoModelo { public int? IdSucursal { get; set; } public string Nombre { get; set; } = string.Empty; }
 
     // Aplica permisos y alcance de sesión a las consultas compactas del dashboard.
     public class DashboardLogica
@@ -59,26 +59,31 @@ namespace Capa_Logica
         public List<AvisoModelo> ListarAvisos()
         {
             if (!SesionActual.TienePermiso("AVISOS_VER")) return new List<AvisoModelo>();
-            return dashboardDatos.ListarAvisosParaUsuario(SesionActual.IdUsuario).Select(x => new AvisoModelo { IdAviso = x.IdAviso, Titulo = x.Titulo, Mensaje = x.Mensaje, FechaCreacion = x.FechaCreacion, Autor = x.Autor, Destino = x.Destino }).ToList();
+            return dashboardDatos.ListarAvisosParaUsuario(SesionActual.IdUsuario, SesionActual.IdSucursalOperativa).Select(x => new AvisoModelo { IdAviso = x.IdAviso, Titulo = x.Titulo, Mensaje = x.Mensaje, FechaCreacion = x.FechaCreacion, Autor = x.Autor, Alcance = x.Alcance }).ToList();
         }
 
-        // Consulta perfiles destino autorizados únicamente para usuarios que pueden publicar avisos.
-        public List<AvisoDestinoModelo> ListarDestinosAviso()
+        // Devuelve las opciones de alcance solo cuando el usuario publicador no tiene una sucursal fija.
+        public List<SucursalAvisoModelo> ObtenerSucursalesParaAviso()
         {
-            if (!SesionActual.TienePermiso("AVISOS_PUBLICAR")) return new List<AvisoDestinoModelo>();
-            return dashboardDatos.ListarDestinosAviso(SesionActual.IdUsuario).Select(x => new AvisoDestinoModelo { IdPerfil = x.IdPerfil, Nombre = x.Nombre }).ToList();
+            if (!PuedePublicarAvisos() || SesionActual.IdSucursal.HasValue) return new List<SucursalAvisoModelo>();
+            return dashboardDatos.ListarSucursalesAviso().Select(x => new SucursalAvisoModelo { IdSucursal = x.IdSucursal, Nombre = x.Nombre }).ToList();
         }
 
-        // Valida destinatarios y alcance de sesión antes de delegar la autorización definitiva a SQL.
-        public void PublicarAviso(IEnumerable<int> idsDestinos, string titulo, string mensaje)
+        // Indica si la sesión puede publicar avisos antes de habilitar la interacción visual.
+        public bool PuedePublicarAvisos() => SesionActual.TienePermiso("AVISOS_PUBLICAR");
+
+        // Valida el alcance de publicación antes de delegar la autorización definitiva a SQL.
+        public void PublicarAviso(int? idSucursal, string titulo, string mensaje)
         {
             titulo = (titulo ?? string.Empty).Trim(); mensaje = (mensaje ?? string.Empty).Trim();
-            List<int> destinos = (idsDestinos ?? Enumerable.Empty<int>()).Distinct().ToList();
             if (!SesionActual.TienePermiso("AVISOS_PUBLICAR")) throw new InvalidOperationException("No tiene permiso para publicar avisos.");
-            if (destinos.Count == 0 || destinos.Any(id => id <= 0) || string.IsNullOrWhiteSpace(titulo) || string.IsNullOrWhiteSpace(mensaje)) throw new InvalidOperationException("Debe seleccionar al menos un destinatario y completar el título y el mensaje del aviso.");
+            if (string.IsNullOrWhiteSpace(titulo) || string.IsNullOrWhiteSpace(mensaje)) throw new InvalidOperationException("Debe completar el título y el mensaje del aviso.");
             if (titulo.Length > 100 || mensaje.Length > 500) throw new InvalidOperationException("El aviso supera la longitud permitida.");
-            int? idSucursal = SesionActual.IdSucursal.HasValue ? SesionActual.IdSucursal : SesionActual.IdSucursalOperativa;
-            dashboardDatos.PublicarAviso(SesionActual.IdUsuario, destinos, idSucursal, titulo, mensaje);
+            if (SesionActual.IdSucursal.HasValue && idSucursal.HasValue && idSucursal != SesionActual.IdSucursal) throw new InvalidOperationException("Solo puede publicar avisos para su sucursal asignada.");
+            if (!SesionActual.IdSucursal.HasValue && idSucursal.HasValue && !dashboardDatos.ListarSucursalesAviso().Any(sucursal => sucursal.IdSucursal == idSucursal))
+                throw new InvalidOperationException("La sucursal seleccionada no está disponible para publicar el aviso.");
+            int? alcance = SesionActual.IdSucursal ?? idSucursal;
+            dashboardDatos.PublicarAviso(SesionActual.IdUsuario, alcance, titulo, mensaje);
         }
     }
 }

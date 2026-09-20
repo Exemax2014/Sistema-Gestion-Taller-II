@@ -4,9 +4,9 @@
    03_Procedimientos.sql ejecutados previamente.
 
    Identificadores reservados para limpieza futura:
-   usuarios *_test, gerente_a/b, vendedor_a1/a2/b1/b2;
+   usuarios *_test, gerente_a/b, vendedor_a1/a2/b1/b2 y vendedor_central;
    sucursales "Sucursal Prueba ..."; documentos 98000101-98000110;
-   codigos de barra 7799900000011-7799900000016.
+   codigos de barra 7799900000011-7799900000035.
    ========================================================= */
 USE SistemaGestion;
 GO
@@ -103,13 +103,6 @@ BEGIN TRY
     SELECT p.id_perfil,f.id_funcionalidad FROM @Permisos x INNER JOIN dbo.PERFIL p ON p.nombre=x.perfil AND p.eliminado_en IS NULL INNER JOIN dbo.FUNCIONALIDAD f ON f.codigo=x.codigo AND f.eliminado_en IS NULL
     WHERE NOT EXISTS(SELECT 1 FROM dbo.PERFIL_FUNCIONALIDAD pf WHERE pf.id_perfil=p.id_perfil AND pf.id_funcionalidad=f.id_funcionalidad);
 
-    INSERT INTO dbo.PERFIL_AVISO_DESTINO(id_perfil_emisor,id_perfil_destino)
-    SELECT emisor.id_perfil,destino.id_perfil
-    FROM (VALUES(N'Prueba Gerencia',N'Prueba Ventas')) x(emisor,destino)
-    INNER JOIN dbo.PERFIL emisor ON emisor.nombre=x.emisor AND emisor.eliminado_en IS NULL
-    INNER JOIN dbo.PERFIL destino ON destino.nombre=x.destino AND destino.eliminado_en IS NULL
-    WHERE NOT EXISTS(SELECT 1 FROM dbo.PERFIL_AVISO_DESTINO pad WHERE pad.id_perfil_emisor=emisor.id_perfil AND pad.id_perfil_destino=destino.id_perfil);
-
     -- Usuarios legibles: todos usan la contrasena Prueba2026! con PBKDF2 valido.
     DECLARE @Usuarios TABLE(usuario NVARCHAR(50) PRIMARY KEY,nombre NVARCHAR(100),apellido NVARCHAR(100),dni NVARCHAR(20),correo NVARCHAR(150),telefono NVARCHAR(30),perfil NVARCHAR(50) NULL,sucursal NVARCHAR(100) NULL,es_global BIT);
     INSERT INTO @Usuarios VALUES
@@ -119,7 +112,8 @@ BEGIN TRY
         (N'vendedor_a1',N'Pedro',N'Vendedor A1',N'97000020',N'pedro.vendedora1@test.local',N'+54 379 4100020',N'Prueba Ventas',N'Sucursal Prueba Centro',0),
         (N'vendedor_a2',N'Lucas',N'Vendedor A2',N'97000021',N'lucas.vendedora2@test.local',N'+54 379 4100021',N'Prueba Ventas',N'Sucursal Prueba Centro',0),
         (N'vendedor_b1',N'Maria',N'Vendedor B1',N'97000022',N'maria.vendedorab1@test.local',N'+54 379 4100022',N'Prueba Ventas',N'Sucursal Prueba Norte',0),
-        (N'vendedor_b2',N'Diego',N'Vendedor B2',N'97000023',N'diego.vendedorb2@test.local',N'+54 379 4100023',N'Prueba Ventas',N'Sucursal Prueba Norte',0);
+        (N'vendedor_b2',N'Diego',N'Vendedor B2',N'97000023',N'diego.vendedorb2@test.local',N'+54 379 4100023',N'Prueba Ventas',N'Sucursal Prueba Norte',0),
+        (N'vendedor_central',N'Lucia',N'Vendedora Central',N'97000024',N'lucia.vendedoracentral@test.local',N'+54 379 4100024',N'Prueba Ventas',N'Sucursal Central',0);
     IF EXISTS(SELECT 1 FROM @Usuarios x INNER JOIN dbo.USUARIO u ON (u.dni=x.dni OR u.correo=x.correo) AND u.nombre_usuario<>x.usuario)
         THROW 51003, 'Un DNI o correo reservado ya pertenece a otro usuario.', 1;
     UPDATE u SET u.id_perfil=COALESCE(p.id_perfil,pg.id_perfil),u.id_sucursal=CASE WHEN x.es_global=1 THEN NULL ELSE s.id_sucursal END,u.nombre=x.nombre,u.apellido=x.apellido,u.dni=x.dni,u.correo=x.correo,u.telefono=x.telefono,u.contrasena_hash=@HashPrueba,u.eliminado_en=NULL
@@ -154,27 +148,111 @@ BEGIN TRY
     SELECT x.nombre,x.apellido,x.documento,x.correo,x.telefono,d.id_direccion FROM @Clientes x INNER JOIN dbo.DIRECCION d ON d.calle=N'Cliente Prueba' AND d.altura=x.altura
     WHERE NOT EXISTS(SELECT 1 FROM dbo.CLIENTE c WHERE c.documento=x.documento);
 
-    -- Subconjunto del catálogo histórico, con códigos reservados si aún no existe el producto.
-    DECLARE @Productos TABLE(nombre NVARCHAR(100) PRIMARY KEY,categoria NVARCHAR(100),marca NVARCHAR(100),codigo NVARCHAR(50),costo DECIMAL(18,2),ganancia DECIMAL(5,2));
+    -- Catálogo histórico reutilizado con identificadores reservados para este escenario.
+    DECLARE @Productos TABLE(nombre NVARCHAR(100) PRIMARY KEY,categoria NVARCHAR(100),marca NVARCHAR(100),codigo NVARCHAR(50) UNIQUE,costo DECIMAL(18,2),ganancia DECIMAL(5,2));
     INSERT INTO @Productos VALUES
-        (N'Amoladora Angular 900W',N'Ferretería',N'Bosch',N'7799900000011',60000,40),(N'Soldadora Inverter 220A',N'Herrería',N'Lusqtoff',N'7799900000012',85000,40),
-        (N'Guantes de Seguridad Industrial',N'Ferretería',N'Ingco',N'7799900000013',15000,40),(N'Atornillador Inalámbrico',N'Construcción',N'Total',N'7799900000014',70000,40),
-        (N'Cinta Métrica 8m',N'Construcción',N'Bremen',N'7799900000015',57000,40),(N'Martillo de Uña',N'Ferretería',N'Total',N'7799900000016',67000,40);
-    INSERT INTO dbo.CATEGORIA(nombre) SELECT DISTINCT categoria FROM @Productos x WHERE NOT EXISTS(SELECT 1 FROM dbo.CATEGORIA c WHERE c.nombre=x.categoria);
-    INSERT INTO dbo.MARCA(nombre) SELECT DISTINCT marca FROM @Productos x WHERE NOT EXISTS(SELECT 1 FROM dbo.MARCA m WHERE m.nombre=x.marca);
-    INSERT INTO dbo.PRODUCTO(id_categoria,id_marca,codigo_barra,nombre,descripcion,precio_costo,porcentaje_ganancia,activo)
-    SELECT c.id_categoria,m.id_marca,x.codigo,x.nombre,N'Producto incluido para el escenario de pruebas.',x.costo,x.ganancia,1 FROM @Productos x INNER JOIN dbo.CATEGORIA c ON c.nombre=x.categoria INNER JOIN dbo.MARCA m ON m.nombre=x.marca
-    WHERE NOT EXISTS(SELECT 1 FROM dbo.PRODUCTO p WHERE p.codigo_barra=x.codigo) AND NOT EXISTS(SELECT 1 FROM dbo.PRODUCTO p WHERE p.nombre=x.nombre);
-    IF EXISTS(SELECT 1 FROM @Productos x WHERE NOT EXISTS(SELECT 1 FROM dbo.PRODUCTO p WHERE p.nombre=x.nombre AND p.activo=1 AND p.eliminado_en IS NULL))
-        THROW 51005, 'No se pudo resolver un producto activo del catalogo de prueba.', 1;
+        (N'Amoladora Angular 900W',N'Ferretería',N'Bosch',N'7799900000011',60000,40),
+        (N'Soldadora Inverter 220A',N'Herrería',N'Lusqtoff',N'7799900000012',85000,40),
+        (N'Guantes de Seguridad Industrial',N'Pinturería',N'Ingco',N'7799900000013',15000,40),
+        (N'Atornillador Inalámbrico',N'Durlok',N'Total',N'7799900000014',70000,40),
+        (N'Cinta Métrica 8m',N'Construcción',N'Bremen',N'7799900000015',57000,40),
+        (N'Martillo de Uña',N'Ferretería',N'Total',N'7799900000016',67000,40),
+        (N'Calibrador Digital',N'Construcción',N'DeWalt',N'7799900000017',50000,40),
+        (N'Casco de Soldar Fotosensible',N'Herrería',N'Makita',N'7799900000018',92000,40),
+        (N'Prensa de Banco Reforzada',N'Carpintería',N'Lusqtoff',N'7799900000019',90000,40),
+        (N'Kit-3 Brochas Profesional',N'Pinturería',N'Stanley',N'7799900000020',22000,40),
+        (N'Sierra Circular',N'Carpintería',N'Makita',N'7799900000021',97000,40),
+        (N'Atornillador Inalámbrico para Durlok',N'Durlok',N'Milwaukee',N'7799900000022',77000,40),
+        (N'Sierra Circular Inalámbrica DeWalt',N'Carpintería',N'DeWalt',N'7799900000023',104000,40),
+        (N'Taladro Inalámbrico DeWalt con Baterías',N'Construcción',N'DeWalt',N'7799900000024',64000,40),
+        (N'Atornillador de Impacto Inalámbrico DeWalt',N'Ferretería',N'DeWalt',N'7799900000025',74000,40),
+        (N'Sierra Circular Makita',N'Carpintería',N'Makita',N'7799900000026',111000,40),
+        (N'Martillo de Goma Ingco',N'Herrería',N'Ingco',N'7799900000027',99000,40),
+        (N'Caja de Herramientas Apilable con Ruedas Milwaukee',N'Ferretería',N'Milwaukee',N'7799900000028',81000,40),
+        (N'Caja de Herramientas Apilable con Manija Milwaukee',N'Ferretería',N'Milwaukee',N'7799900000029',88000,40),
+        (N'Sierra Caladora con Cable Makita',N'Carpintería',N'Makita',N'7799900000030',118000,40),
+        (N'Amoladora Angular 1500W',N'Ferretería',N'DeWalt',N'7799900000031',95000,40),
+        (N'Taladro Maquita 13mm 220v 710w',N'Carpintería',N'Makita',N'7799900000032',125000,40),
+        (N'Medidor de distancia Dwht77100 láser de 100 pies Dewalt',N'Carpintería',N'DeWalt',N'7799900000033',132000,40),
+        (N'Multimetro Digital Baw Rm113d Trms Autorrango 600v 10a',N'Electricidad',N'Baw',N'7799900000034',30000,40),
+        (N'Multímetro Digital Automático 6000 Cuentas Recargable',N'Electricidad',N'Neng',N'7799900000035',37000,40);
 
-    -- Stock por sucursal: valores altos para ventas y tres alertas de stock bajo.
+    IF EXISTS
+    (
+        SELECT 1 FROM @Productos x INNER JOIN dbo.PRODUCTO p ON p.codigo_barra=x.codigo
+        WHERE p.nombre<>x.nombre
+    ) OR EXISTS
+    (
+        SELECT 1 FROM @Productos x INNER JOIN dbo.PRODUCTO p ON p.nombre=x.nombre
+        WHERE ISNULL(p.codigo_barra,N'')<>x.codigo
+    )
+        THROW 51005, 'Un identificador reservado del catálogo de prueba ya pertenece a otro producto.', 1;
+
+    UPDATE c SET c.eliminado_en=NULL
+    FROM dbo.CATEGORIA c INNER JOIN (SELECT DISTINCT categoria FROM @Productos) x ON x.categoria=c.nombre;
+    INSERT INTO dbo.CATEGORIA(nombre)
+    SELECT DISTINCT x.categoria FROM @Productos x
+    WHERE NOT EXISTS(SELECT 1 FROM dbo.CATEGORIA c WHERE c.nombre=x.categoria);
+    UPDATE m SET m.eliminado_en=NULL
+    FROM dbo.MARCA m INNER JOIN (SELECT DISTINCT marca FROM @Productos) x ON x.marca=m.nombre;
+    INSERT INTO dbo.MARCA(nombre)
+    SELECT DISTINCT x.marca FROM @Productos x
+    WHERE NOT EXISTS(SELECT 1 FROM dbo.MARCA m WHERE m.nombre=x.marca);
+
+    INSERT INTO dbo.MARCA_CATEGORIA(id_marca,id_categoria)
+    SELECT DISTINCT m.id_marca,c.id_categoria
+    FROM @Productos x
+    INNER JOIN dbo.MARCA m ON m.nombre=x.marca
+    INNER JOIN dbo.CATEGORIA c ON c.nombre=x.categoria
+    WHERE NOT EXISTS
+    (
+        SELECT 1 FROM dbo.MARCA_CATEGORIA mc
+        WHERE mc.id_marca=m.id_marca AND mc.id_categoria=c.id_categoria
+    );
+
+    UPDATE p SET p.id_categoria=c.id_categoria,p.id_marca=m.id_marca,p.activo=1,p.eliminado_en=NULL,
+                  p.precio_costo=x.costo,p.porcentaje_ganancia=x.ganancia
+    FROM dbo.PRODUCTO p INNER JOIN @Productos x ON x.codigo=p.codigo_barra
+    INNER JOIN dbo.CATEGORIA c ON c.nombre=x.categoria INNER JOIN dbo.MARCA m ON m.nombre=x.marca;
+    INSERT INTO dbo.PRODUCTO(id_categoria,id_marca,codigo_barra,nombre,descripcion,precio_costo,porcentaje_ganancia,activo)
+    SELECT c.id_categoria,m.id_marca,x.codigo,x.nombre,N'Producto del escenario reproducible de pruebas.',x.costo,x.ganancia,1
+    FROM @Productos x INNER JOIN dbo.CATEGORIA c ON c.nombre=x.categoria INNER JOIN dbo.MARCA m ON m.nombre=x.marca
+    WHERE NOT EXISTS(SELECT 1 FROM dbo.PRODUCTO p WHERE p.codigo_barra=x.codigo);
+
+    -- Prepara stock por sucursal, con faltantes, agotados, bajos y suficientes.
     DECLARE @Stock TABLE(sucursal NVARCHAR(100),producto NVARCHAR(100),inicial INT,minimo INT,PRIMARY KEY(sucursal,producto));
-    INSERT INTO @Stock VALUES
-        (N'Sucursal Prueba Centro',N'Amoladora Angular 900W',80,5),(N'Sucursal Prueba Centro',N'Soldadora Inverter 220A',35,4),(N'Sucursal Prueba Centro',N'Guantes de Seguridad Industrial',20,10),
-        (N'Sucursal Prueba Centro',N'Atornillador Inalámbrico',45,5),(N'Sucursal Prueba Centro',N'Cinta Métrica 8m',65,5),(N'Sucursal Prueba Centro',N'Martillo de Uña',55,5),
-        (N'Sucursal Prueba Norte',N'Amoladora Angular 900W',60,5),(N'Sucursal Prueba Norte',N'Soldadora Inverter 220A',7,8),(N'Sucursal Prueba Norte',N'Guantes de Seguridad Industrial',45,5),
-        (N'Sucursal Prueba Norte',N'Atornillador Inalámbrico',35,5),(N'Sucursal Prueba Norte',N'Cinta Métrica 8m',25,8),(N'Sucursal Prueba Norte',N'Martillo de Uña',40,5);
+    DECLARE @SucursalesStock TABLE(nombre NVARCHAR(100) PRIMARY KEY);
+    INSERT INTO @SucursalesStock VALUES(N'Sucursal Central'),(N'Sucursal Prueba Centro'),(N'Sucursal Prueba Norte');
+    ;WITH ProductosOrdenados AS
+    (
+        SELECT nombre,ROW_NUMBER() OVER(ORDER BY codigo) AS numero FROM @Productos
+    ), Combinaciones AS
+    (
+        SELECT s.nombre AS sucursal,p.nombre AS producto,p.numero,
+               CASE s.nombre WHEN N'Sucursal Central' THEN 1 WHEN N'Sucursal Prueba Centro' THEN 5 ELSE 9 END AS desplazamiento
+        FROM @SucursalesStock s CROSS JOIN ProductosOrdenados p
+        WHERE NOT (s.nombre=N'Sucursal Central' AND p.numero IN(24,25))
+          AND NOT (s.nombre=N'Sucursal Prueba Centro' AND p.numero=25)
+          AND NOT (s.nombre=N'Sucursal Prueba Norte' AND p.numero IN(23,24,25))
+    )
+    INSERT INTO @Stock(sucursal,producto,inicial,minimo)
+    SELECT sucursal,producto,
+        CASE
+            WHEN numero<=6 AND sucursal=N'Sucursal Central' THEN
+                CASE numero WHEN 1 THEN 30 WHEN 2 THEN 20 WHEN 3 THEN 0 WHEN 4 THEN 12 WHEN 5 THEN 15 ELSE 8 END
+            WHEN numero<=6 AND sucursal=N'Sucursal Prueba Centro' THEN
+                CASE numero WHEN 1 THEN 80 WHEN 2 THEN 35 WHEN 3 THEN 20 WHEN 4 THEN 45 WHEN 5 THEN 65 ELSE 55 END
+            WHEN numero<=6 AND sucursal=N'Sucursal Prueba Norte' THEN
+                CASE numero WHEN 1 THEN 60 WHEN 2 THEN 7 WHEN 3 THEN 45 WHEN 4 THEN 35 WHEN 5 THEN 25 ELSE 40 END
+            WHEN (numero+desplazamiento)%17=0 THEN 0
+            WHEN (numero+desplazamiento)%13=0 THEN 2
+            WHEN (numero+desplazamiento)%11=0 THEN 5
+            ELSE 15+((numero*7+desplazamiento)%35)
+        END,
+        CASE WHEN sucursal=N'Sucursal Prueba Centro' AND numero=3 THEN 10
+             WHEN sucursal=N'Sucursal Prueba Norte' AND numero=2 THEN 8 ELSE 5 END
+    FROM Combinaciones;
+
     UPDATE i SET i.stock=x.inicial,i.stock_minimo=x.minimo,i.eliminado_en=NULL FROM dbo.INVENTARIO i INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=i.id_sucursal INNER JOIN dbo.PRODUCTO p ON p.id_producto=i.id_producto INNER JOIN @Stock x ON x.sucursal=s.nombre AND x.producto=p.nombre;
     INSERT INTO dbo.INVENTARIO(id_producto,id_sucursal,stock,stock_minimo)
     SELECT p.id_producto,s.id_sucursal,x.inicial,x.minimo FROM @Stock x INNER JOIN dbo.SUCURSAL s ON s.nombre=x.sucursal INNER JOIN dbo.PRODUCTO p ON p.nombre=x.producto
@@ -204,7 +282,7 @@ BEGIN TRY
     IF NOT EXISTS
     (
         SELECT 1 FROM dbo.VENTA v INNER JOIN dbo.USUARIO u ON u.id_usuario=v.id_usuario INNER JOIN dbo.CLIENTE c ON c.id_cliente=v.id_cliente INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=v.id_sucursal
-        WHERE u.nombre_usuario IN(N'vendedor_a1',N'vendedor_a2',N'vendedor_b1',N'vendedor_b2') AND c.documento BETWEEN N'98000101' AND N'98000110' AND s.nombre IN(N'Sucursal Prueba Centro',N'Sucursal Prueba Norte') AND v.eliminado_en IS NULL
+        WHERE u.nombre_usuario IN(N'vendedor_a1',N'vendedor_a2',N'vendedor_b1',N'vendedor_b2',N'vendedor_central') AND c.documento BETWEEN N'98000101' AND N'98000110' AND s.nombre IN(N'Sucursal Central',N'Sucursal Prueba Centro',N'Sucursal Prueba Norte') AND v.eliminado_en IS NULL
     )
     BEGIN
         ;WITH Totales AS
@@ -233,29 +311,43 @@ BEGIN TRY
     ;WITH Consumo AS
     (
         SELECT v.id_sucursal,d.id_producto,SUM(d.cantidad) cantidad FROM dbo.VENTA v INNER JOIN dbo.DETALLE_VENTA d ON d.id_venta=v.id_venta AND d.eliminado_en IS NULL INNER JOIN dbo.USUARIO u ON u.id_usuario=v.id_usuario INNER JOIN dbo.CLIENTE c ON c.id_cliente=v.id_cliente INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=v.id_sucursal
-        WHERE v.eliminado_en IS NULL AND u.nombre_usuario IN(N'vendedor_a1',N'vendedor_a2',N'vendedor_b1',N'vendedor_b2') AND c.documento BETWEEN N'98000101' AND N'98000110' AND s.nombre IN(N'Sucursal Prueba Centro',N'Sucursal Prueba Norte') GROUP BY v.id_sucursal,d.id_producto
+        WHERE v.eliminado_en IS NULL AND u.nombre_usuario IN(N'vendedor_a1',N'vendedor_a2',N'vendedor_b1',N'vendedor_b2',N'vendedor_central') AND c.documento BETWEEN N'98000101' AND N'98000110' AND s.nombre IN(N'Sucursal Central',N'Sucursal Prueba Centro',N'Sucursal Prueba Norte') GROUP BY v.id_sucursal,d.id_producto
     )
     UPDATE i SET i.stock=x.inicial-ISNULL(c.cantidad,0),i.stock_minimo=x.minimo,i.eliminado_en=NULL FROM dbo.INVENTARIO i INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=i.id_sucursal INNER JOIN dbo.PRODUCTO p ON p.id_producto=i.id_producto INNER JOIN @Stock x ON x.sucursal=s.nombre AND x.producto=p.nombre LEFT JOIN Consumo c ON c.id_sucursal=i.id_sucursal AND c.id_producto=i.id_producto;
-    IF EXISTS(SELECT 1 FROM dbo.INVENTARIO i INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=i.id_sucursal WHERE s.nombre IN(N'Sucursal Prueba Centro',N'Sucursal Prueba Norte') AND i.stock<0)
+    IF EXISTS(SELECT 1 FROM dbo.INVENTARIO i INNER JOIN dbo.SUCURSAL s ON s.id_sucursal=i.id_sucursal WHERE s.nombre IN(N'Sucursal Central',N'Sucursal Prueba Centro',N'Sucursal Prueba Norte') AND i.stock<0)
         THROW 51006, 'Las ventas de prueba exceden el stock inicial.', 1;
 
-    -- Avisos de prueba por perfiles destino configurados dinámicamente.
-    DECLARE @Avisos TABLE(titulo NVARCHAR(100) PRIMARY KEY,mensaje NVARCHAR(500),autor NVARCHAR(50),sucursal NVARCHAR(100) NULL,destino NVARCHAR(50));
+    -- Avisos de prueba globales y por sucursal para verificar cada alcance.
+    DECLARE @Avisos TABLE(titulo NVARCHAR(100) PRIMARY KEY,mensaje NVARCHAR(500),autor NVARCHAR(50),sucursal NVARCHAR(100) NULL);
     INSERT INTO @Avisos VALUES
-        (N'Aviso prueba global',N'Revisar los indicadores semanales de ambas sucursales.',N'coordinador_global_test',NULL,N'Prueba Gerencia'),
-        (N'Aviso prueba Centro',N'Priorizar la reposicion de guantes de seguridad.',N'gerente_a',N'Sucursal Prueba Centro',N'Prueba Ventas'),
-        (N'Aviso prueba Norte',N'Controlar el stock bajo antes del proximo cierre.',N'gerente_b',N'Sucursal Prueba Norte',N'Prueba Ventas');
+        (N'Aviso prueba global',N'Revisar los indicadores semanales de ambas sucursales.',N'coordinador_global_test',NULL),
+        (N'Aviso prueba Centro',N'Priorizar la reposicion de guantes de seguridad.',N'gerente_a',N'Sucursal Prueba Centro'),
+        (N'Aviso prueba Norte',N'Controlar el stock bajo antes del proximo cierre.',N'gerente_b',N'Sucursal Prueba Norte');
     INSERT INTO dbo.AVISO(titulo,mensaje,id_usuario_autor,id_sucursal,activo)
     SELECT x.titulo,x.mensaje,u.id_usuario,s.id_sucursal,1 FROM @Avisos x INNER JOIN dbo.USUARIO u ON u.nombre_usuario=x.autor AND u.eliminado_en IS NULL LEFT JOIN dbo.SUCURSAL s ON s.nombre=x.sucursal AND s.eliminado_en IS NULL
     WHERE NOT EXISTS(SELECT 1 FROM dbo.AVISO a WHERE a.titulo=x.titulo AND a.id_usuario_autor=u.id_usuario AND a.eliminado_en IS NULL);
 
-    INSERT INTO dbo.AVISO_PERFIL_DESTINO(id_aviso,id_perfil)
-    SELECT a.id_aviso,p.id_perfil FROM dbo.AVISO a INNER JOIN @Avisos x ON x.titulo=a.titulo INNER JOIN dbo.PERFIL p ON p.nombre=x.destino AND p.eliminado_en IS NULL
-    WHERE NOT EXISTS(SELECT 1 FROM dbo.AVISO_PERFIL_DESTINO apd WHERE apd.id_aviso=a.id_aviso AND apd.id_perfil=p.id_perfil);
-
     UPDATE a SET a.activo=1,a.eliminado_en=NULL
     FROM dbo.AVISO a INNER JOIN @Avisos x ON x.titulo=a.titulo
     INNER JOIN dbo.USUARIO u ON u.id_usuario=a.id_usuario_autor AND u.nombre_usuario=x.autor;
+
+    -- Actividad administrativa reservada para verificar el reporte por usuario sin inferir acciones.
+    DECLARE @AuditoriaPrueba TABLE(usuario NVARCHAR(50),accion NVARCHAR(50),entidad NVARCHAR(50),detalle NVARCHAR(300),sucursal NVARCHAR(100) NULL,PRIMARY KEY(usuario,accion,entidad,detalle));
+    INSERT INTO @AuditoriaPrueba VALUES
+        (N'gerente_a',N'MODIFICACION',N'INVENTARIO',N'AUDITORIA_PRUEBA: Stock actualizado de 7 a 8.',N'Sucursal Prueba Centro'),
+        (N'gerente_b',N'ALTA',N'AVISO',N'AUDITORIA_PRUEBA: Aviso publicado para la sucursal.',N'Sucursal Prueba Norte'),
+        (N'coordinador_global_test',N'MODIFICACION',N'PRODUCTO',N'AUDITORIA_PRUEBA: Producto actualizado para el catálogo.',NULL),
+        (N'vendedor_a1',N'ALTA',N'VENTA',N'AUDITORIA_PRUEBA: Venta registrada por $84000,00.',N'Sucursal Prueba Centro');
+    INSERT INTO dbo.AUDITORIA(id_usuario,accion,entidad,detalle,id_sucursal)
+    SELECT u.id_usuario,x.accion,x.entidad,x.detalle,s.id_sucursal
+    FROM @AuditoriaPrueba x
+    INNER JOIN dbo.USUARIO u ON u.nombre_usuario=x.usuario
+    LEFT JOIN dbo.SUCURSAL s ON s.nombre=x.sucursal
+    WHERE NOT EXISTS
+    (
+        SELECT 1 FROM dbo.AUDITORIA a
+        WHERE a.id_usuario=u.id_usuario AND a.detalle=x.detalle
+    );
 
     COMMIT TRANSACTION;
 END TRY

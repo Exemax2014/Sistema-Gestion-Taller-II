@@ -39,12 +39,12 @@ namespace Capa_Datos
         public string Mensaje { get; set; } = string.Empty;
         public DateTime FechaCreacion { get; set; }
         public string Autor { get; set; } = string.Empty;
-        public string Destino { get; set; } = string.Empty;
+        public string Alcance { get; set; } = string.Empty;
     }
 
-    public class AvisoDestinoDatos
+    public class SucursalAvisoDatos
     {
-        public int IdPerfil { get; set; }
+        public int IdSucursal { get; set; }
         public string Nombre { get; set; } = string.Empty;
     }
 
@@ -103,38 +103,37 @@ namespace Capa_Datos
             });
         }
 
-        // Lista exclusivamente los avisos activos destinados al usuario autenticado.
-        public List<AvisoDatos> ListarAvisosParaUsuario(int idUsuario)
+        // Lista avisos activos según el permiso y alcance que SQL valida para el usuario autenticado.
+        public List<AvisoDatos> ListarAvisosParaUsuario(int idUsuario, int? idSucursalOperativa)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = CrearComando("dbo.sp_Aviso_ListarParaUsuario", conexion);
             comando.Parameters.Add("@idUsuario", SqlDbType.Int).Value = idUsuario;
+            comando.Parameters.Add("@idSucursalOperativa", SqlDbType.Int).Value = idSucursalOperativa ?? (object)DBNull.Value;
             return EjecutarLista(comando, lector => new AvisoDatos
             {
                 IdAviso = lector.GetInt32(0), Titulo = lector.GetString(1), Mensaje = lector.GetString(2),
-                FechaCreacion = lector.GetDateTime(3), Autor = lector.GetString(4), Destino = lector.GetString(5)
+                FechaCreacion = lector.GetDateTime(3), Autor = lector.GetString(4), Alcance = lector.GetString(5)
             });
         }
 
-        // Devuelve los perfiles destino habilitados por SQL para el contexto del autor.
-        public List<AvisoDestinoDatos> ListarDestinosAviso(int idUsuario)
+        // Obtiene sucursales activas para que un usuario global elija el alcance del aviso.
+        public List<SucursalAvisoDatos> ListarSucursalesAviso()
         {
             using SqlConnection conexion = Conexion.CrearConexion();
-            using SqlCommand comando = CrearComando("dbo.sp_Aviso_ListarDestinos", conexion);
-            comando.Parameters.Add("@idUsuario", SqlDbType.Int).Value = idUsuario;
-            return EjecutarLista(comando, lector => new AvisoDestinoDatos
+            using SqlCommand comando = CrearComando("dbo.sp_Sucursal_Listar", conexion);
+            return EjecutarLista(comando, lector => new SucursalAvisoDatos
             {
-                IdPerfil = lector.GetInt32(0), Nombre = lector.GetString(1)
+                IdSucursal = lector.GetInt32(0), Nombre = lector.GetString(1)
             });
         }
 
-        // Publica un aviso para varios perfiles y delega la autorización final a SQL.
-        public void PublicarAviso(int idUsuario, IEnumerable<int> idsDestinos, int? idSucursal, string titulo, string mensaje)
+        // Publica un aviso global o de sucursal y delega la autorización final a SQL.
+        public void PublicarAviso(int idUsuario, int? idSucursal, string titulo, string mensaje)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = CrearComando("dbo.sp_Aviso_Publicar", conexion);
             comando.Parameters.Add("@idUsuario", SqlDbType.Int).Value = idUsuario;
-            comando.Parameters.Add("@idsPerfilesDestino", SqlDbType.NVarChar, -1).Value = string.Join(",", idsDestinos);
             comando.Parameters.Add("@idSucursal", SqlDbType.Int).Value = idSucursal ?? (object)DBNull.Value;
             comando.Parameters.Add("@titulo", SqlDbType.NVarChar, 100).Value = titulo;
             comando.Parameters.Add("@mensaje", SqlDbType.NVarChar, 500).Value = mensaje;

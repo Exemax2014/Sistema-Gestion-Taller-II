@@ -143,6 +143,7 @@ namespace Capa_Logica
 
             sucursalLogica =
                 new SucursalLogica();
+
         }
 
 
@@ -221,7 +222,8 @@ namespace Capa_Logica
                 usuario.NombreUsuario,
                 usuario.Perfil,
                 usuario.Sucursal,
-                funcionalidades
+                funcionalidades,
+                usuario.AlcanceGlobal
             );
 
 
@@ -683,13 +685,13 @@ namespace Capa_Logica
 
             ResultadoUsuarioDatos resultado =
                 usuarioDatos.Alta(
-                    datos
+                    datos,
+                    SesionActual.IdUsuario,
+                    SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa
                 );
 
 
-            return ConvertirResultado(
-                resultado
-            );
+            return ConvertirResultado(resultado);
         }
 
 
@@ -768,13 +770,13 @@ namespace Capa_Logica
             ResultadoUsuarioDatos resultado =
                 usuarioDatos.Modificar(
                     idUsuario,
-                    datos
+                    datos,
+                    SesionActual.IdUsuario,
+                    SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa
                 );
 
 
-            return ConvertirResultado(
-                resultado
-            );
+            return ConvertirResultado(resultado);
         }
 
 
@@ -815,13 +817,13 @@ namespace Capa_Logica
 
             ResultadoUsuarioDatos resultado =
                 usuarioDatos.Baja(
-                    idUsuario
+                    idUsuario,
+                    SesionActual.IdUsuario,
+                    SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa
                 );
 
 
-            return ConvertirResultado(
-                resultado
-            );
+            return ConvertirResultado(resultado);
         }
 
 
@@ -850,13 +852,13 @@ namespace Capa_Logica
 
             ResultadoUsuarioDatos resultado =
                 usuarioDatos.Reactivar(
-                    idUsuario
+                    idUsuario,
+                    SesionActual.IdUsuario,
+                    SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa
                 );
 
 
-            return ConvertirResultado(
-                resultado
-            );
+            return ConvertirResultado(resultado);
         }
 
 

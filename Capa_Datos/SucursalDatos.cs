@@ -113,18 +113,19 @@ namespace Capa_Datos
         }
 
         // Registra una sucursal y su dirección dentro de la misma operación SQL.
-        public ResultadoSucursalDatos Alta(string nombre, int idLocalidad, string calle)
+        public ResultadoSucursalDatos Alta(string nombre, int idLocalidad, string calle, int idUsuarioEjecutor)
         {
             return EjecutarOperacion("dbo.sp_Sucursal_Alta", comando =>
             {
                 comando.Parameters.Add("@nombre", SqlDbType.NVarChar, 100).Value = nombre;
                 comando.Parameters.Add("@idLocalidad", SqlDbType.Int).Value = idLocalidad;
                 comando.Parameters.Add("@calle", SqlDbType.NVarChar, 150).Value = calle;
+                comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
             });
         }
 
         // Actualiza los datos y ubicación de una sucursal existente.
-        public ResultadoSucursalDatos Modificar(int idSucursal, string nombre, int idLocalidad, string calle)
+        public ResultadoSucursalDatos Modificar(int idSucursal, string nombre, int idLocalidad, string calle, int idUsuarioEjecutor)
         {
             return EjecutarOperacion("dbo.sp_Sucursal_Modificar", comando =>
             {
@@ -132,21 +133,28 @@ namespace Capa_Datos
                 comando.Parameters.Add("@nombre", SqlDbType.NVarChar, 100).Value = nombre;
                 comando.Parameters.Add("@idLocalidad", SqlDbType.Int).Value = idLocalidad;
                 comando.Parameters.Add("@calle", SqlDbType.NVarChar, 150).Value = calle;
+                comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
             });
         }
 
         // Realiza la baja lógica de una sucursal sin eliminar su historial.
-        public ResultadoSucursalDatos Baja(int idSucursal)
+        public ResultadoSucursalDatos Baja(int idSucursal, int idUsuarioEjecutor)
         {
             return EjecutarOperacion("dbo.sp_Sucursal_Baja", comando =>
-                comando.Parameters.Add("@idSucursal", SqlDbType.Int).Value = idSucursal);
+            {
+                comando.Parameters.Add("@idSucursal", SqlDbType.Int).Value = idSucursal;
+                comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            });
         }
 
         // Reactiva una sucursal dada de baja manteniendo sus relaciones existentes.
-        public ResultadoSucursalDatos Reactivar(int idSucursal)
+        public ResultadoSucursalDatos Reactivar(int idSucursal, int idUsuarioEjecutor)
         {
             return EjecutarOperacion("dbo.sp_Sucursal_Reactivar", comando =>
-                comando.Parameters.Add("@idSucursal", SqlDbType.Int).Value = idSucursal);
+            {
+                comando.Parameters.Add("@idSucursal", SqlDbType.Int).Value = idSucursal;
+                comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
+            });
         }
 
         // Ejecuta un SP de gestión y materializa su contrato uniforme de salida.
