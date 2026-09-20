@@ -2117,10 +2117,6 @@ END;
 GO
 
 
--- ============================================================
--- CATEGORÍAS
--- ============================================================
-
 /* ============================================================
    CLIENTES - versión vigente con filtro de estado y reactivación
    ============================================================ */
@@ -2224,6 +2220,10 @@ BEGIN
     END CATCH;
 END;
 GO
+
+-- ============================================================
+-- CATEGORÍAS
+-- ============================================================
 
 CREATE OR ALTER PROCEDURE dbo.sp_Categoria_Listar
 AS
@@ -4948,4 +4948,31 @@ GO
 
 -- ============================================================
 -- FIN DEL SCRIPT
+--
+-- NOTA IMPORTANTE SOBRE VENTA:
+-- La registración completa de una venta todavía debe resolverse
+-- como UNA TRANSACCIÓN ATÓMICA que incluya:
+--
+-- 1. VENTA
+-- 2. DETALLE_VENTA
+-- 3. PAGO
+-- 4. descuento de INVENTARIO en la SUCURSAL de la venta
+--
+-- También deberá devolver:
+-- @IdGenerado
+-- @CodigoResultado
+-- @MensajeResultado
+--
+-- Código 4 quedará reservado para STOCK INSUFICIENTE.
+--
+-- Para implementarlo correctamente primero se debe definir cómo
+-- Capa_Logica enviará múltiples productos y múltiples pagos
+-- (por ejemplo, usando Table-Valued Parameters).
+--
+-- NOTA SOBRE PERMISOS DE CLIENTES:
+-- Falta decidir e insertar (en 02_DatosIniciales.sql o similar)
+-- las funcionalidades CLIENTES_VER / CLIENTES_ALTA /
+-- CLIENTES_MODIFICAR / CLIENTES_BAJA y su asignación a los
+-- perfiles Gerente y Vendedor (Administrador puede asignarse
+-- directamente). Es una decisión abierta del equipo.
 -- ============================================================

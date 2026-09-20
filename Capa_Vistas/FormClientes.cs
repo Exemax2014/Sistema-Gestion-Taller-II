@@ -16,9 +16,10 @@ namespace Capa_Vistas
         {
             InitializeComponent();
             this.formPrincipal = formPrincipal;
-
             ConfigurarGrilla();
+
             ConfigurarPermisos();
+
             ConfigurarEventos();
             EjecutarBusqueda();
         }

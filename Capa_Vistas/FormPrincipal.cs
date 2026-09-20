@@ -13,9 +13,6 @@ namespace Capa_Vistas
         private Form? formularioActivo;
         private Button? botonActivo;
 
-        private readonly UsuarioLogica usuarioLogicaSucursal;
-        private bool cargandoSucursalesOperativas;
-
 
         // =========================================================
         // RELOJ
@@ -23,7 +20,6 @@ namespace Capa_Vistas
 
         private readonly System.Windows.Forms.Timer reloj =
             new System.Windows.Forms.Timer();
-
 
 
         // =========================================================
@@ -74,9 +70,6 @@ namespace Capa_Vistas
         {
             InitializeComponent();
 
-            usuarioLogicaSucursal =
-                new UsuarioLogica();
-
             ConfigurarEventos();
 
             ConfigurarReloj();
@@ -117,11 +110,6 @@ namespace Capa_Vistas
 
             btnReportes.Click +=
                 BtnReportes_Click;
-
-
-            // Sucursal operativa
-            cmbSucursalOperativa.SelectedIndexChanged +=
-                CmbSucursalOperativa_SelectedIndexChanged;
 
 
             // Cuenta
@@ -209,8 +197,6 @@ namespace Capa_Vistas
                     "Todas";
             }
 
-
-            ConfigurarSelectorSucursalOperativa();
 
             ActualizarFechaHora();
         }
@@ -865,10 +851,17 @@ namespace Capa_Vistas
             );
 
 
-            // El acceso al módulo depende del permiso granular y no del nombre o tipo de perfil.
             bool puedeVerReportes =
                 SesionActual.TienePermiso(
-                    "REPORTES_VER"
+                    "REPORTES_ADMINISTRADOR"
+                )
+                ||
+                SesionActual.TienePermiso(
+                    "REPORTES_GERENTE"
+                )
+                ||
+                SesionActual.TienePermiso(
+                    "REPORTES_VENDEDOR"
                 );
 
 
@@ -1268,9 +1261,7 @@ namespace Capa_Vistas
 
 
             AbrirFormularioEnPanel(
-                new FormVentas(
-                    this
-                ),
+                new FormVentas(),
                 btnVentas
             );
         }
@@ -1308,7 +1299,6 @@ namespace Capa_Vistas
         // seleccionado el módulo Productos.
         public Button BotonProductos
         {
-
             get
             {
                 return btnProductos;
@@ -1332,22 +1322,7 @@ namespace Capa_Vistas
                 new FormProductos(this),
                 btnProductos
             );
-
-
         }
-
-        // =========================================================
-        // ACCESO BOTÓN USUARIOS
-        // =========================================================
-
-        public Button BotonUsuarios
-        {
-            get
-            {
-                return btnUsuarios;
-            }
-        }
-
 
         // =========================================================
         // USUARIOS
@@ -1411,15 +1386,6 @@ namespace Capa_Vistas
 
 
             mensaje.ShowDialog(this);
-        }
-
-
-        private class OpcionSucursalOperativa
-        {
-            public int? IdSucursal { get; set; }
-
-            public string Nombre { get; set; } =
-                string.Empty;
         }
 
 
