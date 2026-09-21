@@ -40,10 +40,10 @@ Sistema_Hierro_Y_Forja/
 │   └── Historico/
 │       └── 05_CatalogoInicial.sql
 ├── Capa_Datos/      Conexion y servicios de usuarios, perfiles, clientes,
-│                    direcciones, productos, inventario, sucursales y ventas
+│                    direcciones, productos, inventario, sucursales, ventas y backup
 ├── Capa_Logica/     Sesión, autenticación, permisos y lógica de esos módulos
 ├── Capa_Vistas/     Login, Principal/Inicio, Clientes, Productos, Usuarios,
-│                    Ventas, listados/detalles, mensajes y reportes
+│                    Ventas, backup, listados/detalles, mensajes y reportes
 ├── Sistema_Hierro_Y_Forja.slnx
 ├── AGENTS.md
 ├── README.md
@@ -148,6 +148,7 @@ Sí realizar cambios pequeños, reutilizar código, obtener datos dinámicos des
 - Grillas de Usuarios, Clientes y Productos con estados, acciones, alineación y presentación visual unificadas.
 - Reportes: `FormReportesGeneral` es la única vista activa; permisos granulares `REPORTES_*`, alcance propio/sucursal/global, gráfico de ventas y recaudación, productos más vendidos, rendimiento de vendedores, stock bajo, detalle de ventas y exportación CSV. `FormReportesGerente` y `FormReportesVendedor` quedan fuera de navegación.
 - Auditoría: historial persistente de altas, modificaciones, bajas/reactivaciones, stock, ventas y avisos; Reportes por usuario muestra actividad administrativa real según alcance autorizado.
+- Back Up: generación manual de archivos `.bak` desde el menú, protegida por `BACKUP_REALIZAR` y registrada en `AUDITORIA`; no incluye restauración ni tablas propias.
 - Los permisos heredados `REPORTES_ADMINISTRADOR`, `REPORTES_GERENTE` y `REPORTES_VENDEDOR` se conservan por compatibilidad, pero no forman parte de la lógica nueva de Reportes.
 
 ## 14. Pendiente y decisiones abiertas

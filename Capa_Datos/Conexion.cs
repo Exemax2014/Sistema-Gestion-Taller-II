@@ -144,5 +144,12 @@ namespace Capa_Datos
 
             return new SqlConnection(builder.ConnectionString);
         }
+
+        // Expone solo el catálogo configurado sin divulgar el resto de la cadena de conexión.
+        public static string ObtenerNombreBaseDatos()
+        {
+            using SqlConnection conexion = CrearConexion();
+            return new SqlConnectionStringBuilder(conexion.ConnectionString).InitialCatalog;
+        }
     }
 }

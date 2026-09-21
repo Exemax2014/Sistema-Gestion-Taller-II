@@ -51,6 +51,7 @@ namespace Capa_Vistas
             btnProductos = new Button();
             btnUsuarios = new Button();
             btnReportes = new Button();
+            btnBackup = new Button();
             pnlCuenta = new Panel();
             pnlSeparadorCuenta = new Panel();
             lblUsuarioActual = new Label();
@@ -218,6 +219,7 @@ namespace Capa_Vistas
             pnlMenu.Controls.Add(btnProductos);
             pnlMenu.Controls.Add(btnUsuarios);
             pnlMenu.Controls.Add(btnReportes);
+            pnlMenu.Controls.Add(btnBackup);
             pnlMenu.Controls.Add(pnlCuenta);
             pnlMenu.Dock = DockStyle.Left;
             pnlMenu.Location = new Point(0, 0);
@@ -394,6 +396,26 @@ namespace Capa_Vistas
             btnReportes.TextAlign = ContentAlignment.BottomCenter;
             btnReportes.UseVisualStyleBackColor = false;
             // 
+            // btnBackup
+            //
+            btnBackup.BackColor = Color.FromArgb(17, 21, 26);
+            btnBackup.Cursor = Cursors.Hand;
+            btnBackup.FlatAppearance.BorderSize = 0;
+            btnBackup.FlatAppearance.MouseOverBackColor = Color.FromArgb(31, 35, 40);
+            btnBackup.FlatStyle = FlatStyle.Flat;
+            btnBackup.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            btnBackup.ForeColor = Color.White;
+            btnBackup.ImageAlign = ContentAlignment.TopCenter;
+            btnBackup.Location = new Point(0, 661);
+            btnBackup.Name = "btnBackup";
+            btnBackup.Padding = new Padding(0, 4, 0, 5);
+            btnBackup.Size = new Size(165, 92);
+            btnBackup.TabIndex = 7;
+            btnBackup.Tag = "BACKUP_REALIZAR";
+            btnBackup.Text = "BACK UP";
+            btnBackup.TextAlign = ContentAlignment.BottomCenter;
+            btnBackup.UseVisualStyleBackColor = false;
+            //
             // pnlCuenta
             // 
             pnlCuenta.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
@@ -402,7 +424,7 @@ namespace Capa_Vistas
             pnlCuenta.Controls.Add(lblUsuarioActual);
             pnlCuenta.Controls.Add(btnEditarPerfil);
             pnlCuenta.Controls.Add(btnCerrarSesion);
-            pnlCuenta.Location = new Point(0, 720);
+            pnlCuenta.Location = new Point(0, 760);
             pnlCuenta.Name = "pnlCuenta";
             pnlCuenta.Size = new Size(165, 150);
             pnlCuenta.TabIndex = 7;
@@ -534,6 +556,8 @@ namespace Capa_Vistas
         private Button btnUsuarios;
 
         private Button btnReportes;
+
+        private Button btnBackup;
 
         private Panel pnlCuenta;
 

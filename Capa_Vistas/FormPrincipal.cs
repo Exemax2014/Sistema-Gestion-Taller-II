@@ -15,6 +15,8 @@ namespace Capa_Vistas
         private Button? botonActivo;
         private readonly UsuarioLogica usuarioLogicaSucursal = new UsuarioLogica();
         private readonly ReporteLogica reporteLogica = new();
+        private readonly BackupLogica backupLogica = new();
+        private Bitmap? iconoBackupOriginal;
         private bool cargandoSucursalesOperativas;
         private ToolTip? toolTipSesion;
         private readonly Dictionary<Button, Image?> imagenesMenuOriginales = new();
@@ -85,6 +87,8 @@ namespace Capa_Vistas
             InitializeComponent();
             components ??= new System.ComponentModel.Container();
             toolTipSesion = new ToolTip(components);
+            iconoBackupOriginal = CrearIconoBackup();
+            btnBackup.Image = iconoBackupOriginal;
             foreach (Button boton in ObtenerBotonesMenu())
                 imagenesMenuOriginales[boton] = boton.Image;
 
@@ -129,6 +133,9 @@ namespace Capa_Vistas
 
             btnReportes.Click +=
                 BtnReportes_Click;
+
+            btnBackup.Click +=
+                BtnBackup_Click;
 
 
             // Cuenta
@@ -185,7 +192,25 @@ namespace Capa_Vistas
             }
 
             cmbSucursalOperativa.SelectedIndexChanged += CmbSucursalOperativa_SelectedIndexChanged;
-            FormClosed += (_, _) => LiberarImagenesMenuAtenuadas();
+            FormClosed += (_, _) => LiberarRecursosMenu();
+        }
+
+        // Renderiza un símbolo monocromático y deja que el menú aplique su atenuación cacheada habitual.
+        private static Bitmap CrearIconoBackup()
+        {
+            Bitmap imagen = new(42, 42);
+            using Graphics graphics = Graphics.FromImage(imagen);
+            graphics.Clear(Color.Transparent);
+            graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
+            using Font fuente = new("Segoe UI Symbol", 27F, FontStyle.Regular, GraphicsUnit.Pixel);
+            using Brush pincel = new SolidBrush(Color.White);
+            using StringFormat formato = new()
+            {
+                Alignment = StringAlignment.Center,
+                LineAlignment = StringAlignment.Center
+            };
+            graphics.DrawString("⇩", fuente, pincel, new RectangleF(0, 0, imagen.Width, imagen.Height), formato);
+            return imagen;
         }
 
 
@@ -523,6 +548,15 @@ namespace Capa_Vistas
             foreach (Image imagen in imagenesMenuAtenuadas.Values)
                 imagen.Dispose();
             imagenesMenuAtenuadas.Clear();
+        }
+
+        // Libera las imágenes propias del botón nuevo sin disponer los recursos compartidos del menú.
+        private void LiberarRecursosMenu()
+        {
+            LiberarImagenesMenuAtenuadas();
+            btnBackup.Image = null;
+            iconoBackupOriginal?.Dispose();
+            iconoBackupOriginal = null;
         }
 
 
@@ -937,6 +971,11 @@ namespace Capa_Vistas
                 btnReportes,
                 reporteLogica.PuedeAbrirReportes()
             );
+
+            ConfigurarPermisoBoton(
+                btnBackup,
+                backupLogica.PuedeRealizarBackup()
+            );
         }
 
 
@@ -1010,7 +1049,8 @@ namespace Capa_Vistas
                 btnClientes,
                 btnProductos,
                 btnUsuarios,
-                btnReportes
+                btnReportes,
+                btnBackup
             };
         }
 
@@ -1196,6 +1236,13 @@ namespace Capa_Vistas
 
             if (!TieneAccesoMenu(botonOrigen) && !detalleStockAutorizado)
             {
+                if (formulario is FormBackup)
+                {
+                    MostrarMensajePrincipal(
+                        "Sin permiso",
+                        "No tenés permisos para realizar copias de seguridad.");
+                }
+
                 formulario.Dispose();
 
                 return;
@@ -1455,6 +1502,20 @@ namespace Capa_Vistas
                 reportes,
                 btnReportes
             );
+        }
+
+        // Revalida el permiso y abre el formulario embebido de generación de copias.
+        private void BtnBackup_Click(object? sender, EventArgs e)
+        {
+            if (!backupLogica.PuedeRealizarBackup())
+            {
+                MostrarMensajePrincipal(
+                    "Sin permiso",
+                    "No tenés permisos para realizar copias de seguridad.");
+                return;
+            }
+
+            AbrirFormularioEnPanel(new FormBackup(this), btnBackup);
         }
 
 
