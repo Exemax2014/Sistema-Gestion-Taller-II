@@ -105,9 +105,9 @@ namespace Capa_Vistas
             pnlListado.Controls.Add(lblListadoDescripcion);
             pnlListado.Controls.Add(dgvVentas);
             pnlListado.Controls.Add(lblCantidad);
-            pnlListado.Location = new Point(32, 184);
+            pnlListado.Location = new Point(32, 198);
             pnlListado.Name = "pnlListado";
-            pnlListado.Size = new Size(1116, 490);
+            pnlListado.Size = new Size(1116, 476);
             pnlListado.TabIndex = 2;
             // 
             // lblListadoTitulo
@@ -194,7 +194,7 @@ namespace Capa_Vistas
             pnlFiltros.Controls.Add(dtpHasta);
             pnlFiltros.Controls.Add(btnBuscar);
             pnlFiltros.Controls.Add(btnLimpiar);
-            pnlFiltros.Location = new Point(32, 106);
+            pnlFiltros.Location = new Point(32, 120);
             pnlFiltros.Name = "pnlFiltros";
             pnlFiltros.Size = new Size(1116, 72);
             pnlFiltros.TabIndex = 1;
@@ -268,9 +268,9 @@ namespace Capa_Vistas
             pnlCabecera.Controls.Add(lblTitulo);
             pnlCabecera.Controls.Add(lblSubtitulo);
             pnlCabecera.Controls.Add(pnlLineaTitulo);
-            pnlCabecera.Location = new Point(32, 18);
+            pnlCabecera.Location = new Point(32, 20);
             pnlCabecera.Name = "pnlCabecera";
-            pnlCabecera.Size = new Size(1116, 82);
+            pnlCabecera.Size = new Size(1116, 100);
             pnlCabecera.TabIndex = 0;
             // 
             // lblTitulo
@@ -278,7 +278,7 @@ namespace Capa_Vistas
             lblTitulo.AutoSize = true;
             lblTitulo.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
             lblTitulo.ForeColor = Color.FromArgb(45, 49, 54);
-            lblTitulo.Location = new Point(0, 0);
+            lblTitulo.Location = new Point(0, 2);
             lblTitulo.Name = "lblTitulo";
             lblTitulo.Size = new Size(346, 50);
             lblTitulo.TabIndex = 0;
@@ -287,9 +287,9 @@ namespace Capa_Vistas
             // lblSubtitulo
             // 
             lblSubtitulo.AutoSize = true;
-            lblSubtitulo.Font = new Font("Segoe UI", 9F);
+            lblSubtitulo.Font = new Font("Segoe UI", 9.5F);
             lblSubtitulo.ForeColor = Color.FromArgb(105, 110, 116);
-            lblSubtitulo.Location = new Point(2, 48);
+            lblSubtitulo.Location = new Point(2, 54);
             lblSubtitulo.Name = "lblSubtitulo";
             lblSubtitulo.Size = new Size(325, 20);
             lblSubtitulo.TabIndex = 1;
@@ -298,9 +298,9 @@ namespace Capa_Vistas
             // pnlLineaTitulo
             // 
             pnlLineaTitulo.BackColor = Color.FromArgb(190, 137, 45);
-            pnlLineaTitulo.Location = new Point(2, 74);
+            pnlLineaTitulo.Location = new Point(2, 84);
             pnlLineaTitulo.Name = "pnlLineaTitulo";
-            pnlLineaTitulo.Size = new Size(95, 3);
+            pnlLineaTitulo.Size = new Size(92, 3);
             pnlLineaTitulo.TabIndex = 2;
             // 
             // FormListadoVentas

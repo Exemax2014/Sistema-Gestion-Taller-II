@@ -20,7 +20,9 @@ namespace Capa_Vistas
         private readonly FormPrincipal formPrincipal;
 
         private int? idPerfilEdicion;
+        private int? idSucursalEdicion;
         private bool cargandoPerfil;
+        private bool cargandoSucursal;
 
 
         public FormUsuarios(
@@ -46,12 +48,16 @@ namespace Capa_Vistas
             ConfigurarGrilla();
             ConfigurarEventos();
             ConfigurarPermisos();
-            MostrarVistaUsuarios();
+            AjustarLayoutModulo();
+            MostrarPrimeraVistaPermitida();
             AjustarDistribucionPerfil();
 
-            CargarPerfiles();
             CargarEstados();
-            CargarUsuarios();
+            if (usuarioLogica.PuedeVerUsuarios())
+            {
+                CargarPerfiles();
+                CargarUsuarios();
+            }
         }
 
 
@@ -299,9 +305,6 @@ namespace Capa_Vistas
             pnlDetallePerfil.Resize +=
                 PnlDetallePerfil_Resize;
 
-            flpPermisos.Resize +=
-                FlpPermisos_Resize;
-
             lstPerfiles.SelectedIndexChanged +=
                 LstPerfiles_SelectedIndexChanged;
 
@@ -319,6 +322,56 @@ namespace Capa_Vistas
 
             txtDescripcionPerfil.KeyPress +=
                 DescripcionPerfil_KeyPress;
+
+            Resize += (_, _) => AjustarLayoutModulo();
+        }
+
+
+        // Alinea cabecera, pestañas y vistas al patrón de Productos y recalcula las filas al reducir ancho.
+        private void AjustarLayoutModulo()
+        {
+            if (ClientSize.Width <= 64 || ClientSize.Height <= 140) return;
+
+            const int margen = 32;
+            int ancho = ClientSize.Width - margen * 2;
+            tlpCabeceraUsuarios.SetBounds(margen, 20, ancho, 100);
+            btnNuevoUsuario.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnNuevoUsuario.Margin = new Padding(10, 17, 0, 0);
+            btnNuevoUsuario.SetBounds(Math.Max(0, ancho - 189), 17, 179, 42);
+            lblTitulo.AutoSize = false;
+            lblTitulo.AutoEllipsis = true;
+            lblTitulo.SetBounds(0, 2, Math.Max(160, ancho - 190), 50);
+            lblSubtitulo.AutoSize = false;
+            lblSubtitulo.AutoEllipsis = true;
+            lblSubtitulo.SetBounds(2, 54, Math.Max(100, ancho - 194), 22);
+            pnlLineaTitulo.SetBounds(2, 84, 92, 3);
+
+            List<(Button Boton, int Ancho)> botones = new();
+            if (usuarioLogica.PuedeVerUsuarios()) botones.Add((btnVistaUsuarios, 120));
+            if (perfilLogica.PuedeGestionarPermisos()) botones.Add((btnVistaPerfiles, 230));
+            if (sucursalLogica.PuedeVerSucursales()) botones.Add((btnVistaSucursales, 120));
+
+            int fila = 0;
+            int x = 0;
+            foreach ((Button boton, int anchoBoton) in botones)
+            {
+                if (x > 0 && x + anchoBoton > ancho)
+                {
+                    fila++;
+                    x = 0;
+                }
+
+                boton.SetBounds(x, fila * 43 + 2, anchoBoton, 39);
+                boton.TextAlign = ContentAlignment.MiddleCenter;
+                x += anchoBoton + 6;
+            }
+
+            int altoNavegacion = botones.Count == 0 ? 0 : (fila + 1) * 43;
+            int inicioContenido = 120 + altoNavegacion;
+            pnlNavegacion.SetBounds(margen, 120, ancho, altoNavegacion);
+            int altoContenido = Math.Max(120, ClientSize.Height - inicioContenido - 20);
+            foreach (Panel vista in new[] { pnlVistaUsuarios, pnlVistaPerfiles, pnlVistaSucursales })
+                vista.SetBounds(margen, inicioContenido, ancho, altoContenido);
         }
 
 
@@ -348,6 +401,9 @@ namespace Capa_Vistas
 
             dgvUsuarios.Enabled =
                 usuarioLogica.PuedeVerUsuarios();
+
+            btnVistaUsuarios.Visible = usuarioLogica.PuedeVerUsuarios();
+            btnVistaUsuarios.Enabled = usuarioLogica.PuedeVerUsuarios();
 
             bool puedeGestionarPermisos =
                 perfilLogica.PuedeGestionarPermisos();
@@ -423,6 +479,12 @@ namespace Capa_Vistas
 
         private void MostrarVistaUsuarios()
         {
+            if (!usuarioLogica.PuedeVerUsuarios())
+            {
+                MostrarMensaje("Acceso no permitido", "No tiene permiso para consultar usuarios.");
+                return;
+            }
+
             pnlVistaUsuarios.Visible =
                 true;
 
@@ -458,6 +520,28 @@ namespace Capa_Vistas
 
             btnNuevoUsuario.Visible =
                 usuarioLogica.PuedeCrearUsuario();
+        }
+
+
+        // Selecciona la primera vista interna autorizada sin forzar acceso a Usuarios.
+        private void MostrarPrimeraVistaPermitida()
+        {
+            if (usuarioLogica.PuedeVerUsuarios())
+            {
+                MostrarVistaUsuarios();
+                return;
+            }
+
+            if (perfilLogica.PuedeGestionarPermisos())
+            {
+                MostrarVistaPerfiles();
+                return;
+            }
+
+            if (sucursalLogica.PuedeVerSucursales())
+            {
+                MostrarVistaSucursales();
+            }
         }
 
 
@@ -518,7 +602,7 @@ namespace Capa_Vistas
             btnVistaSucursales.ForeColor = Color.White;
 
             lblTitulo.Text = "Sucursales";
-            lblSubtitulo.Text = "Consulta las sucursales activas y la distribución de usuarios por perfil.";
+            lblSubtitulo.Text = "Consulta sucursales y la distribución de usuarios por perfil.";
             btnNuevoUsuario.Visible = false;
 
             MostrarListadoSucursales();
@@ -549,8 +633,7 @@ namespace Capa_Vistas
                     flpSucursales.Controls.Add(CrearBloqueSucursal(sucursal));
                 }
 
-                lblCantidadSucursales.Text =
-                    $"{sucursales.Count} sucursal(es) activa(s)";
+                lblCantidadSucursales.Text = $"{sucursales.Count(s => s.Activa)} activa(s) · {sucursales.Count(s => !s.Activa)} inactiva(s)";
 
                 AjustarAnchoBloquesSucursales();
             }
@@ -570,22 +653,36 @@ namespace Capa_Vistas
         private Panel CrearBloqueSucursal(SucursalResumenModelo sucursal)
         {
             int altoResumen = Math.Max(1, sucursal.UsuariosPorPerfil.Count) * 24;
+            bool puedeModificar = sucursalLogica.PuedeModificarSucursal() && sucursal.Activa;
+            bool puedeCambiarEstado = sucursalLogica.PuedeEliminarSucursal();
             Panel bloque = new Panel
             {
                 BackColor = Color.White,
                 BorderStyle = BorderStyle.FixedSingle,
-                Height = 105 + altoResumen,
+                Width = Math.Max(360, flpSucursales.ClientSize.Width - 24),
+                Height = 166 + altoResumen,
                 Margin = new Padding(0, 0, 0, 12),
                 Tag = sucursal.IdSucursal
             };
 
             Label lblNombre = new Label
             {
-                AutoSize = true,
+                AutoEllipsis = true,
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 Font = new Font("Segoe UI", 11F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(55, 59, 64),
                 Location = new Point(18, 15),
+                Size = new Size(Math.Max(120, bloque.Width - 36), 25),
                 Text = sucursal.Nombre
+            };
+
+            Label lblEstado = new Label
+            {
+                AutoSize = true,
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                ForeColor = sucursal.Activa ? Color.FromArgb(46, 125, 74) : Color.FromArgb(165, 55, 55),
+                Location = new Point(18, 43),
+                Text = sucursal.Activa ? "Activa" : "Inactiva"
             };
 
             string ubicacion = string.Join(", ", new[]
@@ -597,10 +694,13 @@ namespace Capa_Vistas
 
             Label lblUbicacion = new Label
             {
-                AutoSize = true,
+                AutoSize = false,
+                AutoEllipsis = true,
                 Font = new Font("Segoe UI", 8.5F),
                 ForeColor = Color.FromArgb(105, 110, 116),
-                Location = new Point(18, 45),
+                Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
+                Location = new Point(18, 65),
+                Size = new Size(Math.Max(120, bloque.Width - 36), 22),
                 Text = string.IsNullOrWhiteSpace(ubicacion)
                     ? "Sin dirección registrada"
                     : ubicacion
@@ -611,7 +711,7 @@ namespace Capa_Vistas
                 AutoSize = true,
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
                 ForeColor = Color.FromArgb(190, 137, 45),
-                Location = new Point(18, 73),
+                Location = new Point(18, 93),
                 Text = "Usuarios activos por perfil"
             };
 
@@ -619,7 +719,7 @@ namespace Capa_Vistas
             {
                 Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right,
                 FlowDirection = FlowDirection.LeftToRight,
-                Location = new Point(18, 99),
+                Location = new Point(18, 119),
                 Size = new Size(Math.Max(300, flpSucursales.ClientSize.Width - 55), altoResumen),
                 WrapContents = true
             };
@@ -637,10 +737,122 @@ namespace Capa_Vistas
             }
 
             bloque.Controls.Add(lblNombre);
+            bloque.Controls.Add(lblEstado);
             bloque.Controls.Add(lblUbicacion);
             bloque.Controls.Add(lblResumen);
             bloque.Controls.Add(perfiles);
+
+            int yAcciones = 124 + altoResumen;
+            Button btnDetalle = CrearBotonAccionSucursal(
+                puedeModificar ? "Modificar" : "Ver detalle",
+                Color.FromArgb(105, 110, 116));
+            btnDetalle.Location = new Point(18, yAcciones);
+            btnDetalle.Click += (_, _) => AbrirDetalleSucursal(sucursal, puedeModificar);
+            bloque.Controls.Add(btnDetalle);
+
+            if (puedeCambiarEstado)
+            {
+                Button btnEstado = CrearBotonAccionSucursal(
+                    sucursal.Activa ? "Dar de baja" : "Reactivar",
+                    sucursal.Activa ? Color.FromArgb(165, 55, 55) : Color.FromArgb(46, 125, 74));
+                btnEstado.Location = new Point(150, yAcciones);
+                btnEstado.Click += (_, _) => CambiarEstadoSucursal(sucursal);
+                bloque.Controls.Add(btnEstado);
+            }
+
             return bloque;
+        }
+
+
+        // Crea una acción compacta y consistente para las tarjetas de sucursal.
+        private static Button CrearBotonAccionSucursal(string texto, Color color)
+        {
+            return new Button
+            {
+                BackColor = color,
+                Cursor = Cursors.Hand,
+                FlatStyle = FlatStyle.Flat,
+                FlatAppearance = { BorderSize = 0 },
+                ForeColor = Color.White,
+                Size = new Size(122, 32),
+                Text = texto,
+                UseVisualStyleBackColor = false
+            };
+        }
+
+
+        // Abre los datos de una sucursal y vuelve de solo lectura cualquier consulta sin permiso de modificación.
+        private void AbrirDetalleSucursal(SucursalResumenModelo sucursal, bool habilitarEdicion)
+        {
+            if (!sucursalLogica.PuedeVerSucursales())
+            {
+                MostrarMensaje("Acceso no permitido", "No tiene permiso para consultar sucursales.");
+                return;
+            }
+
+            bool editable = habilitarEdicion && sucursal.Activa && sucursalLogica.PuedeModificarSucursal();
+            idSucursalEdicion = sucursal.IdSucursal;
+            lblFormularioSucursalTitulo.Text = editable ? "Modificar sucursal" : "Detalle de sucursal";
+            btnGuardarSucursal.Text = "Guardar cambios";
+            btnGuardarSucursal.Visible = editable;
+            btnGuardarSucursal.Enabled = editable;
+            txtNombreSucursal.Text = sucursal.Nombre;
+            txtDireccionSucursal.Text = sucursal.Calle;
+            chkSucursalActiva.Checked = sucursal.Activa;
+            CargarProvinciasSucursal();
+
+            cargandoSucursal = true;
+            if (sucursal.IdProvincia > 0)
+            {
+                cmbSucursalProvincia.SelectedValue = sucursal.IdProvincia;
+                CargarLocalidadesSucursal(sucursal.IdProvincia, true);
+                if (sucursal.IdLocalidad > 0)
+                    cmbSucursalLocalidad.SelectedValue = sucursal.IdLocalidad;
+            }
+            cargandoSucursal = false;
+
+            ConfigurarCamposSucursal(!editable);
+            pnlListadoSucursales.Visible = false;
+            pnlFormularioSucursal.Visible = true;
+        }
+
+
+        // Cambia el estado lógico con autorización de Lógica y confirmación centralizada.
+        private void CambiarEstadoSucursal(SucursalResumenModelo sucursal)
+        {
+            if (!sucursalLogica.PuedeEliminarSucursal())
+            {
+                MostrarMensaje("Acceso no permitido", "No tiene permiso para dar de baja o reactivar sucursales.");
+                return;
+            }
+
+            bool reactivar = !sucursal.Activa;
+            using FormMensaje confirmacion = new FormMensaje(
+                reactivar ? "Reactivar sucursal" : "Dar de baja sucursal",
+                reactivar
+                    ? $"¿Deseás reactivar la sucursal \"{sucursal.Nombre}\"?"
+                    : $"¿Deseás dar de baja la sucursal \"{sucursal.Nombre}\"?",
+                reactivar ? "Reactivar" : "Dar de baja",
+                true);
+            if (confirmacion.ShowDialog(formPrincipal) != DialogResult.OK) return;
+
+            ResultadoSucursal resultado = reactivar
+                ? sucursalLogica.Reactivar(sucursal.IdSucursal)
+                : sucursalLogica.Baja(sucursal.IdSucursal);
+            MostrarMensaje(resultado.Exitoso ? "Sucursales" : "No se pudo cambiar el estado", resultado.Mensaje);
+            if (resultado.Exitoso) CargarSucursales();
+        }
+
+
+        // Alterna entre formulario editable y consulta de solo lectura sin cambiar el permiso de consulta.
+        private void ConfigurarCamposSucursal(bool soloLectura)
+        {
+            txtNombreSucursal.ReadOnly = soloLectura;
+            txtDireccionSucursal.ReadOnly = soloLectura;
+            cmbSucursalProvincia.Enabled = !soloLectura;
+            cmbSucursalLocalidad.Enabled = !soloLectura;
+            chkSucursalActiva.Enabled = false;
+            btnCancelarSucursal.Text = soloLectura ? "Volver" : "Cancelar";
         }
 
 
@@ -676,6 +888,12 @@ namespace Capa_Vistas
             }
 
             LimpiarFormularioSucursal();
+            idSucursalEdicion = null;
+            lblFormularioSucursalTitulo.Text = "Nueva sucursal";
+            btnGuardarSucursal.Text = "Guardar sucursal";
+            btnGuardarSucursal.Visible = true;
+            btnGuardarSucursal.Enabled = sucursalLogica.PuedeCrearSucursal();
+            ConfigurarCamposSucursal(soloLectura: false);
             pnlListadoSucursales.Visible = false;
             pnlFormularioSucursal.Visible = true;
             CargarProvinciasSucursal();
@@ -693,6 +911,18 @@ namespace Capa_Vistas
         // Valida y registra la nueva sucursal después de resolver la localidad elegida o creada.
         private void BtnGuardarSucursal_Click(object? sender, EventArgs e)
         {
+            if (idSucursalEdicion.HasValue && !sucursalLogica.PuedeModificarSucursal())
+            {
+                MostrarMensaje("Acceso no permitido", "No tiene permiso para modificar sucursales.");
+                return;
+            }
+
+            if (!idSucursalEdicion.HasValue && !sucursalLogica.PuedeCrearSucursal())
+            {
+                MostrarMensaje("Acceso no permitido", "No tiene permiso para registrar sucursales.");
+                return;
+            }
+
             int? idProvincia = ObtenerIdSucursalSeleccionado(cmbSucursalProvincia);
 
             if (!ValidarSucursalEnVista(idProvincia) || !idProvincia.HasValue)
@@ -708,12 +938,9 @@ namespace Capa_Vistas
             ResultadoSucursal resultado;
             try
             {
-                resultado = sucursalLogica.Alta(
-                    txtNombreSucursal.Text,
-                    idProvincia,
-                    idLocalidad,
-                    txtDireccionSucursal.Text
-                );
+                resultado = idSucursalEdicion.HasValue
+                    ? sucursalLogica.Modificar(idSucursalEdicion.Value, txtNombreSucursal.Text, idProvincia, idLocalidad, txtDireccionSucursal.Text)
+                    : sucursalLogica.Alta(txtNombreSucursal.Text, idProvincia, idLocalidad, txtDireccionSucursal.Text);
             }
             catch (Exception ex)
             {
@@ -722,7 +949,7 @@ namespace Capa_Vistas
             }
 
             MostrarMensaje(
-                resultado.Exitoso ? "Sucursal creada" : "No se pudo crear la sucursal",
+                resultado.Exitoso ? "Sucursal guardada" : "No se pudo guardar la sucursal",
                 resultado.Mensaje
             );
 
@@ -737,6 +964,7 @@ namespace Capa_Vistas
         // Recarga las localidades y limpia la selección al cambiar la provincia de la sucursal.
         private void CmbSucursalProvincia_SelectedIndexChanged(object? sender, EventArgs e)
         {
+            if (cargandoSucursal) return;
             CargarLocalidadesSucursal(ObtenerIdSucursalSeleccionado(cmbSucursalProvincia) ?? 0, true);
         }
 
@@ -854,6 +1082,7 @@ namespace Capa_Vistas
         // Restablece el formulario para evitar reutilizar una ubicación de una alta anterior.
         private void LimpiarFormularioSucursal()
         {
+            idSucursalEdicion = null;
             txtNombreSucursal.Clear();
             txtDireccionSucursal.Clear();
             chkSucursalActiva.Checked = true;
@@ -866,6 +1095,7 @@ namespace Capa_Vistas
         // Muestra el listado y oculta el formulario de alta dentro de la misma pestaña.
         private void MostrarListadoSucursales()
         {
+            idSucursalEdicion = null;
             pnlFormularioSucursal.Visible = false;
             pnlListadoSucursales.Visible = true;
         }
@@ -1119,7 +1349,8 @@ namespace Capa_Vistas
             flpPermisos.Controls.Clear();
 
             foreach (IGrouping<string, FuncionalidadPerfilModelo> grupo in funcionalidades
-                .OrderBy(funcionalidad => funcionalidad.Codigo)
+                .OrderBy(funcionalidad => PrioridadVisualPermiso(funcionalidad.Codigo))
+                .ThenBy(funcionalidad => funcionalidad.Codigo)
                 .GroupBy(funcionalidad => ObtenerGrupoFuncionalidad(funcionalidad.Codigo))
                 .OrderBy(grupo => grupo.Key))
             {
@@ -1147,7 +1378,7 @@ namespace Capa_Vistas
             }
 
             flpPermisos.ResumeLayout();
-            AjustarGruposPermisos();
+            AjustarDistribucionPerfil();
         }
 
 
@@ -1207,7 +1438,29 @@ namespace Capa_Vistas
         }
 
 
-        // Crea una opción compacta y conserva el ID dinámico para el guardado posterior del perfil.
+        // Prioriza acciones CRUD por sufijo y deja las demás funcionalidades después.
+        private static int PrioridadVisualPermiso(string codigo)
+        {
+            return codigo.EndsWith("_VER", StringComparison.Ordinal) ? 1
+                : codigo.EndsWith("_ALTA", StringComparison.Ordinal) ? 2
+                : codigo.EndsWith("_MODIFICAR", StringComparison.Ordinal) ? 3
+                : codigo.EndsWith("_BAJA", StringComparison.Ordinal) ? 4
+                : 5;
+        }
+
+
+        // Devuelve una etiqueta compacta para acciones CRUD sin alterar su código ni su ID.
+        private static string ObtenerEtiquetaPermiso(string codigo, string nombre)
+        {
+            return codigo.EndsWith("_VER", StringComparison.Ordinal) ? "Ver"
+                : codigo.EndsWith("_ALTA", StringComparison.Ordinal) ? "Alta"
+                : codigo.EndsWith("_MODIFICAR", StringComparison.Ordinal) ? "Modificar"
+                : codigo.EndsWith("_BAJA", StringComparison.Ordinal) ? "Baja"
+                : nombre;
+        }
+
+
+        // Crea una opción legible y conserva el ID funcional para selección y guardado.
         private CheckBox CrearCheckPermiso(
             FuncionalidadPerfilModelo funcionalidad)
         {
@@ -1215,7 +1468,7 @@ namespace Capa_Vistas
                 new CheckBox
                 {
                     AutoSize = false,
-                    AutoEllipsis = true,
+                    AutoEllipsis = false,
                     Height = 30,
                     Margin = new Padding(
                         4,
@@ -1235,8 +1488,9 @@ namespace Capa_Vistas
                             64
                         ),
                     Padding = new Padding(4, 0, 4, 0),
-                    Text = funcionalidad.Nombre,
+                    Text = ObtenerEtiquetaPermiso(funcionalidad.Codigo, funcionalidad.Nombre),
                     TextAlign = ContentAlignment.MiddleLeft,
+                    AccessibleName = funcionalidad.Codigo,
                     Tag =
                         funcionalidad.IdFuncionalidad,
                     Checked =
@@ -1250,14 +1504,7 @@ namespace Capa_Vistas
         }
 
 
-        // Redistribuye las tarjetas al cambiar el tamaño y usa dos columnas solo cuando el ancho mejora la lectura.
-        private void FlpPermisos_Resize(object? sender, EventArgs e)
-        {
-            AjustarGruposPermisos();
-        }
-
-
-        // Reserva el alto restante para permisos y desplaza los destinos de Avisos dentro del scroll del detalle.
+        // Recalcula el contenido de permisos dentro del scroll único del detalle.
         private void PnlDetallePerfil_Resize(object? sender, EventArgs e)
         {
             AjustarDistribucionPerfil();
@@ -1273,13 +1520,12 @@ namespace Capa_Vistas
             }
 
             int ancho = Math.Max(280, pnlDetallePerfil.ClientSize.Width - 44);
-            int altoDisponible = pnlDetallePerfil.ClientSize.Height - 340;
-            int altoPermisos = Math.Max(190, altoDisponible);
 
             txtNombrePerfil.Width = ancho;
             txtDescripcionPerfil.Width = ancho;
             flpPermisos.Width = ancho;
-            flpPermisos.Height = altoPermisos;
+
+            AjustarGruposPermisos();
 
             int topAcciones = flpPermisos.Bottom + 16;
             btnEliminarPerfil.Location = new Point(22, topAcciones);
@@ -1293,7 +1539,6 @@ namespace Capa_Vistas
                 btnGuardarPerfil.Bottom + 20
             );
 
-            AjustarGruposPermisos();
         }
 
 
@@ -1305,12 +1550,10 @@ namespace Capa_Vistas
                 return;
             }
 
-            int anchoTarjeta = Math.Max(
-                250,
-                flpPermisos.ClientSize.Width - flpPermisos.Padding.Horizontal - 8
-            );
-
-            int columnas = anchoTarjeta >= 620 ? 2 : 1;
+            int anchoTarjeta = Math.Max(160,
+                flpPermisos.ClientSize.Width - flpPermisos.Padding.Horizontal - 4);
+            int altoContenido = flpPermisos.Padding.Vertical + 4;
+            flpPermisos.SuspendLayout();
 
             foreach (Panel tarjeta in flpPermisos.Controls.OfType<Panel>())
             {
@@ -1320,10 +1563,15 @@ namespace Capa_Vistas
                 }
 
                 tarjeta.Width = anchoTarjeta;
-                int anchoOpcion = Math.Max(
-                    210,
-                    (anchoTarjeta - 24 - (columnas * 8)) / columnas
-                );
+                bool esCrud = new[] { "_VER", "_ALTA", "_MODIFICAR", "_BAJA" }
+                    .All(sufijo => opciones.Controls.OfType<CheckBox>()
+                        .Any(check => check.AccessibleName?.EndsWith(sufijo, StringComparison.Ordinal) == true));
+                int columnas = esCrud
+                    ? anchoTarjeta >= 760 ? 4 : anchoTarjeta >= 420 ? 2 : 1
+                    : anchoTarjeta >= 620 ? 2 : 1;
+                opciones.Width = anchoTarjeta - 18;
+                int anchoOpcion = Math.Max(80,
+                    (opciones.ClientSize.Width - opciones.Padding.Horizontal - (columnas * 8)) / columnas);
 
                 foreach (CheckBox check in opciones.Controls.OfType<CheckBox>())
                 {
@@ -1334,10 +1582,13 @@ namespace Capa_Vistas
                     opciones.Controls.OfType<CheckBox>().Count() / (double)columnas
                 );
 
-                opciones.Width = anchoTarjeta - 18;
                 opciones.Height = Math.Max(38, (filas * 34) + 8);
                 tarjeta.Height = opciones.Bottom + 8;
+                altoContenido += tarjeta.Height + tarjeta.Margin.Vertical;
             }
+
+            flpPermisos.ResumeLayout(true);
+            flpPermisos.Height = Math.Max(flpPermisos.Padding.Vertical, altoContenido);
         }
 
 
@@ -1579,7 +1830,7 @@ namespace Capa_Vistas
 
 
             if (
-                confirmacion.ShowDialog(this)
+                confirmacion.ShowDialog(formPrincipal)
                 !=
                 DialogResult.OK)
             {
@@ -1788,6 +2039,7 @@ namespace Capa_Vistas
         // CARGA DE USUARIOS
         // ========================================================
 
+        // Carga el resultado filtrado y presenta dentro del listado el estado vacío correspondiente.
         private void CargarUsuarios()
         {
             if (!usuarioLogica.PuedeVerUsuarios())
@@ -1797,6 +2049,7 @@ namespace Capa_Vistas
 
                 lblCantidad.Text =
                     "0 usuario(s)";
+                lblEstadoVacio.Visible = false;
 
                 return;
             }
@@ -1823,14 +2076,40 @@ namespace Capa_Vistas
                 dgvUsuarios.DataSource =
                     usuarios;
 
+                bool sinResultados = usuarios.Count == 0;
 
-                lblCantidad.Text =
-                    $"{usuarios.Count} usuario(s)";
+                if (sinResultados)
+                {
+                    bool criteriosActivos = !string.IsNullOrWhiteSpace(txtBuscar.Text)
+                        || idPerfil.HasValue
+                        || estado != EstadoUsuarioFiltro.Todos;
+
+                    lblEstadoVacio.Text = criteriosActivos
+                        ? "No se encontraron usuarios para la búsqueda ingresada."
+                        : "No hay usuarios registrados.";
+                    lblCantidad.Text = string.Empty;
+                    lblCantidad.Visible = false;
+                    dgvUsuarios.Visible = false;
+                    lblEstadoVacio.Bounds = dgvUsuarios.Bounds;
+                    lblEstadoVacio.Visible = true;
+                    lblEstadoVacio.BringToFront();
+                }
+                else
+                {
+                    lblEstadoVacio.Visible = false;
+                    dgvUsuarios.Visible = true;
+                    dgvUsuarios.BringToFront();
+                    lblCantidad.Visible = true;
+                    lblCantidad.Text = $"{usuarios.Count} usuario(s)";
+                }
             }
             catch (Exception ex)
             {
                 dgvUsuarios.DataSource =
                     null;
+                dgvUsuarios.Visible = true;
+                lblEstadoVacio.Visible = false;
+                lblCantidad.Visible = true;
 
                 lblCantidad.Text =
                     "0 usuario(s)";
@@ -1926,6 +2205,13 @@ namespace Capa_Vistas
 
             if (nombreColumna == "colDetalle")
             {
+                if (!usuario.Activo && !usuarioLogica.PuedeReactivarUsuario())
+                {
+                    e.Value = string.Empty;
+                    e.FormattingApplied = true;
+                    return;
+                }
+
                 e.Value =
                     usuario.Activo
                         ? "Ver detalle"
@@ -2115,6 +2401,7 @@ namespace Capa_Vistas
                 }
                 else
                 {
+                    if (!usuarioLogica.PuedeReactivarUsuario()) return;
                     ReactivarUsuario(
                         usuario
                     );
@@ -2140,7 +2427,7 @@ namespace Capa_Vistas
             {
                 MostrarMensaje(
                     "Acceso no permitido",
-                    "No tiene permiso para dar de alta usuarios."
+                    "No tiene permiso para reactivar usuarios."
                 );
 
                 return;
@@ -2414,6 +2701,11 @@ namespace Capa_Vistas
         }
 
         private void pnlCabecera_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
+
+        private void btnLimpiarFiltros_Click_1(object sender, EventArgs e)
         {
 
         }

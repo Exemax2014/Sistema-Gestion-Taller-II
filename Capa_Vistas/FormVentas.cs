@@ -57,6 +57,7 @@ namespace Capa_Vistas
 
             CargarMetodosPago();
             ReiniciarVenta();
+            AjustarLayoutResponsive();
 
             if (
                 ventaLogica.PuedeRealizarVentas()
@@ -88,6 +89,137 @@ namespace Capa_Vistas
                 DateTime.Now.ToString(
                     "dd/MM/yyyy HH:mm"
                 );
+        }
+
+        // Redistribuye la cabecera y el flujo de productos según el espacio real del panel embebido.
+        private void AjustarLayoutResponsive()
+        {
+            if (pnlPrincipal.ClientSize.Width <= 0 || pnlPrincipal.ClientSize.Height <= 0) return;
+
+            pnlPrincipal.AutoScroll = true;
+            int margen = 32;
+            int ancho = Math.Max(320, pnlPrincipal.ClientSize.Width - margen * 2);
+            int yContexto = 120;
+            int altoContexto = ancho < 620 ? 112 : 66;
+            int yContenido = yContexto + altoContexto + 14;
+            int altoVisible = Math.Max(500, pnlPrincipal.ClientSize.Height - yContenido - 24);
+
+            pnlCabecera.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            pnlContexto.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            pnlPasoProductos.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            pnlPasoFinalizar.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            pnlCabecera.SetBounds(margen, 20, ancho, 100);
+            btnMisVentas.SetBounds(Math.Max(0, ancho - btnMisVentas.Width - 12), 12, btnMisVentas.Width, btnMisVentas.Height);
+            pnlContexto.SetBounds(margen, yContexto, ancho, altoContexto);
+            AjustarDatosContexto(ancho, altoContexto);
+
+            pnlPasoProductos.SetBounds(margen, yContenido, ancho, altoVisible);
+            pnlPasoFinalizar.SetBounds(margen, yContenido, ancho, altoVisible);
+            if (ancho >= 1000)
+                AjustarDosColumnasProductos(ancho, altoVisible);
+            else
+                AjustarProductosApilados(ancho);
+
+            pnlPrincipal.AutoScrollMinSize = new Size(0, yContenido + pnlPasoProductos.Height + 24);
+        }
+
+        // Reubica vendedor, sucursal y fecha en tres columnas o en filas compactas.
+        private void AjustarDatosContexto(int ancho, int alto)
+        {
+            if (ancho >= 620)
+            {
+                int columna = (ancho - 36) / 3;
+                int[] posiciones = { 18, 18 + columna, 18 + columna * 2 };
+                Label[] titulos = { lblVendedorTitulo, lblSucursalTitulo, lblFechaTitulo };
+                Label[] valores = { lblVendedorValor, lblSucursalValor, lblFechaValor };
+                for (int i = 0; i < titulos.Length; i++)
+                {
+                    titulos[i].SetBounds(posiciones[i], 8, columna - 12, 20);
+                    valores[i].SetBounds(posiciones[i], 32, columna - 12, 24);
+                }
+            }
+            else
+            {
+                Label[] titulos = { lblVendedorTitulo, lblSucursalTitulo, lblFechaTitulo };
+                Label[] valores = { lblVendedorValor, lblSucursalValor, lblFechaValor };
+                for (int i = 0; i < titulos.Length; i++)
+                {
+                    titulos[i].SetBounds(14, 5 + i * 34, 82, 22);
+                    valores[i].SetBounds(100, 5 + i * 34, Math.Max(150, ancho - 116), 22);
+                }
+            }
+        }
+
+        // Distribuye búsqueda y carrito en dos columnas equilibradas en anchos grandes.
+        private void AjustarDosColumnasProductos(int ancho, int alto)
+        {
+            const int separacion = 16;
+            int anchoIzquierdo = (ancho - separacion) / 2;
+            int anchoDerecho = ancho - separacion - anchoIzquierdo;
+            pnlBuscarProductos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            pnlCarrito.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
+            pnlBuscarProductos.SetBounds(0, 0, anchoIzquierdo, alto);
+            pnlCarrito.SetBounds(anchoIzquierdo + separacion, 0, anchoDerecho, alto);
+            AjustarControlesBusqueda(anchoIzquierdo, alto, false);
+            AjustarControlesCarrito(anchoDerecho, alto);
+        }
+
+        // Apila los paneles en ventanas angostas para evitar recortes y desplazamiento horizontal.
+        private void AjustarProductosApilados(int ancho)
+        {
+            int altoBusqueda = 440;
+            int altoCarrito = 470;
+            pnlBuscarProductos.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            pnlCarrito.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            pnlBuscarProductos.SetBounds(0, 0, ancho, altoBusqueda);
+            pnlCarrito.SetBounds(0, altoBusqueda + 14, ancho, altoCarrito);
+            pnlPasoProductos.Height = altoBusqueda + 14 + altoCarrito;
+            AjustarControlesBusqueda(ancho, altoBusqueda, true);
+            AjustarControlesCarrito(ancho, altoCarrito);
+        }
+
+        // Ajusta los campos de búsqueda y la grilla al ancho de su panel sin alterar el filtrado.
+        private void AjustarControlesBusqueda(int ancho, int alto, bool apilado)
+        {
+            int anchoInterior = Math.Max(120, ancho - 36);
+            lblPasoProductos.SetBounds(18, 14, anchoInterior, 28);
+            lblBuscarProducto.SetBounds(18, 55, anchoInterior, 20);
+            bool controlesEnFila = ancho >= 690 && !apilado;
+            if (controlesEnFila)
+            {
+                int anchoTexto = Math.Max(150, anchoInterior - 112 - 10 - 132 - 8);
+                txtBuscarProducto.SetBounds(18, 79, anchoTexto, 27);
+                btnBuscarProducto.SetBounds(18 + anchoTexto + 10, 76, 112, 34);
+                btnMostrarTodos.SetBounds(18 + anchoTexto + 130, 76, 132, 34);
+                lblAyudaBusqueda.SetBounds(18, 116, anchoInterior, 20);
+                dgvProductos.SetBounds(18, 144, anchoInterior, Math.Max(120, alto - 162));
+            }
+            else
+            {
+                txtBuscarProducto.SetBounds(18, 79, anchoInterior, 27);
+                int anchoBotonMostrar = Math.Min(132, Math.Max(112, (anchoInterior - 8 - 96) / 2));
+                btnBuscarProducto.SetBounds(18, 114, 96, 34);
+                btnMostrarTodos.SetBounds(18 + 96 + 8, 114, anchoBotonMostrar, 34);
+                lblAyudaBusqueda.SetBounds(18, 153, anchoInterior, 34);
+                dgvProductos.SetBounds(18, 190, anchoInterior, Math.Max(120, alto - 208));
+            }
+            dgvProductos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+        }
+
+        // Mantiene grilla, total y acciones del carrito alineados a sus márgenes internos.
+        private void AjustarControlesCarrito(int ancho, int alto)
+        {
+            int anchoInterior = Math.Max(120, ancho - 36);
+            lblCarrito.SetBounds(18, 14, anchoInterior, 26);
+            lblCarritoAyuda.SetBounds(18, 46, anchoInterior, 22);
+            dgvCarrito.SetBounds(18, 76, anchoInterior, Math.Max(120, alto - 200));
+            lblTotalCarritoTitulo.SetBounds(18, alto - 96, Math.Max(120, anchoInterior / 2), 28);
+            lblTotalCarrito.SetBounds(Math.Max(150, ancho - 218), alto - 100, Math.Max(100, anchoInterior / 2), 34);
+            int anchoCancelar = Math.Min(145, Math.Max(120, (anchoInterior - 12) / 2));
+            int anchoContinuar = Math.Min(160, Math.Max(120, anchoInterior - anchoCancelar - 12));
+            btnCancelarVentaPaso1.SetBounds(18, alto - 62, anchoCancelar, 42);
+            btnContinuar.SetBounds(ancho - 18 - anchoContinuar, alto - 62, anchoContinuar, 42);
+            dgvCarrito.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
         }
 
 
@@ -409,6 +541,8 @@ namespace Capa_Vistas
 
         private void ConfigurarEventos()
         {
+            pnlPrincipal.Resize += (_, _) => AjustarLayoutResponsive();
+
             btnBuscarProducto.Click +=
                 BtnBuscarProducto_Click;
 
@@ -1482,7 +1616,7 @@ namespace Capa_Vistas
 
 
             if (
-                confirmacion.ShowDialog(this)
+                confirmacion.ShowDialog((Form?)formPrincipal ?? this)
                 !=
                 DialogResult.OK)
             {
@@ -1612,7 +1746,7 @@ namespace Capa_Vistas
 
 
                 if (
-                    confirmacion.ShowDialog(this)
+                    confirmacion.ShowDialog((Form?)formPrincipal ?? this)
                     !=
                     DialogResult.OK)
                 {

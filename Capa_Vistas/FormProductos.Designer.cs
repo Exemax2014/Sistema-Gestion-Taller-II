@@ -27,6 +27,11 @@ namespace Capa_Vistas
         private Button btnMarcas;
 
 
+        private Button btnVistaProductos;
+
+        private FlowLayoutPanel flpNavegacion;
+
+
         private Panel pnlFiltros;
 
         private TableLayoutPanel tlpFiltros;
@@ -55,6 +60,8 @@ namespace Capa_Vistas
         private Label lblCantidad;
 
         private DataGridView dgvProductos;
+
+        private Label lblEstadoVacio;
 
 
         protected override void Dispose(
@@ -89,6 +96,8 @@ namespace Capa_Vistas
             btnNuevoProducto = new Button();
             btnCategorias = new Button();
             btnMarcas = new Button();
+            btnVistaProductos = new Button();
+            flpNavegacion = new FlowLayoutPanel();
             pnlFiltros = new Panel();
             tlpFiltros = new TableLayoutPanel();
             lblBuscar = new Label();
@@ -103,8 +112,10 @@ namespace Capa_Vistas
             btnLimpiarFiltros = new Button();
             lblCantidad = new Label();
             dgvProductos = new DataGridView();
+            lblEstadoVacio = new Label();
             tlpPrincipal.SuspendLayout();
             tlpCabecera.SuspendLayout();
+            flpNavegacion.SuspendLayout();
             pnlTitulo.SuspendLayout();
             pnlFiltros.SuspendLayout();
             tlpFiltros.SuspendLayout();
@@ -117,16 +128,19 @@ namespace Capa_Vistas
             tlpPrincipal.ColumnCount = 1;
             tlpPrincipal.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
             tlpPrincipal.Controls.Add(tlpCabecera, 0, 0);
-            tlpPrincipal.Controls.Add(pnlFiltros, 0, 1);
-            tlpPrincipal.Controls.Add(lblCantidad, 0, 2);
-            tlpPrincipal.Controls.Add(dgvProductos, 0, 3);
+            tlpPrincipal.Controls.Add(flpNavegacion, 0, 1);
+            tlpPrincipal.Controls.Add(pnlFiltros, 0, 2);
+            tlpPrincipal.Controls.Add(lblCantidad, 0, 3);
+            tlpPrincipal.Controls.Add(dgvProductos, 0, 4);
+            tlpPrincipal.Controls.Add(lblEstadoVacio, 0, 4);
             tlpPrincipal.Dock = DockStyle.Fill;
             tlpPrincipal.Location = new Point(0, 0);
             tlpPrincipal.Margin = new Padding(0);
             tlpPrincipal.Name = "tlpPrincipal";
             tlpPrincipal.Padding = new Padding(32, 20, 32, 25);
-            tlpPrincipal.RowCount = 4;
+            tlpPrincipal.RowCount = 5;
             tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
+            tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Absolute, 43F));
             tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Absolute, 120F));
             tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Absolute, 38F));
             tlpPrincipal.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
@@ -135,15 +149,11 @@ namespace Capa_Vistas
             // 
             // tlpCabecera
             // 
-            tlpCabecera.ColumnCount = 4;
+            tlpCabecera.ColumnCount = 2;
             tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
-            tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 120F));
-            tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 105F));
             tlpCabecera.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190F));
             tlpCabecera.Controls.Add(pnlTitulo, 0, 0);
-            tlpCabecera.Controls.Add(btnCategorias, 1, 0);
-            tlpCabecera.Controls.Add(btnMarcas, 2, 0);
-            tlpCabecera.Controls.Add(btnNuevoProducto, 3, 0);
+            tlpCabecera.Controls.Add(btnNuevoProducto, 1, 0);
             tlpCabecera.Dock = DockStyle.Fill;
             tlpCabecera.Location = new Point(32, 20);
             tlpCabecera.Margin = new Padding(0);
@@ -152,6 +162,31 @@ namespace Capa_Vistas
             tlpCabecera.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
             tlpCabecera.Size = new Size(1116, 100);
             tlpCabecera.TabIndex = 0;
+            //
+            // flpNavegacion
+            //
+            flpNavegacion.Dock = DockStyle.Fill;
+            flpNavegacion.FlowDirection = FlowDirection.LeftToRight;
+            flpNavegacion.Margin = new Padding(0);
+            flpNavegacion.Name = "flpNavegacion";
+            flpNavegacion.Padding = new Padding(0);
+            flpNavegacion.WrapContents = true;
+            flpNavegacion.Controls.Add(btnVistaProductos);
+            flpNavegacion.Controls.Add(btnCategorias);
+            flpNavegacion.Controls.Add(btnMarcas);
+            //
+            // btnVistaProductos
+            //
+            btnVistaProductos.BackColor = Color.FromArgb(190, 137, 45);
+            btnVistaProductos.FlatAppearance.BorderSize = 0;
+            btnVistaProductos.FlatStyle = FlatStyle.Flat;
+            btnVistaProductos.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            btnVistaProductos.ForeColor = Color.White;
+            btnVistaProductos.Margin = new Padding(0, 2, 6, 2);
+            btnVistaProductos.Name = "btnVistaProductos";
+            btnVistaProductos.Size = new Size(120, 39);
+            btnVistaProductos.Text = "Productos";
+            btnVistaProductos.UseVisualStyleBackColor = false;
             // 
             // pnlTitulo
             // 
@@ -194,30 +229,34 @@ namespace Capa_Vistas
             pnlLineaTitulo.Name = "pnlLineaTitulo";
             pnlLineaTitulo.Size = new Size(92, 3);
             pnlLineaTitulo.TabIndex = 2;
-            // 
+            //
             // btnNuevoProducto
             //
             btnCategorias.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnCategorias.BackColor = Color.FromArgb(82, 88, 94);
+            btnCategorias.Cursor = Cursors.Hand;
+            btnCategorias.FlatAppearance.BorderSize = 0;
             btnCategorias.FlatStyle = FlatStyle.Flat;
             btnCategorias.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnCategorias.ForeColor = Color.White;
-            btnCategorias.Location = new Point(800, 17);
-            btnCategorias.Margin = new Padding(4, 17, 4, 0);
+            btnCategorias.Location = new Point(0, 0);
+            btnCategorias.Margin = new Padding(0, 2, 6, 2);
             btnCategorias.Name = "btnCategorias";
-            btnCategorias.Size = new Size(112, 42);
+            btnCategorias.Size = new Size(145, 39);
             btnCategorias.Text = "Categorías";
             btnCategorias.UseVisualStyleBackColor = false;
             //
             btnMarcas.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnMarcas.BackColor = Color.FromArgb(82, 88, 94);
+            btnMarcas.Cursor = Cursors.Hand;
+            btnMarcas.FlatAppearance.BorderSize = 0;
             btnMarcas.FlatStyle = FlatStyle.Flat;
             btnMarcas.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnMarcas.ForeColor = Color.White;
-            btnMarcas.Location = new Point(920, 17);
-            btnMarcas.Margin = new Padding(4, 17, 4, 0);
+            btnMarcas.Location = new Point(0, 0);
+            btnMarcas.Margin = new Padding(0, 2, 6, 2);
             btnMarcas.Name = "btnMarcas";
-            btnMarcas.Size = new Size(97, 42);
+            btnMarcas.Size = new Size(110, 39);
             btnMarcas.Text = "Marcas";
             btnMarcas.UseVisualStyleBackColor = false;
             // 
@@ -473,6 +512,17 @@ namespace Capa_Vistas
             dgvProductos.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvProductos.Size = new Size(1116, 397);
             dgvProductos.TabIndex = 3;
+            //
+            // lblEstadoVacio
+            //
+            lblEstadoVacio.BackColor = Color.White;
+            lblEstadoVacio.Dock = DockStyle.Fill;
+            lblEstadoVacio.Font = new Font("Segoe UI", 11F);
+            lblEstadoVacio.ForeColor = Color.FromArgb(105, 110, 116);
+            lblEstadoVacio.Name = "lblEstadoVacio";
+            lblEstadoVacio.TabIndex = 4;
+            lblEstadoVacio.TextAlign = ContentAlignment.MiddleCenter;
+            lblEstadoVacio.Visible = false;
             // 
             // FormProductos
             // 
@@ -487,6 +537,7 @@ namespace Capa_Vistas
             tlpPrincipal.ResumeLayout(false);
             tlpPrincipal.PerformLayout();
             tlpCabecera.ResumeLayout(false);
+            flpNavegacion.ResumeLayout(false);
             pnlTitulo.ResumeLayout(false);
             pnlTitulo.PerformLayout();
             pnlFiltros.ResumeLayout(false);

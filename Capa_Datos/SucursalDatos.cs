@@ -33,6 +33,9 @@ namespace Capa_Datos
         public string Calle { get; set; } = string.Empty;
         public string Localidad { get; set; } = string.Empty;
         public string Provincia { get; set; } = string.Empty;
+        public int IdLocalidad { get; set; }
+        public int IdProvincia { get; set; }
+        public bool Activa { get; set; }
         public List<PerfilSucursalResumenInfo> UsuariosPorPerfil { get; } = new();
     }
 
@@ -95,7 +98,10 @@ namespace Capa_Datos
                         Nombre = LeerTexto(lector, "nombre_sucursal"),
                         Calle = LeerTexto(lector, "calle"),
                         Localidad = LeerTexto(lector, "localidad"),
-                        Provincia = LeerTexto(lector, "provincia")
+                        Provincia = LeerTexto(lector, "provincia"),
+                        IdLocalidad = lector["id_localidad"] == DBNull.Value ? 0 : Convert.ToInt32(lector["id_localidad"]),
+                        IdProvincia = lector["id_provincia"] == DBNull.Value ? 0 : Convert.ToInt32(lector["id_provincia"]),
+                        Activa = Convert.ToBoolean(lector["activa"])
                     };
 
                     sucursales.Add(idSucursal, sucursal);

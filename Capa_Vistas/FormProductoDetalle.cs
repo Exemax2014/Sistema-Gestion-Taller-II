@@ -319,6 +319,17 @@ namespace Capa_Vistas
             txtNuevoStock.KeyPress += EnteroNoNegativo_KeyPress;
             txtStockMinimo.KeyPress += EnteroNoNegativo_KeyPress;
             txtNombre.KeyPress += TextoUnaLinea_KeyPress;
+            txtCodigoBarra.KeyPress += CodigoBarra_KeyPress;
+        }
+
+
+        // Previene caracteres no numéricos en el código sin convertirlo a número.
+        private static void CodigoBarra_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && (e.KeyChar < '0' || e.KeyChar > '9'))
+            {
+                e.Handled = true;
+            }
         }
 
 
@@ -418,7 +429,9 @@ namespace Capa_Vistas
 
 
             chkActivo.Enabled =
-                puedeEditarDatos;
+                EsAlta
+                    ? productoLogica.PuedeCrearProducto()
+                    : productoLogica.PuedeEliminarProducto();
 
 
             btnGuardar.Visible =
@@ -1126,7 +1139,7 @@ namespace Capa_Vistas
 
 
             if (
-                mensaje.ShowDialog(this)
+                mensaje.ShowDialog(formPrincipal)
                 != DialogResult.OK)
             {
                 return;
@@ -1186,7 +1199,7 @@ namespace Capa_Vistas
                 );
 
 
-            return mensaje.ShowDialog(this)
+            return mensaje.ShowDialog(formPrincipal)
                 == DialogResult.OK;
         }
 
@@ -1262,7 +1275,7 @@ namespace Capa_Vistas
                 );
 
 
-            mensaje.ShowDialog(this);
+            mensaje.ShowDialog(formPrincipal);
         }
     }
 }

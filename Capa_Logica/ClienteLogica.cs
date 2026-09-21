@@ -19,6 +19,9 @@ namespace Capa_Logica
         public string Telefono { get; set; } = string.Empty;
         public string Localidad { get; set; } = string.Empty;
         public string Provincia { get; set; } = string.Empty;
+        public string Calle { get; set; } = string.Empty;
+        public string Altura { get; set; } = string.Empty;
+        public string Piso { get; set; } = string.Empty;
         public string DireccionCompleta { get; set; } = string.Empty;
         public bool Activo { get; set; }
     }
@@ -34,6 +37,7 @@ namespace Capa_Logica
         public int? IdDireccion { get; set; }
         public string Calle { get; set; } = string.Empty;
         public string Altura { get; set; } = string.Empty;
+        public string Piso { get; set; } = string.Empty;
         public int? IdLocalidad { get; set; }
         public int? IdProvincia { get; set; }
     }
@@ -111,7 +115,10 @@ namespace Capa_Logica
                     Telefono = c.Telefono,
                     Localidad = c.Localidad,
                     Provincia = c.Provincia,
-                    DireccionCompleta = ArmarDireccion(c.Calle, c.Altura, c.Localidad, c.Provincia),
+                    Calle = c.Calle,
+                    Altura = c.Altura,
+                    Piso = c.Piso,
+                    DireccionCompleta = ArmarDireccion(c.Calle, c.Altura, c.Piso, c.Localidad, c.Provincia),
                     Activo = c.Activo
                 })
                 .ToList();
@@ -140,7 +147,10 @@ namespace Capa_Logica
                     Telefono = c.Telefono,
                     Localidad = c.Localidad,
                     Provincia = c.Provincia,
-                    DireccionCompleta = ArmarDireccion(c.Calle, c.Altura, c.Localidad, c.Provincia),
+                    Calle = c.Calle,
+                    Altura = c.Altura,
+                    Piso = c.Piso,
+                    DireccionCompleta = ArmarDireccion(c.Calle, c.Altura, c.Piso, c.Localidad, c.Provincia),
                     Activo = c.Activo
                 })
                 .ToList();
@@ -175,6 +185,7 @@ namespace Capa_Logica
                 IdDireccion = cliente.IdDireccion,
                 Calle = cliente.Calle,
                 Altura = cliente.Altura,
+                Piso = cliente.Piso,
                 IdLocalidad = cliente.IdLocalidad,
                 IdProvincia = cliente.IdProvincia
             };
@@ -264,9 +275,10 @@ namespace Capa_Logica
         // VALIDAR CLIENTE
         // ========================================================
 
+        // Unifica las reglas del cliente y valida calle, altura, piso y localidad antes de Datos.
         public string? ValidarCliente(
             string nombre, string apellido, string documento, string? correo, string? telefono,
-            int? idProvincia, int? idLocalidad, string? calle)
+            int? idProvincia, int? idLocalidad, string? calle, string? altura, string? piso)
         {
             string? errorBasico = ValidarDatosBasicos(nombre, apellido, documento, correo, telefono);
 
@@ -275,7 +287,7 @@ namespace Capa_Logica
                 return errorBasico;
             }
 
-            return ValidarDireccionObligatoria(idProvincia, idLocalidad, calle);
+            return ValidarDireccionObligatoria(idProvincia, idLocalidad, calle, altura, piso);
         }
 
         // ========================================================
@@ -285,7 +297,7 @@ namespace Capa_Logica
         // Registra un cliente solo después de validar datos y dirección completa.
         public ResultadoCliente Alta(
             string nombre, string apellido, string documento, string? correo, string? telefono,
-            int? idProvincia, int? idLocalidad, string? calle, string? altura)
+            int? idProvincia, int? idLocalidad, string? calle, string? altura, string? piso)
         {
             if (!PuedeCrearCliente())
             {
@@ -293,13 +305,17 @@ namespace Capa_Logica
             }
 
             string? error = ValidarCliente(nombre, apellido, documento, correo, telefono,
-                idProvincia, idLocalidad, calle);
+                idProvincia, idLocalidad, calle, altura, piso);
             if (error != null)
             {
                 return new ResultadoCliente { Codigo = 3, Mensaje = error };
             }
 
-            ResultadoDireccionDatos direccion = direccionDatos.Alta(idLocalidad!.Value, calle!, altura);
+            ResultadoDireccionDatos direccion = direccionDatos.Alta(
+                idLocalidad!.Value,
+                NormalizarNombre(calle),
+                altura!,
+                string.IsNullOrEmpty(piso) ? null : piso);
 
             if (!direccion.Exitoso)
             {
@@ -317,7 +333,7 @@ namespace Capa_Logica
         // Modifica datos y dirección mediante las mismas reglas autoritativas del alta.
         public ResultadoCliente Modificar(
             int idCliente, int? idDireccionActual, string nombre, string apellido, string documento,
-            string? correo, string? telefono, int? idProvincia, int? idLocalidad, string? calle, string? altura)
+            string? correo, string? telefono, int? idProvincia, int? idLocalidad, string? calle, string? altura, string? piso)
         {
             if (!PuedeModificarCliente())
             {
@@ -330,7 +346,7 @@ namespace Capa_Logica
             }
 
             string? error = ValidarCliente(nombre, apellido, documento, correo, telefono,
-                idProvincia, idLocalidad, calle);
+                idProvincia, idLocalidad, calle, altura, piso);
             if (error != null)
             {
                 return new ResultadoCliente { Codigo = 3, Mensaje = error };
@@ -341,7 +357,8 @@ namespace Capa_Logica
             if (idDireccionActual.HasValue)
             {
                 ResultadoDireccionDatos direccion =
-                    direccionDatos.Modificar(idDireccionActual.Value, idLocalidad!.Value, calle!, altura);
+                    direccionDatos.Modificar(idDireccionActual.Value, idLocalidad!.Value,
+                        NormalizarNombre(calle), altura!, string.IsNullOrEmpty(piso) ? null : piso);
 
                 if (!direccion.Exitoso)
                 {
@@ -350,7 +367,11 @@ namespace Capa_Logica
             }
             else
             {
-                ResultadoDireccionDatos direccion = direccionDatos.Alta(idLocalidad!.Value, calle!, altura);
+                ResultadoDireccionDatos direccion = direccionDatos.Alta(
+                    idLocalidad!.Value,
+                    NormalizarNombre(calle),
+                    altura!,
+                    string.IsNullOrEmpty(piso) ? null : piso);
 
                 if (!direccion.Exitoso)
                 {
@@ -408,7 +429,8 @@ namespace Capa_Logica
         // AUXILIARES
         // ========================================================
 
-        private static string ArmarDireccion(string calle, string altura, string localidad, string provincia)
+        // Compone una dirección legible para listados sin alterar los campos persistidos.
+        private static string ArmarDireccion(string calle, string altura, string piso, string localidad, string provincia)
         {
             if (string.IsNullOrWhiteSpace(calle))
             {
@@ -416,6 +438,7 @@ namespace Capa_Logica
             }
 
             string direccion = string.IsNullOrWhiteSpace(altura) ? calle : $"{calle} {altura}";
+            if (!string.IsNullOrWhiteSpace(piso)) direccion += $", piso {piso}";
 
             if (!string.IsNullOrWhiteSpace(localidad)) direccion += $", {localidad}";
             if (!string.IsNullOrWhiteSpace(provincia)) direccion += $" ({provincia})";
@@ -444,7 +467,7 @@ namespace Capa_Logica
             };
         }
 
-        // Unifica espacios internos para comparar nombres de localidad de forma consistente.
+        // Normaliza espacios para localidades y calles antes de validar o persistir los valores.
         private static string NormalizarNombre(string? valor)
         {
             return string.Join(
@@ -459,7 +482,9 @@ namespace Capa_Logica
         private string? ValidarDireccionObligatoria(
             int? idProvincia,
             int? idLocalidad,
-            string? calle)
+            string? calle,
+            string? altura,
+            string? piso)
         {
             if (!idProvincia.HasValue || idProvincia.Value <= 0 ||
                 !ObtenerProvincias().Any(provincia => provincia.Id == idProvincia.Value))
@@ -473,14 +498,38 @@ namespace Capa_Logica
                 return "Seleccioná o ingresá una localidad válida para la provincia.";
             }
 
-            if (string.IsNullOrWhiteSpace(calle))
+            string calleNormalizada = NormalizarNombre(calle);
+            if (string.IsNullOrWhiteSpace(calleNormalizada))
             {
                 return "Ingresá la calle de la dirección.";
             }
 
-            if (calle.Trim().Length > 150)
+            if (calleNormalizada.Length > 150)
             {
                 return "La calle supera el máximo de 150 caracteres.";
+            }
+
+            if (!Regex.IsMatch(calleNormalizada, @"^[\p{L}\p{M}\p{N}\s.,'’/#º°-]+$"))
+            {
+                return "La calle contiene caracteres no válidos.";
+            }
+
+            if (string.IsNullOrEmpty(altura) || altura.Length > 20
+                || !altura.All(char.IsAsciiDigit)
+                || !int.TryParse(altura, out int alturaNumerica)
+                || alturaNumerica <= 0)
+            {
+                return "La altura es obligatoria y debe ser un número entero positivo.";
+            }
+
+            if (!string.IsNullOrEmpty(piso)
+                && (piso.Length > 2
+                    || !piso.All(char.IsAsciiDigit)
+                    || !int.TryParse(piso, out int pisoNumerico)
+                    || pisoNumerico < 0
+                    || pisoNumerico > 99))
+            {
+                return "El piso debe contener solo dígitos y estar entre 0 y 99.";
             }
 
             return null;

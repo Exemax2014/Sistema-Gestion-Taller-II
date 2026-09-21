@@ -112,7 +112,8 @@ namespace Capa_Datos
             };
         }
 
-        public ResultadoDireccionDatos Alta(int idLocalidad, string calle, string? altura)
+        // Registra la dirección con altura obligatoria y piso opcional mediante el procedimiento validado.
+        public ResultadoDireccionDatos Alta(int idLocalidad, string calle, string altura, string? piso)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = new SqlCommand("dbo.sp_Direccion_Alta", conexion);
@@ -121,7 +122,9 @@ namespace Capa_Datos
             comando.Parameters.Add("@idLocalidad", SqlDbType.Int).Value = idLocalidad;
             comando.Parameters.Add("@calle", SqlDbType.NVarChar, 150).Value = calle.Trim();
             comando.Parameters.Add("@altura", SqlDbType.NVarChar, 20).Value =
-                string.IsNullOrWhiteSpace(altura) ? DBNull.Value : altura.Trim();
+                altura;
+            comando.Parameters.Add("@piso", SqlDbType.NVarChar, 2).Value =
+                string.IsNullOrWhiteSpace(piso) ? DBNull.Value : piso;
 
             SqlParameter idGenerado = CrearSalida(comando, "@IdGenerado", SqlDbType.Int);
             SqlParameter codigoResultado = CrearSalida(comando, "@CodigoResultado", SqlDbType.Int);
@@ -138,7 +141,8 @@ namespace Capa_Datos
             };
         }
 
-        public ResultadoDireccionDatos Modificar(int idDireccion, int idLocalidad, string calle, string? altura)
+        // Actualiza localidad y los tres componentes de dirección sin convertirlos en un texto combinado.
+        public ResultadoDireccionDatos Modificar(int idDireccion, int idLocalidad, string calle, string altura, string? piso)
         {
             using SqlConnection conexion = Conexion.CrearConexion();
             using SqlCommand comando = new SqlCommand("dbo.sp_Direccion_Modificar", conexion);
@@ -148,7 +152,9 @@ namespace Capa_Datos
             comando.Parameters.Add("@idLocalidad", SqlDbType.Int).Value = idLocalidad;
             comando.Parameters.Add("@calle", SqlDbType.NVarChar, 150).Value = calle.Trim();
             comando.Parameters.Add("@altura", SqlDbType.NVarChar, 20).Value =
-                string.IsNullOrWhiteSpace(altura) ? DBNull.Value : altura.Trim();
+                altura;
+            comando.Parameters.Add("@piso", SqlDbType.NVarChar, 2).Value =
+                string.IsNullOrWhiteSpace(piso) ? DBNull.Value : piso;
 
             SqlParameter codigoResultado = CrearSalida(comando, "@CodigoResultado", SqlDbType.Int);
             SqlParameter mensajeResultado = CrearSalida(comando, "@MensajeResultado", SqlDbType.NVarChar, 250);

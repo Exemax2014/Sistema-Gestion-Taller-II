@@ -19,6 +19,7 @@ namespace Capa_Datos
         public string Provincia { get; set; } = string.Empty;
         public string Calle { get; set; } = string.Empty;
         public string Altura { get; set; } = string.Empty;
+        public string Piso { get; set; } = string.Empty;
         public bool Activo { get; set; }
     }
 
@@ -35,6 +36,7 @@ namespace Capa_Datos
         public string Provincia { get; set; } = string.Empty;
         public string Calle { get; set; } = string.Empty;
         public string Altura { get; set; } = string.Empty;
+        public string Piso { get; set; } = string.Empty;
         public bool Activo { get; set; }
     }
 
@@ -49,6 +51,7 @@ namespace Capa_Datos
         public int? IdDireccion { get; set; }
         public string Calle { get; set; } = string.Empty;
         public string Altura { get; set; } = string.Empty;
+        public string Piso { get; set; } = string.Empty;
         public int? IdLocalidad { get; set; }
         public string Localidad { get; set; } = string.Empty;
         public int? IdProvincia { get; set; }
@@ -103,6 +106,7 @@ namespace Capa_Datos
                     Provincia = LeerTexto(lector, "provincia"),
                     Calle = LeerTexto(lector, "calle"),
                     Altura = LeerTexto(lector, "altura"),
+                    Piso = LeerTexto(lector, "piso"),
                     Activo = Convert.ToBoolean(lector["activo"])
                 });
             }
@@ -141,6 +145,7 @@ namespace Capa_Datos
                     Provincia = LeerTexto(lector, "provincia"),
                     Calle = LeerTexto(lector, "calle"),
                     Altura = LeerTexto(lector, "altura"),
+                    Piso = LeerTexto(lector, "piso"),
                     Activo = Convert.ToBoolean(lector["activo"])
                 });
             }
@@ -178,6 +183,7 @@ namespace Capa_Datos
                     : Convert.ToInt32(lector["id_direccion"]),
                 Calle = LeerTexto(lector, "calle"),
                 Altura = LeerTexto(lector, "altura"),
+                Piso = LeerTexto(lector, "piso"),
                 IdLocalidad = lector["id_localidad"] == DBNull.Value
                     ? null
                     : Convert.ToInt32(lector["id_localidad"]),

@@ -22,8 +22,11 @@ public partial class FormCategorias : Form
         btnNuevo.Click += (_, _) => NuevaCategoria();
         btnGuardar.Click += (_, _) => GuardarCategoria();
         btnEstado.Click += (_, _) => CambiarEstado();
+        Resize += (_, _) => AjustarNavegacionResponsive();
+        tlpNavegacion.SizeChanged += (_, _) => AjustarNavegacionResponsive();
         dgvCategorias.SelectionChanged += (_, _) => SeleccionarCategoria();
         ConfigurarPermisos();
+        ConfigurarNavegacion();
         CargarListado();
     }
 
@@ -51,11 +54,58 @@ public partial class FormCategorias : Form
     // Oculta las vistas sin permiso y restringe las acciones de mantenimiento.
     private void ConfigurarPermisos()
     {
+        btnProductos.Visible = logica.Puede("PRODUCTOS_VER");
         btnCategorias.Visible = logica.Puede("CATEGORIAS_VER");
         btnMarcas.Visible = logica.Puede("MARCAS_VER");
         btnNuevo.Visible = logica.Puede("CATEGORIAS_ALTA");
         btnGuardar.Visible = logica.Puede("CATEGORIAS_ALTA") || logica.Puede("CATEGORIAS_MODIFICAR");
         btnEstado.Visible = logica.Puede("CATEGORIAS_BAJA");
+    }
+
+    // Resalta la vista actual y conserva los accesos autorizados dinámicamente.
+    private void ConfigurarNavegacion()
+    {
+        AplicarEstiloNavegacion(btnProductos, false);
+        AplicarEstiloNavegacion(btnCategorias, true);
+        AplicarEstiloNavegacion(btnMarcas, false);
+        AjustarNavegacionResponsive();
+    }
+
+    // Ajusta la fila de pestañas si el ancho disponible obliga a envolverlas.
+    private void AjustarNavegacionResponsive()
+    {
+        if (tlpNavegacion.ClientSize.Width <= 0 || tlpPrincipal.RowStyles.Count < 2) return;
+        List<Button> botonesVisibles = new();
+        if (logica.Puede("PRODUCTOS_VER")) botonesVisibles.Add(btnProductos);
+        if (logica.Puede("CATEGORIAS_VER")) botonesVisibles.Add(btnCategorias);
+        if (logica.Puede("MARCAS_VER")) botonesVisibles.Add(btnMarcas);
+        int filas = CalcularFilasNavegacion(botonesVisibles, tlpNavegacion.ClientSize.Width);
+        tlpPrincipal.RowStyles[1].Height = filas * 43;
+    }
+
+    // Calcula el alto requerido usando solo pestañas permitidas para esta sesión.
+    private static int CalcularFilasNavegacion(IEnumerable<Button> botones, int anchoDisponible)
+    {
+        int filas = 1;
+        int anchoFila = 0;
+        foreach (Button boton in botones)
+        {
+            int anchoBoton = boton.Width + boton.Margin.Horizontal;
+            if (anchoFila > 0 && anchoFila + anchoBoton > anchoDisponible)
+            {
+                filas++;
+                anchoFila = 0;
+            }
+            anchoFila += anchoBoton;
+        }
+        return filas;
+    }
+
+    // Aplica el estado activo dorado y el fondo neutro de las demás pestañas.
+    private static void AplicarEstiloNavegacion(Button boton, bool activo)
+    {
+        boton.BackColor = activo ? Color.FromArgb(190, 137, 45) : Color.FromArgb(235, 237, 240);
+        boton.ForeColor = activo ? Color.White : Color.FromArgb(55, 59, 64);
     }
 
     // Carga categorías activas e inactivas conservando el recuento histórico.
@@ -78,6 +128,7 @@ public partial class FormCategorias : Form
         txtNombre.Text = item.Nombre;
         txtDescripcion.Text = item.Descripcion;
         btnEstado.Text = item.Activo ? "Dar de baja" : "Dar de alta";
+        btnEstado.BackColor = item.Activo ? Color.FromArgb(165, 55, 55) : Color.FromArgb(46, 125, 74);
         btnEstado.Enabled = logica.Puede("CATEGORIAS_BAJA");
         btnGuardar.Enabled = item.Activo && logica.Puede("CATEGORIAS_MODIFICAR");
     }
@@ -114,7 +165,11 @@ public partial class FormCategorias : Form
     }
 
     // Regresa a la lista principal de productos dentro del mismo contenedor.
-    private void AbrirProductos() => principal.AbrirFormularioEnPanel(new FormProductos(principal), principal.BotonProductos);
+    private void AbrirProductos()
+    {
+        if (!logica.Puede("PRODUCTOS_VER")) return;
+        principal.AbrirFormularioEnPanel(new FormProductos(principal), principal.BotonProductos);
+    }
 
     // Cambia a la gestión interna de marcas sin abrir una ventana modal.
     private void AbrirMarcas()

@@ -343,5 +343,15 @@
 
             SesionIniciada = false;
         }
+
+        // Refresca los datos descriptivos propios sin alterar permisos ni alcance de la sesión.
+        public static bool ActualizarDatosPersonales(int idUsuario, string nombre, string apellido, string nombreUsuario)
+        {
+            if (!SesionIniciada || idUsuario != IdUsuario) return false;
+            Nombre = nombre;
+            Apellido = apellido;
+            NombreUsuario = nombreUsuario;
+            return true;
+        }
     }
 }

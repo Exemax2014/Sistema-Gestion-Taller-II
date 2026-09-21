@@ -35,10 +35,12 @@ namespace Capa_Vistas
             pnlPrincipal = new Panel();
             pnlTabla = new Panel();
             dgvClientes = new DataGridView();
+            lblEstadoVacio = new Label();
             pnlBusqueda = new Panel();
             txtBuscar = new TextBox();
             btnBuscar = new Button();
             cmbEstado = new ComboBox();
+            btnLimpiarBusqueda = new Button();
             btnNuevoCliente = new Button();
             pnlEncabezado = new Panel();
             lblTitulo = new Label();
@@ -64,7 +66,7 @@ namespace Capa_Vistas
             pnlPrincipal.Dock = DockStyle.Fill;
             pnlPrincipal.Location = new Point(0, 0);
             pnlPrincipal.Name = "pnlPrincipal";
-            pnlPrincipal.Padding = new Padding(32);
+            pnlPrincipal.Padding = new Padding(32, 20, 32, 25);
             pnlPrincipal.Size = new Size(1180, 760);
             pnlPrincipal.TabIndex = 0;
             //
@@ -73,6 +75,7 @@ namespace Capa_Vistas
             pnlTabla.BackColor = Color.White;
             pnlTabla.BorderStyle = BorderStyle.FixedSingle;
             pnlTabla.Controls.Add(dgvClientes);
+            pnlTabla.Controls.Add(lblEstadoVacio);
             pnlTabla.Dock = DockStyle.Fill;
             pnlTabla.Location = new Point(32, 200);
             pnlTabla.Name = "pnlTabla";
@@ -123,14 +126,25 @@ namespace Capa_Vistas
             dgvClientes.Size = new Size(1078, 450);
             dgvClientes.TabIndex = 0;
             //
+            // lblEstadoVacio
+            //
+            lblEstadoVacio.BackColor = Color.White;
+            lblEstadoVacio.Dock = DockStyle.Fill;
+            lblEstadoVacio.Font = new Font("Segoe UI", 11F);
+            lblEstadoVacio.ForeColor = Color.FromArgb(105, 110, 116);
+            lblEstadoVacio.Name = "lblEstadoVacio";
+            lblEstadoVacio.TabIndex = 1;
+            lblEstadoVacio.TextAlign = ContentAlignment.MiddleCenter;
+            lblEstadoVacio.Visible = false;
+            //
             // pnlBusqueda
             //
             pnlBusqueda.BackColor = Color.White;
             pnlBusqueda.BorderStyle = BorderStyle.FixedSingle;
             pnlBusqueda.Controls.Add(txtBuscar);
-            pnlBusqueda.Controls.Add(btnBuscar);
             pnlBusqueda.Controls.Add(cmbEstado);
-            pnlBusqueda.Controls.Add(btnNuevoCliente);
+            pnlBusqueda.Controls.Add(btnBuscar);
+            pnlBusqueda.Controls.Add(btnLimpiarBusqueda);
             pnlBusqueda.Dock = DockStyle.Top;
             pnlBusqueda.Location = new Point(32, 114);
             pnlBusqueda.Name = "pnlBusqueda";
@@ -142,39 +156,55 @@ namespace Capa_Vistas
             txtBuscar.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtBuscar.BorderStyle = BorderStyle.FixedSingle;
             txtBuscar.Font = new Font("Segoe UI", 10F);
-            txtBuscar.Location = new Point(18, 26);
+            txtBuscar.Location = new Point(18, 24);
             txtBuscar.Name = "txtBuscar";
             txtBuscar.PlaceholderText = "Buscar por nombre, apellido, DNI o teléfono...";
-            txtBuscar.Size = new Size(580, 30);
+            txtBuscar.Size = new Size(400, 30);
             txtBuscar.TabIndex = 0;
             //
             // btnBuscar
             //
-            btnBuscar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            btnBuscar.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             btnBuscar.BackColor = Color.FromArgb(45, 49, 54);
             btnBuscar.Cursor = Cursors.Hand;
             btnBuscar.FlatAppearance.BorderSize = 0;
             btnBuscar.FlatStyle = FlatStyle.Flat;
             btnBuscar.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnBuscar.ForeColor = Color.White;
-            btnBuscar.Location = new Point(608, 20);
+            btnBuscar.Location = new Point(584, 19);
             btnBuscar.Name = "btnBuscar";
-            btnBuscar.Size = new Size(110, 40);
+            btnBuscar.Size = new Size(100, 40);
             btnBuscar.TabIndex = 1;
             btnBuscar.Text = "Buscar";
             btnBuscar.UseVisualStyleBackColor = false;
             //
             // cmbEstado
             //
-            cmbEstado.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            cmbEstado.Anchor = AnchorStyles.Top | AnchorStyles.Left;
             cmbEstado.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbEstado.Font = new Font("Segoe UI", 9.5F);
             cmbEstado.Items.AddRange(new object[] { "Activos", "Dados de baja", "Todos" });
-            cmbEstado.Location = new Point(728, 25);
+            cmbEstado.Location = new Point(426, 24);
             cmbEstado.Name = "cmbEstado";
             cmbEstado.SelectedIndex = 0;
-            cmbEstado.Size = new Size(140, 30);
+            cmbEstado.Size = new Size(150, 30);
             cmbEstado.TabIndex = 2;
+            //
+            // btnLimpiarBusqueda
+            //
+            btnLimpiarBusqueda.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            btnLimpiarBusqueda.BackColor = Color.White;
+            btnLimpiarBusqueda.Cursor = Cursors.Hand;
+            btnLimpiarBusqueda.FlatAppearance.BorderColor = Color.FromArgb(180, 184, 188);
+            btnLimpiarBusqueda.FlatStyle = FlatStyle.Flat;
+            btnLimpiarBusqueda.Font = new Font("Segoe UI", 8.5F);
+            btnLimpiarBusqueda.ForeColor = Color.FromArgb(70, 75, 80);
+            btnLimpiarBusqueda.Location = new Point(692, 19);
+            btnLimpiarBusqueda.Name = "btnLimpiarBusqueda";
+            btnLimpiarBusqueda.Size = new Size(110, 40);
+            btnLimpiarBusqueda.TabIndex = 3;
+            btnLimpiarBusqueda.Text = "Limpiar";
+            btnLimpiarBusqueda.UseVisualStyleBackColor = false;
             //
             // btnNuevoCliente
             //
@@ -185,9 +215,9 @@ namespace Capa_Vistas
             btnNuevoCliente.FlatStyle = FlatStyle.Flat;
             btnNuevoCliente.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnNuevoCliente.ForeColor = Color.White;
-            btnNuevoCliente.Location = new Point(878, 20);
+            btnNuevoCliente.Location = new Point(900, 16);
             btnNuevoCliente.Name = "btnNuevoCliente";
-            btnNuevoCliente.Size = new Size(200, 40);
+            btnNuevoCliente.Size = new Size(180, 42);
             btnNuevoCliente.TabIndex = 3;
             btnNuevoCliente.Text = "+ Nuevo cliente";
             btnNuevoCliente.UseVisualStyleBackColor = false;
@@ -198,10 +228,11 @@ namespace Capa_Vistas
             pnlEncabezado.Controls.Add(lblTitulo);
             pnlEncabezado.Controls.Add(lblSubtitulo);
             pnlEncabezado.Controls.Add(pnlLineaDorada);
+            pnlEncabezado.Controls.Add(btnNuevoCliente);
             pnlEncabezado.Dock = DockStyle.Top;
             pnlEncabezado.Location = new Point(32, 32);
             pnlEncabezado.Name = "pnlEncabezado";
-            pnlEncabezado.Size = new Size(1116, 82);
+            pnlEncabezado.Size = new Size(1116, 100);
             pnlEncabezado.TabIndex = 2;
             //
             // lblTitulo
@@ -209,7 +240,7 @@ namespace Capa_Vistas
             lblTitulo.AutoSize = true;
             lblTitulo.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
             lblTitulo.ForeColor = Color.FromArgb(45, 49, 54);
-            lblTitulo.Location = new Point(0, 0);
+            lblTitulo.Location = new Point(0, 2);
             lblTitulo.Name = "lblTitulo";
             lblTitulo.Size = new Size(159, 50);
             lblTitulo.TabIndex = 0;
@@ -218,9 +249,9 @@ namespace Capa_Vistas
             // lblSubtitulo
             //
             lblSubtitulo.AutoSize = true;
-            lblSubtitulo.Font = new Font("Segoe UI", 9F);
+            lblSubtitulo.Font = new Font("Segoe UI", 9.5F);
             lblSubtitulo.ForeColor = Color.FromArgb(105, 110, 116);
-            lblSubtitulo.Location = new Point(2, 48);
+            lblSubtitulo.Location = new Point(2, 54);
             lblSubtitulo.Name = "lblSubtitulo";
             lblSubtitulo.Size = new Size(250, 20);
             lblSubtitulo.TabIndex = 1;
@@ -229,9 +260,9 @@ namespace Capa_Vistas
             // pnlLineaDorada
             //
             pnlLineaDorada.BackColor = Color.FromArgb(190, 137, 45);
-            pnlLineaDorada.Location = new Point(2, 74);
+            pnlLineaDorada.Location = new Point(2, 84);
             pnlLineaDorada.Name = "pnlLineaDorada";
-            pnlLineaDorada.Size = new Size(95, 3);
+            pnlLineaDorada.Size = new Size(92, 3);
             pnlLineaDorada.TabIndex = 2;
             //
             // pnlPie
@@ -303,6 +334,8 @@ namespace Capa_Vistas
 
         private Button btnBuscar;
 
+        private Button btnLimpiarBusqueda;
+
         private Button btnNuevoCliente;
         private ComboBox cmbEstado;
 
@@ -310,6 +343,8 @@ namespace Capa_Vistas
         private Panel pnlTabla;
 
         private DataGridView dgvClientes;
+
+        private Label lblEstadoVacio;
 
 
         private Panel pnlPie;

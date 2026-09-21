@@ -25,6 +25,9 @@ namespace Capa_Logica
         public string Calle { get; set; } = string.Empty;
         public string Localidad { get; set; } = string.Empty;
         public string Provincia { get; set; } = string.Empty;
+        public int IdLocalidad { get; set; }
+        public int IdProvincia { get; set; }
+        public bool Activa { get; set; }
         public List<PerfilSucursalResumenModelo> UsuariosPorPerfil { get; set; } = new();
     }
 
@@ -93,6 +96,9 @@ namespace Capa_Logica
                     Calle = s.Calle,
                     Localidad = s.Localidad,
                     Provincia = s.Provincia,
+                    IdLocalidad = s.IdLocalidad,
+                    IdProvincia = s.IdProvincia,
+                    Activa = s.Activa,
                     UsuariosPorPerfil = s.UsuariosPorPerfil
                         .Select(p => new PerfilSucursalResumenModelo
                         {

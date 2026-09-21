@@ -7,6 +7,7 @@ namespace Capa_Vistas
         private System.ComponentModel.IContainer components = null;
 
         private Panel pnlCabecera;
+        private TableLayoutPanel tlpCabeceraUsuarios;
         private Label lblTitulo;
         private Label lblSubtitulo;
         private Panel pnlLineaTitulo;
@@ -33,6 +34,7 @@ namespace Capa_Vistas
         private Label lblListadoDescripcion;
         private DataGridView dgvUsuarios;
         private Label lblCantidad;
+        private Label lblEstadoVacio;
 
         private Panel pnlVistaPerfiles;
         private Panel pnlListaPerfiles;
@@ -90,18 +92,16 @@ namespace Capa_Vistas
         {
             DataGridViewCellStyle dataGridViewCellStyle1 = new DataGridViewCellStyle();
             DataGridViewCellStyle dataGridViewCellStyle2 = new DataGridViewCellStyle();
-
             pnlCabecera = new Panel();
+            tlpCabeceraUsuarios = new TableLayoutPanel();
             lblTitulo = new Label();
             lblSubtitulo = new Label();
             pnlLineaTitulo = new Panel();
             btnNuevoUsuario = new Button();
-
             pnlNavegacion = new Panel();
             btnVistaUsuarios = new Button();
             btnVistaPerfiles = new Button();
             btnVistaSucursales = new Button();
-
             pnlVistaUsuarios = new Panel();
             pnlFiltros = new Panel();
             lblBuscar = new Label();
@@ -112,20 +112,18 @@ namespace Capa_Vistas
             cmbEstado = new ComboBox();
             btnBuscar = new Button();
             btnLimpiarFiltros = new Button();
-
             pnlListado = new Panel();
             lblListadoTitulo = new Label();
             lblListadoDescripcion = new Label();
             dgvUsuarios = new DataGridView();
             lblCantidad = new Label();
-
+            lblEstadoVacio = new Label();
             pnlVistaPerfiles = new Panel();
             pnlListaPerfiles = new Panel();
             lblPerfilesTitulo = new Label();
             lblPerfilesDescripcion = new Label();
             lstPerfiles = new ListBox();
             btnNuevoPerfil = new Button();
-
             pnlDetallePerfil = new Panel();
             lblDetallePerfilTitulo = new Label();
             lblNombrePerfil = new Label();
@@ -137,7 +135,6 @@ namespace Capa_Vistas
             flpPermisos = new FlowLayoutPanel();
             btnGuardarPerfil = new Button();
             btnEliminarPerfil = new Button();
-
             pnlVistaSucursales = new Panel();
             pnlListadoSucursales = new Panel();
             lblSucursalesTitulo = new Label();
@@ -158,8 +155,8 @@ namespace Capa_Vistas
             chkSucursalActiva = new CheckBox();
             btnCancelarSucursal = new Button();
             btnGuardarSucursal = new Button();
-
             pnlCabecera.SuspendLayout();
+            tlpCabeceraUsuarios.SuspendLayout();
             pnlNavegacion.SuspendLayout();
             pnlVistaUsuarios.SuspendLayout();
             pnlFiltros.SuspendLayout();
@@ -172,107 +169,152 @@ namespace Capa_Vistas
             pnlListadoSucursales.SuspendLayout();
             pnlFormularioSucursal.SuspendLayout();
             SuspendLayout();
-
+            // 
+            // pnlCabecera
+            // 
             pnlCabecera.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlCabecera.Controls.Add(lblTitulo);
             pnlCabecera.Controls.Add(lblSubtitulo);
             pnlCabecera.Controls.Add(pnlLineaTitulo);
-            pnlCabecera.Controls.Add(btnNuevoUsuario);
-            pnlCabecera.Location = new Point(32, 12);
+            pnlCabecera.Dock = DockStyle.Fill;
+            pnlCabecera.Location = new Point(0, 0);
             pnlCabecera.Name = "pnlCabecera";
-            pnlCabecera.Size = new Size(1243, 88);
+            pnlCabecera.Size = new Size(1053, 100);
             pnlCabecera.TabIndex = 0;
-
+            //
+            // tlpCabeceraUsuarios
+            //
+            tlpCabeceraUsuarios.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            tlpCabeceraUsuarios.ColumnCount = 2;
+            tlpCabeceraUsuarios.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpCabeceraUsuarios.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 190F));
+            tlpCabeceraUsuarios.Controls.Add(pnlCabecera, 0, 0);
+            tlpCabeceraUsuarios.Controls.Add(btnNuevoUsuario, 1, 0);
+            tlpCabeceraUsuarios.Location = new Point(32, 20);
+            tlpCabeceraUsuarios.Margin = new Padding(0);
+            tlpCabeceraUsuarios.Name = "tlpCabeceraUsuarios";
+            tlpCabeceraUsuarios.RowCount = 1;
+            tlpCabeceraUsuarios.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            tlpCabeceraUsuarios.Size = new Size(1243, 100);
+            tlpCabeceraUsuarios.TabIndex = 5;
+            // 
+            // lblTitulo
+            // 
             lblTitulo.AutoSize = true;
             lblTitulo.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
             lblTitulo.ForeColor = Color.FromArgb(45, 49, 54);
-            lblTitulo.Location = new Point(0, 4);
+            lblTitulo.Location = new Point(0, 2);
             lblTitulo.Name = "lblTitulo";
             lblTitulo.Size = new Size(172, 50);
             lblTitulo.TabIndex = 0;
             lblTitulo.Text = "Usuarios";
-
+            // 
+            // lblSubtitulo
+            // 
             lblSubtitulo.AutoSize = true;
-            lblSubtitulo.Font = new Font("Segoe UI", 9F);
+            lblSubtitulo.Font = new Font("Segoe UI", 9.5F);
             lblSubtitulo.ForeColor = Color.FromArgb(105, 110, 116);
-            lblSubtitulo.Location = new Point(3, 50);
+            lblSubtitulo.Location = new Point(2, 54);
             lblSubtitulo.Name = "lblSubtitulo";
-            lblSubtitulo.Size = new Size(328, 20);
+            lblSubtitulo.Size = new Size(348, 21);
             lblSubtitulo.TabIndex = 1;
             lblSubtitulo.Text = "Administración de usuarios, perfiles y sucursales.";
-
+            // 
+            // pnlLineaTitulo
+            // 
             pnlLineaTitulo.BackColor = Color.FromArgb(190, 137, 45);
-            pnlLineaTitulo.Location = new Point(2, 74);
+            pnlLineaTitulo.Location = new Point(2, 84);
             pnlLineaTitulo.Name = "pnlLineaTitulo";
-            pnlLineaTitulo.Size = new Size(95, 3);
+            pnlLineaTitulo.Size = new Size(92, 3);
             pnlLineaTitulo.TabIndex = 2;
-
+            // 
+            // btnNuevoUsuario
+            // 
             btnNuevoUsuario.Anchor = AnchorStyles.Top | AnchorStyles.Right;
-            btnNuevoUsuario.BackColor = Color.FromArgb(45, 49, 54);
+            btnNuevoUsuario.BackColor = Color.FromArgb(190, 137, 45);
             btnNuevoUsuario.Cursor = Cursors.Hand;
             btnNuevoUsuario.FlatAppearance.BorderSize = 0;
+            btnNuevoUsuario.FlatAppearance.MouseOverBackColor = Color.FromArgb(168, 119, 35);
             btnNuevoUsuario.FlatStyle = FlatStyle.Flat;
+            btnNuevoUsuario.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
             btnNuevoUsuario.ForeColor = Color.White;
-            btnNuevoUsuario.Location = new Point(1124, 30);
+            btnNuevoUsuario.Location = new Point(1054, 17);
+            btnNuevoUsuario.Margin = new Padding(10, 17, 0, 0);
             btnNuevoUsuario.Name = "btnNuevoUsuario";
-            btnNuevoUsuario.Size = new Size(100, 40);
+            btnNuevoUsuario.Size = new Size(179, 42);
             btnNuevoUsuario.TabIndex = 3;
             btnNuevoUsuario.Text = "+ Nuevo";
             btnNuevoUsuario.UseVisualStyleBackColor = false;
-
+            // 
+            // pnlNavegacion
+            // 
             pnlNavegacion.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            pnlNavegacion.BackColor = Color.FromArgb(241, 243, 245);
             pnlNavegacion.Controls.Add(btnVistaUsuarios);
             pnlNavegacion.Controls.Add(btnVistaPerfiles);
             pnlNavegacion.Controls.Add(btnVistaSucursales);
-            pnlNavegacion.Location = new Point(32, 103);
+            pnlNavegacion.Location = new Point(32, 120);
             pnlNavegacion.Name = "pnlNavegacion";
             pnlNavegacion.Size = new Size(1243, 43);
             pnlNavegacion.TabIndex = 1;
-
+            // 
+            // btnVistaUsuarios
+            // 
             btnVistaUsuarios.BackColor = Color.FromArgb(190, 137, 45);
             btnVistaUsuarios.Cursor = Cursors.Hand;
             btnVistaUsuarios.FlatAppearance.BorderSize = 0;
             btnVistaUsuarios.FlatStyle = FlatStyle.Flat;
+            btnVistaUsuarios.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnVistaUsuarios.ForeColor = Color.White;
             btnVistaUsuarios.Location = new Point(0, 0);
             btnVistaUsuarios.Name = "btnVistaUsuarios";
-            btnVistaUsuarios.Size = new Size(145, 40);
+            btnVistaUsuarios.Size = new Size(120, 39);
             btnVistaUsuarios.TabIndex = 0;
             btnVistaUsuarios.Text = "Usuarios";
             btnVistaUsuarios.UseVisualStyleBackColor = false;
-
+            // 
+            // btnVistaPerfiles
+            // 
             btnVistaPerfiles.BackColor = Color.FromArgb(235, 237, 240);
             btnVistaPerfiles.Cursor = Cursors.Hand;
             btnVistaPerfiles.FlatAppearance.BorderSize = 0;
             btnVistaPerfiles.FlatStyle = FlatStyle.Flat;
+            btnVistaPerfiles.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnVistaPerfiles.ForeColor = Color.FromArgb(55, 59, 64);
             btnVistaPerfiles.Location = new Point(151, 0);
             btnVistaPerfiles.Name = "btnVistaPerfiles";
-            btnVistaPerfiles.Size = new Size(230, 40);
+            btnVistaPerfiles.Size = new Size(230, 39);
             btnVistaPerfiles.TabIndex = 1;
             btnVistaPerfiles.Text = "Tipos de usuario y permisos";
             btnVistaPerfiles.UseVisualStyleBackColor = false;
-
+            // 
+            // btnVistaSucursales
+            // 
             btnVistaSucursales.BackColor = Color.FromArgb(235, 237, 240);
             btnVistaSucursales.Cursor = Cursors.Hand;
             btnVistaSucursales.FlatAppearance.BorderSize = 0;
             btnVistaSucursales.FlatStyle = FlatStyle.Flat;
+            btnVistaSucursales.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnVistaSucursales.ForeColor = Color.FromArgb(55, 59, 64);
             btnVistaSucursales.Location = new Point(387, 0);
             btnVistaSucursales.Name = "btnVistaSucursales";
-            btnVistaSucursales.Size = new Size(130, 40);
+            btnVistaSucursales.Size = new Size(120, 39);
             btnVistaSucursales.TabIndex = 2;
             btnVistaSucursales.Text = "Sucursales";
             btnVistaSucursales.UseVisualStyleBackColor = false;
-
+            // 
+            // pnlVistaUsuarios
+            // 
             pnlVistaUsuarios.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlVistaUsuarios.Controls.Add(pnlFiltros);
             pnlVistaUsuarios.Controls.Add(pnlListado);
-            pnlVistaUsuarios.Location = new Point(32, 152);
+            pnlVistaUsuarios.Location = new Point(32, 163);
             pnlVistaUsuarios.Name = "pnlVistaUsuarios";
             pnlVistaUsuarios.Size = new Size(1243, 576);
             pnlVistaUsuarios.TabIndex = 2;
-
+            // 
+            // pnlFiltros
+            // 
             pnlFiltros.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlFiltros.BackColor = Color.White;
             pnlFiltros.BorderStyle = BorderStyle.FixedSingle;
@@ -288,46 +330,60 @@ namespace Capa_Vistas
             pnlFiltros.Name = "pnlFiltros";
             pnlFiltros.Size = new Size(1243, 73);
             pnlFiltros.TabIndex = 0;
-
+            // 
+            // lblBuscar
+            // 
             lblBuscar.AutoSize = true;
             lblBuscar.Location = new Point(18, 25);
             lblBuscar.Name = "lblBuscar";
             lblBuscar.Size = new Size(104, 20);
             lblBuscar.TabIndex = 0;
             lblBuscar.Text = "Buscar usuario";
-
+            // 
+            // txtBuscar
+            // 
             txtBuscar.Location = new Point(126, 21);
             txtBuscar.Name = "txtBuscar";
             txtBuscar.PlaceholderText = "Usuario, nombre o apellido";
             txtBuscar.Size = new Size(300, 27);
             txtBuscar.TabIndex = 1;
-
+            // 
+            // lblPerfil
+            // 
             lblPerfil.AutoSize = true;
             lblPerfil.Location = new Point(473, 25);
             lblPerfil.Name = "lblPerfil";
             lblPerfil.Size = new Size(42, 20);
             lblPerfil.TabIndex = 2;
             lblPerfil.Text = "Perfil";
-
+            // 
+            // cmbPerfil
+            // 
             cmbPerfil.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbPerfil.Location = new Point(521, 20);
             cmbPerfil.Name = "cmbPerfil";
             cmbPerfil.Size = new Size(180, 28);
             cmbPerfil.TabIndex = 3;
-
+            // 
+            // lblEstado
+            // 
             lblEstado.AutoSize = true;
             lblEstado.Location = new Point(729, 25);
             lblEstado.Name = "lblEstado";
             lblEstado.Size = new Size(54, 20);
             lblEstado.TabIndex = 4;
             lblEstado.Text = "Estado";
-
+            // 
+            // cmbEstado
+            // 
             cmbEstado.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbEstado.Location = new Point(789, 21);
             cmbEstado.Name = "cmbEstado";
             cmbEstado.Size = new Size(160, 28);
             cmbEstado.TabIndex = 5;
-
+            // 
+            // btnBuscar
+            // 
             btnBuscar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnBuscar.BackColor = Color.FromArgb(190, 137, 45);
             btnBuscar.Cursor = Cursors.Hand;
@@ -340,7 +396,9 @@ namespace Capa_Vistas
             btnBuscar.TabIndex = 6;
             btnBuscar.Text = "Buscar";
             btnBuscar.UseVisualStyleBackColor = false;
-
+            // 
+            // btnLimpiarFiltros
+            // 
             btnLimpiarFiltros.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnLimpiarFiltros.BackColor = Color.White;
             btnLimpiarFiltros.Cursor = Cursors.Hand;
@@ -352,19 +410,25 @@ namespace Capa_Vistas
             btnLimpiarFiltros.TabIndex = 7;
             btnLimpiarFiltros.Text = "Limpiar";
             btnLimpiarFiltros.UseVisualStyleBackColor = false;
-
+            btnLimpiarFiltros.Click += btnLimpiarFiltros_Click_1;
+            // 
+            // pnlListado
+            // 
             pnlListado.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlListado.BackColor = Color.White;
             pnlListado.BorderStyle = BorderStyle.FixedSingle;
             pnlListado.Controls.Add(lblListadoTitulo);
             pnlListado.Controls.Add(lblListadoDescripcion);
             pnlListado.Controls.Add(dgvUsuarios);
+            pnlListado.Controls.Add(lblEstadoVacio);
             pnlListado.Controls.Add(lblCantidad);
             pnlListado.Location = new Point(0, 79);
             pnlListado.Name = "pnlListado";
             pnlListado.Size = new Size(1243, 497);
             pnlListado.TabIndex = 1;
-
+            // 
+            // lblListadoTitulo
+            // 
             lblListadoTitulo.AutoSize = true;
             lblListadoTitulo.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
             lblListadoTitulo.ForeColor = Color.FromArgb(55, 59, 64);
@@ -373,7 +437,9 @@ namespace Capa_Vistas
             lblListadoTitulo.Size = new Size(185, 25);
             lblListadoTitulo.TabIndex = 0;
             lblListadoTitulo.Text = "Usuarios registrados";
-
+            // 
+            // lblListadoDescripcion
+            // 
             lblListadoDescripcion.AutoSize = true;
             lblListadoDescripcion.Font = new Font("Segoe UI", 8F);
             lblListadoDescripcion.ForeColor = Color.FromArgb(105, 110, 116);
@@ -382,7 +448,9 @@ namespace Capa_Vistas
             lblListadoDescripcion.Size = new Size(297, 19);
             lblListadoDescripcion.TabIndex = 1;
             lblListadoDescripcion.Text = "Consulta los usuarios registrados en el sistema.";
-
+            // 
+            // dgvUsuarios
+            // 
             dgvUsuarios.AllowUserToAddRows = false;
             dgvUsuarios.AllowUserToDeleteRows = false;
             dgvUsuarios.AllowUserToResizeRows = false;
@@ -419,7 +487,22 @@ namespace Capa_Vistas
             dgvUsuarios.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
             dgvUsuarios.Size = new Size(1205, 406);
             dgvUsuarios.TabIndex = 2;
-
+            // 
+            // lblEstadoVacio
+            // 
+            lblEstadoVacio.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            lblEstadoVacio.BackColor = Color.White;
+            lblEstadoVacio.Font = new Font("Segoe UI", 11F);
+            lblEstadoVacio.ForeColor = Color.FromArgb(105, 110, 116);
+            lblEstadoVacio.Location = new Point(18, 51);
+            lblEstadoVacio.Name = "lblEstadoVacio";
+            lblEstadoVacio.Size = new Size(1205, 406);
+            lblEstadoVacio.TabIndex = 4;
+            lblEstadoVacio.TextAlign = ContentAlignment.MiddleCenter;
+            lblEstadoVacio.Visible = false;
+            // 
+            // lblCantidad
+            // 
             lblCantidad.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblCantidad.AutoSize = true;
             lblCantidad.Font = new Font("Segoe UI", 8.5F);
@@ -429,16 +512,20 @@ namespace Capa_Vistas
             lblCantidad.Size = new Size(85, 20);
             lblCantidad.TabIndex = 3;
             lblCantidad.Text = "0 usuario(s)";
-
+            // 
+            // pnlVistaPerfiles
+            // 
             pnlVistaPerfiles.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlVistaPerfiles.Controls.Add(pnlListaPerfiles);
             pnlVistaPerfiles.Controls.Add(pnlDetallePerfil);
-            pnlVistaPerfiles.Location = new Point(32, 152);
+            pnlVistaPerfiles.Location = new Point(32, 163);
             pnlVistaPerfiles.Name = "pnlVistaPerfiles";
             pnlVistaPerfiles.Size = new Size(1243, 576);
             pnlVistaPerfiles.TabIndex = 3;
             pnlVistaPerfiles.Visible = false;
-
+            // 
+            // pnlListaPerfiles
+            // 
             pnlListaPerfiles.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             pnlListaPerfiles.BackColor = Color.White;
             pnlListaPerfiles.BorderStyle = BorderStyle.FixedSingle;
@@ -450,16 +537,20 @@ namespace Capa_Vistas
             pnlListaPerfiles.Name = "pnlListaPerfiles";
             pnlListaPerfiles.Size = new Size(355, 576);
             pnlListaPerfiles.TabIndex = 0;
-
+            // 
+            // lblPerfilesTitulo
+            // 
             lblPerfilesTitulo.AutoSize = true;
             lblPerfilesTitulo.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblPerfilesTitulo.ForeColor = Color.FromArgb(55, 59, 64);
             lblPerfilesTitulo.Location = new Point(18, 16);
             lblPerfilesTitulo.Name = "lblPerfilesTitulo";
-            lblPerfilesTitulo.Size = new Size(153, 25);
+            lblPerfilesTitulo.Size = new Size(159, 25);
             lblPerfilesTitulo.TabIndex = 0;
             lblPerfilesTitulo.Text = "Tipos de usuario";
-
+            // 
+            // lblPerfilesDescripcion
+            // 
             lblPerfilesDescripcion.Font = new Font("Segoe UI", 8.5F);
             lblPerfilesDescripcion.ForeColor = Color.FromArgb(105, 110, 116);
             lblPerfilesDescripcion.Location = new Point(18, 47);
@@ -467,17 +558,20 @@ namespace Capa_Vistas
             lblPerfilesDescripcion.Size = new Size(315, 42);
             lblPerfilesDescripcion.TabIndex = 1;
             lblPerfilesDescripcion.Text = "Seleccioná un tipo para consultar o modificar sus permisos.";
-
+            // 
+            // lstPerfiles
+            // 
             lstPerfiles.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             lstPerfiles.BorderStyle = BorderStyle.FixedSingle;
             lstPerfiles.Font = new Font("Segoe UI", 9.5F);
             lstPerfiles.FormattingEnabled = true;
-            lstPerfiles.ItemHeight = 21;
             lstPerfiles.Location = new Point(18, 103);
             lstPerfiles.Name = "lstPerfiles";
             lstPerfiles.Size = new Size(315, 401);
             lstPerfiles.TabIndex = 2;
-
+            // 
+            // btnNuevoPerfil
+            // 
             btnNuevoPerfil.Anchor = AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             btnNuevoPerfil.BackColor = Color.FromArgb(45, 49, 54);
             btnNuevoPerfil.Cursor = Cursors.Hand;
@@ -490,7 +584,9 @@ namespace Capa_Vistas
             btnNuevoPerfil.TabIndex = 3;
             btnNuevoPerfil.Text = "+ Nuevo tipo de usuario";
             btnNuevoPerfil.UseVisualStyleBackColor = false;
-
+            // 
+            // pnlDetallePerfil
+            // 
             pnlDetallePerfil.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlDetallePerfil.AutoScroll = true;
             pnlDetallePerfil.BackColor = Color.White;
@@ -509,37 +605,47 @@ namespace Capa_Vistas
             pnlDetallePerfil.Name = "pnlDetallePerfil";
             pnlDetallePerfil.Size = new Size(876, 576);
             pnlDetallePerfil.TabIndex = 1;
-
+            // 
+            // lblDetallePerfilTitulo
+            // 
             lblDetallePerfilTitulo.AutoSize = true;
             lblDetallePerfilTitulo.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblDetallePerfilTitulo.ForeColor = Color.FromArgb(55, 59, 64);
             lblDetallePerfilTitulo.Location = new Point(22, 16);
             lblDetallePerfilTitulo.Name = "lblDetallePerfilTitulo";
-            lblDetallePerfilTitulo.Size = new Size(193, 25);
+            lblDetallePerfilTitulo.Size = new Size(235, 25);
             lblDetallePerfilTitulo.TabIndex = 0;
             lblDetallePerfilTitulo.Text = "Datos del tipo de usuario";
-
+            // 
+            // lblNombrePerfil
+            // 
             lblNombrePerfil.AutoSize = true;
             lblNombrePerfil.Location = new Point(22, 60);
             lblNombrePerfil.Name = "lblNombrePerfil";
             lblNombrePerfil.Size = new Size(64, 20);
             lblNombrePerfil.TabIndex = 1;
             lblNombrePerfil.Text = "Nombre";
-
+            // 
+            // txtNombrePerfil
+            // 
             txtNombrePerfil.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtNombrePerfil.Location = new Point(22, 84);
             txtNombrePerfil.MaxLength = 50;
             txtNombrePerfil.Name = "txtNombrePerfil";
             txtNombrePerfil.Size = new Size(831, 27);
             txtNombrePerfil.TabIndex = 2;
-
+            // 
+            // lblDescripcionPerfil
+            // 
             lblDescripcionPerfil.AutoSize = true;
             lblDescripcionPerfil.Location = new Point(22, 125);
             lblDescripcionPerfil.Name = "lblDescripcionPerfil";
             lblDescripcionPerfil.Size = new Size(87, 20);
             lblDescripcionPerfil.TabIndex = 3;
             lblDescripcionPerfil.Text = "Descripción";
-
+            // 
+            // txtDescripcionPerfil
+            // 
             txtDescripcionPerfil.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtDescripcionPerfil.Location = new Point(22, 149);
             txtDescripcionPerfil.MaxLength = 200;
@@ -548,27 +654,33 @@ namespace Capa_Vistas
             txtDescripcionPerfil.ScrollBars = ScrollBars.Vertical;
             txtDescripcionPerfil.Size = new Size(831, 62);
             txtDescripcionPerfil.TabIndex = 4;
-
+            // 
+            // lblPermisosTitulo
+            // 
             lblPermisosTitulo.AutoSize = true;
             lblPermisosTitulo.Font = new Font("Segoe UI", 10F, FontStyle.Bold);
             lblPermisosTitulo.ForeColor = Color.FromArgb(55, 59, 64);
             lblPermisosTitulo.Location = new Point(22, 228);
             lblPermisosTitulo.Name = "lblPermisosTitulo";
-            lblPermisosTitulo.Size = new Size(81, 23);
+            lblPermisosTitulo.Size = new Size(80, 23);
             lblPermisosTitulo.TabIndex = 5;
             lblPermisosTitulo.Text = "Permisos";
-
+            // 
+            // lblPermisosDescripcion
+            // 
             lblPermisosDescripcion.AutoSize = true;
             lblPermisosDescripcion.Font = new Font("Segoe UI", 8F);
             lblPermisosDescripcion.ForeColor = Color.FromArgb(105, 110, 116);
             lblPermisosDescripcion.Location = new Point(112, 232);
             lblPermisosDescripcion.Name = "lblPermisosDescripcion";
-            lblPermisosDescripcion.Size = new Size(329, 19);
+            lblPermisosDescripcion.Size = new Size(347, 19);
             lblPermisosDescripcion.TabIndex = 6;
             lblPermisosDescripcion.Text = "Las opciones se cargarán dinámicamente desde la base.";
-
+            // 
+            // flpPermisos
+            // 
             flpPermisos.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            flpPermisos.AutoScroll = true;
+            flpPermisos.AutoScroll = false;
             flpPermisos.BackColor = Color.FromArgb(248, 249, 250);
             flpPermisos.BorderStyle = BorderStyle.FixedSingle;
             flpPermisos.FlowDirection = FlowDirection.TopDown;
@@ -578,7 +690,9 @@ namespace Capa_Vistas
             flpPermisos.Size = new Size(831, 128);
             flpPermisos.TabIndex = 7;
             flpPermisos.WrapContents = false;
-
+            // 
+            // btnGuardarPerfil
+            // 
             btnGuardarPerfil.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnGuardarPerfil.BackColor = Color.FromArgb(190, 137, 45);
             btnGuardarPerfil.Cursor = Cursors.Hand;
@@ -591,8 +705,9 @@ namespace Capa_Vistas
             btnGuardarPerfil.TabIndex = 8;
             btnGuardarPerfil.Text = "Guardar cambios";
             btnGuardarPerfil.UseVisualStyleBackColor = false;
-
-            btnEliminarPerfil.Anchor = AnchorStyles.Top | AnchorStyles.Left;
+            // 
+            // btnEliminarPerfil
+            // 
             btnEliminarPerfil.BackColor = Color.White;
             btnEliminarPerfil.Cursor = Cursors.Hand;
             btnEliminarPerfil.FlatAppearance.BorderColor = Color.FromArgb(170, 75, 75);
@@ -604,16 +719,20 @@ namespace Capa_Vistas
             btnEliminarPerfil.TabIndex = 9;
             btnEliminarPerfil.Text = "Dar de baja";
             btnEliminarPerfil.UseVisualStyleBackColor = false;
-
+            // 
+            // pnlVistaSucursales
+            // 
             pnlVistaSucursales.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlVistaSucursales.Controls.Add(pnlListadoSucursales);
             pnlVistaSucursales.Controls.Add(pnlFormularioSucursal);
-            pnlVistaSucursales.Location = new Point(32, 152);
+            pnlVistaSucursales.Location = new Point(32, 163);
             pnlVistaSucursales.Name = "pnlVistaSucursales";
             pnlVistaSucursales.Size = new Size(1243, 576);
             pnlVistaSucursales.TabIndex = 4;
             pnlVistaSucursales.Visible = false;
-
+            // 
+            // pnlListadoSucursales
+            // 
             pnlListadoSucursales.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlListadoSucursales.BackColor = Color.White;
             pnlListadoSucursales.BorderStyle = BorderStyle.FixedSingle;
@@ -626,25 +745,31 @@ namespace Capa_Vistas
             pnlListadoSucursales.Name = "pnlListadoSucursales";
             pnlListadoSucursales.Size = new Size(1243, 576);
             pnlListadoSucursales.TabIndex = 0;
-
+            // 
+            // lblSucursalesTitulo
+            // 
             lblSucursalesTitulo.AutoSize = true;
             lblSucursalesTitulo.Font = new Font("Segoe UI", 11F, FontStyle.Bold);
             lblSucursalesTitulo.ForeColor = Color.FromArgb(55, 59, 64);
             lblSucursalesTitulo.Location = new Point(18, 16);
             lblSucursalesTitulo.Name = "lblSucursalesTitulo";
-            lblSucursalesTitulo.Size = new Size(101, 25);
+            lblSucursalesTitulo.Size = new Size(105, 25);
             lblSucursalesTitulo.TabIndex = 0;
             lblSucursalesTitulo.Text = "Sucursales";
-
+            // 
+            // lblSucursalesDescripcion
+            // 
             lblSucursalesDescripcion.AutoSize = true;
             lblSucursalesDescripcion.Font = new Font("Segoe UI", 8.5F);
             lblSucursalesDescripcion.ForeColor = Color.FromArgb(105, 110, 116);
             lblSucursalesDescripcion.Location = new Point(18, 48);
             lblSucursalesDescripcion.Name = "lblSucursalesDescripcion";
-            lblSucursalesDescripcion.Size = new Size(394, 19);
+            lblSucursalesDescripcion.Size = new Size(440, 20);
             lblSucursalesDescripcion.TabIndex = 1;
             lblSucursalesDescripcion.Text = "Cada resumen se adapta a los perfiles configurados actualmente.";
-
+            // 
+            // btnNuevaSucursal
+            // 
             btnNuevaSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnNuevaSucursal.BackColor = Color.FromArgb(45, 49, 54);
             btnNuevaSucursal.Cursor = Cursors.Hand;
@@ -657,7 +782,9 @@ namespace Capa_Vistas
             btnNuevaSucursal.TabIndex = 2;
             btnNuevaSucursal.Text = "+ Nueva sucursal";
             btnNuevaSucursal.UseVisualStyleBackColor = false;
-
+            // 
+            // flpSucursales
+            // 
             flpSucursales.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             flpSucursales.AutoScroll = true;
             flpSucursales.BackColor = Color.FromArgb(248, 249, 250);
@@ -668,17 +795,21 @@ namespace Capa_Vistas
             flpSucursales.Size = new Size(1205, 440);
             flpSucursales.TabIndex = 3;
             flpSucursales.WrapContents = false;
-
+            // 
+            // lblCantidadSucursales
+            // 
             lblCantidadSucursales.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             lblCantidadSucursales.AutoSize = true;
             lblCantidadSucursales.Font = new Font("Segoe UI", 8.5F);
             lblCantidadSucursales.ForeColor = Color.FromArgb(105, 110, 116);
             lblCantidadSucursales.Location = new Point(18, 538);
             lblCantidadSucursales.Name = "lblCantidadSucursales";
-            lblCantidadSucursales.Size = new Size(150, 20);
+            lblCantidadSucursales.Size = new Size(156, 20);
             lblCantidadSucursales.TabIndex = 4;
             lblCantidadSucursales.Text = "0 sucursal(es) activa(s)";
-
+            // 
+            // pnlFormularioSucursal
+            // 
             pnlFormularioSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlFormularioSucursal.BackColor = Color.White;
             pnlFormularioSucursal.BorderStyle = BorderStyle.FixedSingle;
@@ -699,71 +830,91 @@ namespace Capa_Vistas
             pnlFormularioSucursal.Size = new Size(1243, 576);
             pnlFormularioSucursal.TabIndex = 1;
             pnlFormularioSucursal.Visible = false;
-
+            // 
+            // lblFormularioSucursalTitulo
+            // 
             lblFormularioSucursalTitulo.AutoSize = true;
             lblFormularioSucursalTitulo.Font = new Font("Segoe UI", 12F, FontStyle.Bold);
             lblFormularioSucursalTitulo.ForeColor = Color.FromArgb(55, 59, 64);
             lblFormularioSucursalTitulo.Location = new Point(28, 24);
             lblFormularioSucursalTitulo.Name = "lblFormularioSucursalTitulo";
-            lblFormularioSucursalTitulo.Size = new Size(146, 28);
+            lblFormularioSucursalTitulo.Size = new Size(156, 28);
             lblFormularioSucursalTitulo.TabIndex = 0;
             lblFormularioSucursalTitulo.Text = "Nueva sucursal";
-
+            // 
+            // lblNombreSucursal
+            // 
             lblNombreSucursal.AutoSize = true;
             lblNombreSucursal.Location = new Point(28, 83);
             lblNombreSucursal.Name = "lblNombreSucursal";
             lblNombreSucursal.Size = new Size(64, 20);
             lblNombreSucursal.TabIndex = 1;
             lblNombreSucursal.Text = "Nombre";
-
+            // 
+            // txtNombreSucursal
+            // 
             txtNombreSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtNombreSucursal.Location = new Point(28, 108);
             txtNombreSucursal.MaxLength = 100;
             txtNombreSucursal.Name = "txtNombreSucursal";
             txtNombreSucursal.Size = new Size(1184, 27);
             txtNombreSucursal.TabIndex = 2;
-
+            // 
+            // lblProvinciaSucursal
+            // 
             lblProvinciaSucursal.AutoSize = true;
             lblProvinciaSucursal.Location = new Point(28, 166);
             lblProvinciaSucursal.Name = "lblProvinciaSucursal";
-            lblProvinciaSucursal.Size = new Size(68, 20);
+            lblProvinciaSucursal.Size = new Size(69, 20);
             lblProvinciaSucursal.TabIndex = 3;
             lblProvinciaSucursal.Text = "Provincia";
-
+            // 
+            // cmbSucursalProvincia
+            // 
             cmbSucursalProvincia.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbSucursalProvincia.Location = new Point(28, 191);
             cmbSucursalProvincia.Name = "cmbSucursalProvincia";
             cmbSucursalProvincia.Size = new Size(560, 28);
             cmbSucursalProvincia.TabIndex = 4;
-
+            // 
+            // lblLocalidadSucursal
+            // 
             lblLocalidadSucursal.AutoSize = true;
             lblLocalidadSucursal.Location = new Point(634, 166);
             lblLocalidadSucursal.Name = "lblLocalidadSucursal";
-            lblLocalidadSucursal.Size = new Size(69, 20);
+            lblLocalidadSucursal.Size = new Size(74, 20);
             lblLocalidadSucursal.TabIndex = 5;
             lblLocalidadSucursal.Text = "Localidad";
-
+            // 
+            // cmbSucursalLocalidad
+            // 
             cmbSucursalLocalidad.FormattingEnabled = true;
             cmbSucursalLocalidad.Location = new Point(634, 191);
             cmbSucursalLocalidad.MaxLength = 100;
             cmbSucursalLocalidad.Name = "cmbSucursalLocalidad";
             cmbSucursalLocalidad.Size = new Size(578, 28);
             cmbSucursalLocalidad.TabIndex = 6;
-
+            // 
+            // lblDireccionSucursal
+            // 
             lblDireccionSucursal.AutoSize = true;
             lblDireccionSucursal.Location = new Point(28, 252);
             lblDireccionSucursal.Name = "lblDireccionSucursal";
             lblDireccionSucursal.Size = new Size(72, 20);
             lblDireccionSucursal.TabIndex = 7;
             lblDireccionSucursal.Text = "Dirección";
-
+            // 
+            // txtDireccionSucursal
+            // 
             txtDireccionSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             txtDireccionSucursal.Location = new Point(28, 277);
             txtDireccionSucursal.MaxLength = 150;
             txtDireccionSucursal.Name = "txtDireccionSucursal";
             txtDireccionSucursal.Size = new Size(1184, 27);
             txtDireccionSucursal.TabIndex = 8;
-
+            // 
+            // chkSucursalActiva
+            // 
             chkSucursalActiva.AutoSize = true;
             chkSucursalActiva.Checked = true;
             chkSucursalActiva.CheckState = CheckState.Checked;
@@ -771,11 +922,13 @@ namespace Capa_Vistas
             chkSucursalActiva.ForeColor = Color.FromArgb(55, 59, 64);
             chkSucursalActiva.Location = new Point(28, 335);
             chkSucursalActiva.Name = "chkSucursalActiva";
-            chkSucursalActiva.Size = new Size(130, 24);
+            chkSucursalActiva.Size = new Size(128, 24);
             chkSucursalActiva.TabIndex = 9;
             chkSucursalActiva.Text = "Sucursal activa";
             chkSucursalActiva.UseVisualStyleBackColor = true;
-
+            // 
+            // btnCancelarSucursal
+            // 
             btnCancelarSucursal.Anchor = AnchorStyles.Bottom | AnchorStyles.Left;
             btnCancelarSucursal.BackColor = Color.White;
             btnCancelarSucursal.Cursor = Cursors.Hand;
@@ -788,7 +941,9 @@ namespace Capa_Vistas
             btnCancelarSucursal.TabIndex = 10;
             btnCancelarSucursal.Text = "Cancelar";
             btnCancelarSucursal.UseVisualStyleBackColor = false;
-
+            // 
+            // btnGuardarSucursal
+            // 
             btnGuardarSucursal.Anchor = AnchorStyles.Bottom | AnchorStyles.Right;
             btnGuardarSucursal.BackColor = Color.FromArgb(190, 137, 45);
             btnGuardarSucursal.Cursor = Cursors.Hand;
@@ -801,11 +956,13 @@ namespace Capa_Vistas
             btnGuardarSucursal.TabIndex = 11;
             btnGuardarSucursal.Text = "Guardar sucursal";
             btnGuardarSucursal.UseVisualStyleBackColor = false;
-
+            // 
+            // FormUsuarios
+            // 
             AutoScaleMode = AutoScaleMode.None;
             BackColor = Color.FromArgb(245, 246, 248);
             ClientSize = new Size(1307, 760);
-            Controls.Add(pnlCabecera);
+            Controls.Add(tlpCabeceraUsuarios);
             Controls.Add(pnlNavegacion);
             Controls.Add(pnlVistaUsuarios);
             Controls.Add(pnlVistaPerfiles);
@@ -813,9 +970,9 @@ namespace Capa_Vistas
             FormBorderStyle = FormBorderStyle.None;
             Name = "FormUsuarios";
             Text = "Usuarios";
-
             pnlCabecera.ResumeLayout(false);
             pnlCabecera.PerformLayout();
+            tlpCabeceraUsuarios.ResumeLayout(false);
             pnlNavegacion.ResumeLayout(false);
             pnlVistaUsuarios.ResumeLayout(false);
             pnlFiltros.ResumeLayout(false);

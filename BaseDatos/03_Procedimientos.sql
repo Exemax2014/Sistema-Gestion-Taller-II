@@ -164,6 +164,150 @@ BEGIN
 END;
 GO
 
+-- Devuelve el hash solo a Lógica para confirmar credenciales; la Vista recibe únicamente los datos personales.
+CREATE OR ALTER PROCEDURE dbo.sp_Usuario_ObtenerPerfilPropio
+    @idUsuario INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT u.id_usuario, u.id_perfil, u.id_sucursal, u.nombre, u.apellido,
+           u.dni, u.telefono, u.nombre_usuario, u.correo, u.sexo,
+           u.fecha_nacimiento, u.contrasena_hash, p.nombre AS perfil,
+           ISNULL(s.nombre, N'Todas las sucursales') AS sucursal
+    FROM dbo.USUARIO AS u
+    INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil AND p.eliminado_en IS NULL
+    LEFT JOIN dbo.SUCURSAL AS s ON s.id_sucursal = u.id_sucursal
+    WHERE u.id_usuario = @idUsuario
+      AND u.eliminado_en IS NULL
+      AND (u.id_sucursal IS NULL OR s.eliminado_en IS NULL);
+END;
+GO
+
+-- Actualiza únicamente datos personales propios y audita dentro de la misma transacción.
+CREATE OR ALTER PROCEDURE dbo.sp_Usuario_ModificarPerfilPropio
+    @idUsuario INT,
+    @hashActualEsperado NVARCHAR(255),
+    @nuevoHash NVARCHAR(255) = NULL,
+    @nombre NVARCHAR(100),
+    @apellido NVARCHAR(100),
+    @dni NVARCHAR(20),
+    @telefono NVARCHAR(30) = NULL,
+    @nombreUsuario NVARCHAR(50),
+    @correo NVARCHAR(150),
+    @sexo NVARCHAR(20) = NULL,
+    @fechaNacimiento DATE = NULL,
+    @idSucursalAuditoria INT = NULL,
+    @CodigoResultado INT OUTPUT,
+    @MensajeResultado NVARCHAR(250) OUTPUT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    SET XACT_ABORT ON;
+    SET @CodigoResultado = 0;
+    SET @MensajeResultado = N'Perfil actualizado correctamente.';
+
+    SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
+    SET @apellido = LTRIM(RTRIM(ISNULL(@apellido, N'')));
+    SET @dni = LTRIM(RTRIM(ISNULL(@dni, N'')));
+    SET @telefono = NULLIF(LTRIM(RTRIM(@telefono)), N'');
+    SET @nombreUsuario = LTRIM(RTRIM(ISNULL(@nombreUsuario, N'')));
+    SET @correo = LTRIM(RTRIM(ISNULL(@correo, N'')));
+    SET @sexo = NULLIF(LTRIM(RTRIM(@sexo)), N'');
+
+    IF @idUsuario IS NULL OR @idUsuario <= 0 OR @hashActualEsperado IS NULL
+       OR @nombre = N'' OR @apellido = N'' OR @dni = N''
+       OR @nombreUsuario = N'' OR @correo = N''
+       OR LEN(@nombre) > 100 OR LEN(@apellido) > 100 OR LEN(@dni) > 20
+       OR LEN(@nombreUsuario) > 50 OR LEN(@correo) > 150
+       OR (@telefono IS NOT NULL AND LEN(@telefono) > 30)
+       OR (@sexo IS NOT NULL AND LEN(@sexo) > 20)
+       OR @dni LIKE N'%[^0-9]%'
+       OR @nombre LIKE N'%[0-9]%' OR @apellido LIKE N'%[0-9]%'
+       OR @nombre LIKE N'%' + CHAR(9) + N'%' OR @nombre LIKE N'%' + CHAR(10) + N'%' OR @nombre LIKE N'%' + CHAR(13) + N'%'
+       OR @apellido LIKE N'%' + CHAR(9) + N'%' OR @apellido LIKE N'%' + CHAR(10) + N'%' OR @apellido LIKE N'%' + CHAR(13) + N'%'
+       OR (@telefono IS NOT NULL AND (@telefono NOT LIKE N'%[0-9]%' OR @telefono LIKE N'%[^0-9+() -]%'))
+       OR @nombreUsuario LIKE N'%[^A-Za-z0-9._-]%'
+       OR @correo NOT LIKE N'%_@_%._%' OR @correo LIKE N'%@%@%' OR @correo LIKE N'% %'
+       OR @correo LIKE N'%' + CHAR(9) + N'%' OR @correo LIKE N'%' + CHAR(10) + N'%' OR @correo LIKE N'%' + CHAR(13) + N'%'
+       OR (@fechaNacimiento IS NOT NULL AND @fechaNacimiento > CAST(GETDATE() AS DATE))
+       OR (@nuevoHash IS NOT NULL AND (LEN(@nuevoHash) < 20 OR LEN(@nuevoHash) > 255))
+    BEGIN
+        SET @CodigoResultado = 3;
+        SET @MensajeResultado = N'Los datos personales ingresados no son válidos.';
+        RETURN;
+    END;
+
+    BEGIN TRY
+        BEGIN TRANSACTION;
+        DECLARE @hashActual NVARCHAR(255), @idSucursalPropia INT, @sucursalAuditoria INT;
+        SELECT @hashActual = u.contrasena_hash, @idSucursalPropia = u.id_sucursal
+        FROM dbo.USUARIO AS u WITH (UPDLOCK, HOLDLOCK)
+        INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil AND p.eliminado_en IS NULL
+        LEFT JOIN dbo.SUCURSAL AS s ON s.id_sucursal = u.id_sucursal
+        WHERE u.id_usuario = @idUsuario AND u.eliminado_en IS NULL
+          AND (u.id_sucursal IS NULL OR s.eliminado_en IS NULL);
+
+        IF @hashActual IS NULL
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado = N'La cuenta actual no está disponible.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        IF CONVERT(VARBINARY(510), @hashActual) <> CONVERT(VARBINARY(510), @hashActualEsperado)
+        BEGIN
+            SET @CodigoResultado = 5;
+            SET @MensajeResultado = N'La contraseña o los datos de la cuenta cambiaron. Vuelva a intentarlo.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        IF EXISTS (SELECT 1 FROM dbo.USUARIO WHERE dni = @dni AND id_usuario <> @idUsuario)
+           OR EXISTS (SELECT 1 FROM dbo.USUARIO WHERE nombre_usuario = @nombreUsuario AND id_usuario <> @idUsuario)
+           OR EXISTS (SELECT 1 FROM dbo.USUARIO WHERE correo = @correo AND id_usuario <> @idUsuario)
+        BEGIN
+            SET @CodigoResultado = 2;
+            SET @MensajeResultado = N'El DNI, usuario o correo ya pertenece a otra cuenta.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        IF @idSucursalAuditoria IS NOT NULL AND NOT EXISTS
+           (SELECT 1 FROM dbo.SUCURSAL WHERE id_sucursal = @idSucursalAuditoria AND eliminado_en IS NULL)
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La sucursal de auditoría no está activa.';
+            ROLLBACK TRANSACTION;
+            RETURN;
+        END;
+
+        UPDATE dbo.USUARIO
+        SET nombre = @nombre, apellido = @apellido, dni = @dni,
+            telefono = @telefono, nombre_usuario = @nombreUsuario,
+            correo = @correo, sexo = @sexo, fecha_nacimiento = @fechaNacimiento,
+            contrasena_hash = COALESCE(@nuevoHash, contrasena_hash)
+        WHERE id_usuario = @idUsuario AND eliminado_en IS NULL;
+
+        SET @sucursalAuditoria = COALESCE(@idSucursalPropia, @idSucursalAuditoria);
+        DECLARE @detalleAuditoriaPerfil NVARCHAR(300) =
+            CASE WHEN @nuevoHash IS NULL
+                THEN N'El usuario actualizó sus datos personales.'
+                ELSE N'El usuario actualizó sus datos personales y contraseña.' END;
+        EXEC dbo.sp_Auditoria_Registrar
+            @idUsuario = @idUsuario, @accion = N'MODIFICACION_PROPIA',
+            @entidad = N'USUARIO', @idEntidad = @idUsuario,
+            @detalle = @detalleAuditoriaPerfil, @idSucursal = @sucursalAuditoria;
+        COMMIT TRANSACTION;
+    END TRY
+    BEGIN CATCH
+        IF XACT_STATE() <> 0 ROLLBACK TRANSACTION;
+        THROW;
+    END CATCH;
+END;
+GO
+
 /* ============================================================
    Procedimiento: sp_Usuario_Alta
 
@@ -1632,7 +1776,8 @@ GO
 CREATE OR ALTER PROCEDURE dbo.sp_Direccion_Alta
     @idLocalidad INT,
     @calle NVARCHAR(150),
-    @altura NVARCHAR(20) = NULL,
+    @altura NVARCHAR(20),
+    @piso NVARCHAR(2) = NULL,
 
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
@@ -1647,6 +1792,10 @@ BEGIN
 
     BEGIN TRY
 
+        SET @calle = LTRIM(RTRIM(ISNULL(@calle, N'')));
+        SET @altura = ISNULL(@altura, N'');
+        SET @piso = CASE WHEN LTRIM(RTRIM(@piso)) = N'' THEN NULL ELSE @piso END;
+
         IF NOT EXISTS
         (
             SELECT 1
@@ -1660,10 +1809,25 @@ BEGIN
             RETURN;
         END;
 
-        IF LTRIM(RTRIM(ISNULL(@calle, N''))) = N''
+        IF @calle = N''
         BEGIN
             SET @CodigoResultado = 3;
             SET @MensajeResultado = N'La calle es obligatoria.';
+            RETURN;
+        END;
+
+        IF LEN(@calle) > 150
+           OR @altura = N''
+           OR @altura COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
+           OR TRY_CONVERT(INT, @altura) IS NULL
+           OR TRY_CONVERT(INT, @altura) <= 0
+           OR (@piso IS NOT NULL AND
+               (@piso COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
+                OR TRY_CONVERT(TINYINT, @piso) IS NULL
+                OR TRY_CONVERT(TINYINT, @piso) > 99))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La altura debe ser positiva y el piso, si se informa, debe estar entre 0 y 99.';
             RETURN;
         END;
 
@@ -1671,13 +1835,15 @@ BEGIN
         (
             id_localidad,
             calle,
-            altura
+            altura,
+            piso
         )
         VALUES
         (
             @idLocalidad,
-            LTRIM(RTRIM(@calle)),
-            NULLIF(LTRIM(RTRIM(@altura)), N'')
+            @calle,
+            @altura,
+            @piso
         );
 
         SET @IdGenerado = CAST(SCOPE_IDENTITY() AS INT);
@@ -1707,7 +1873,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Direccion_Modificar
     @idDireccion INT,
     @idLocalidad INT,
     @calle NVARCHAR(150),
-    @altura NVARCHAR(20) = NULL,
+    @altura NVARCHAR(20),
+    @piso NVARCHAR(2) = NULL,
 
     @CodigoResultado INT OUTPUT,
     @MensajeResultado NVARCHAR(250) OUTPUT
@@ -1719,6 +1886,10 @@ BEGIN
     SET @MensajeResultado = N'Operación realizada correctamente.';
 
     BEGIN TRY
+
+        SET @calle = LTRIM(RTRIM(ISNULL(@calle, N'')));
+        SET @altura = ISNULL(@altura, N'');
+        SET @piso = CASE WHEN LTRIM(RTRIM(@piso)) = N'' THEN NULL ELSE @piso END;
 
         IF NOT EXISTS
         (
@@ -1746,18 +1917,34 @@ BEGIN
             RETURN;
         END;
 
-        IF LTRIM(RTRIM(ISNULL(@calle, N''))) = N''
+        IF @calle = N''
         BEGIN
             SET @CodigoResultado = 3;
             SET @MensajeResultado = N'La calle es obligatoria.';
             RETURN;
         END;
 
+        IF LEN(@calle) > 150
+           OR @altura = N''
+           OR @altura COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
+           OR TRY_CONVERT(INT, @altura) IS NULL
+           OR TRY_CONVERT(INT, @altura) <= 0
+           OR (@piso IS NOT NULL AND
+               (@piso COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
+                OR TRY_CONVERT(TINYINT, @piso) IS NULL
+                OR TRY_CONVERT(TINYINT, @piso) > 99))
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La altura debe ser positiva y el piso, si se informa, debe estar entre 0 y 99.';
+            RETURN;
+        END;
+
         UPDATE dbo.DIRECCION
         SET
             id_localidad = @idLocalidad,
-            calle = LTRIM(RTRIM(@calle)),
-            altura = NULLIF(LTRIM(RTRIM(@altura)), N'')
+            calle = @calle,
+            altura = @altura,
+            piso = @piso
         WHERE id_direccion = @idDireccion
           AND eliminado_en IS NULL;
 
@@ -1793,6 +1980,7 @@ BEGIN
         c.id_direccion,
         d.calle,
         d.altura,
+        d.piso,
         l.id_localidad,
         l.nombre AS localidad,
         p.id_provincia,
@@ -1876,10 +2064,16 @@ BEGIN
                 ON p.id_provincia = l.id_provincia
                AND p.eliminado_en IS NULL
             WHERE d.id_direccion = @idDireccion
+              AND NULLIF(LTRIM(RTRIM(d.calle)), N'') IS NOT NULL
+              AND TRY_CONVERT(INT, d.altura) > 0
+              AND d.altura COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9]%'
+              AND (d.piso IS NULL OR
+                   (d.piso COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9]%'
+                    AND TRY_CONVERT(TINYINT, d.piso) BETWEEN 0 AND 99))
         )
         BEGIN
             SET @CodigoResultado = 1;
-            SET @MensajeResultado = N'La dirección indicada no existe o no está activa.';
+            SET @MensajeResultado = N'La dirección indicada no existe, no está activa o tiene datos incompletos.';
             RETURN;
         END;
 
@@ -2011,10 +2205,16 @@ BEGIN
                 ON p.id_provincia = l.id_provincia
                AND p.eliminado_en IS NULL
             WHERE d.id_direccion = @idDireccion
+              AND NULLIF(LTRIM(RTRIM(d.calle)), N'') IS NOT NULL
+              AND TRY_CONVERT(INT, d.altura) > 0
+              AND d.altura COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9]%'
+              AND (d.piso IS NULL OR
+                   (d.piso COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9]%'
+                    AND TRY_CONVERT(TINYINT, d.piso) BETWEEN 0 AND 99))
         )
         BEGIN
             SET @CodigoResultado = 1;
-            SET @MensajeResultado = N'La dirección indicada no existe o no está activa.';
+            SET @MensajeResultado = N'La dirección indicada no existe, no está activa o tiene datos incompletos.';
             RETURN;
         END;
 
@@ -2132,7 +2332,7 @@ BEGIN
 
     SELECT TOP 50
         c.id_cliente, c.nombre, c.apellido, c.documento, c.correo, c.telefono,
-        l.nombre AS localidad, p.nombre AS provincia, d.calle, d.altura,
+        l.nombre AS localidad, p.nombre AS provincia, d.calle, d.altura, d.piso,
         CAST(CASE WHEN c.eliminado_en IS NULL THEN 1 ELSE 0 END AS BIT) AS activo
     FROM dbo.CLIENTE AS c
     LEFT JOIN dbo.DIRECCION AS d ON d.id_direccion = c.id_direccion AND d.eliminado_en IS NULL
@@ -2159,7 +2359,7 @@ BEGIN
 
     SELECT
         c.id_cliente, c.nombre, c.apellido, c.documento, c.correo, c.telefono,
-        c.id_direccion, l.nombre AS localidad, p.nombre AS provincia, d.calle, d.altura,
+        c.id_direccion, l.nombre AS localidad, p.nombre AS provincia, d.calle, d.altura, d.piso,
         CAST(CASE WHEN c.eliminado_en IS NULL THEN 1 ELSE 0 END AS BIT) AS activo
     FROM dbo.CLIENTE AS c
     LEFT JOIN dbo.DIRECCION AS d ON d.id_direccion = c.id_direccion AND d.eliminado_en IS NULL
@@ -4343,7 +4543,7 @@ END;
 GO
 
 
--- Devuelve todas las sucursales activas y una fila por cada perfil activo para el resumen dinámico.
+-- Devuelve sucursales activas e inactivas, con ubicación y conteos por perfil activo.
 CREATE OR ALTER PROCEDURE dbo.sp_Sucursal_ListarResumenUsuarios
 AS
 BEGIN
@@ -4353,8 +4553,11 @@ BEGIN
         s.id_sucursal,
         s.nombre AS nombre_sucursal,
         d.calle,
+        d.id_localidad AS id_localidad,
         l.nombre AS localidad,
+        l.id_provincia AS id_provincia,
         pr.nombre AS provincia,
+        CAST(CASE WHEN s.eliminado_en IS NULL THEN 1 ELSE 0 END AS BIT) AS activa,
         p.id_perfil,
         p.nombre AS perfil,
         COUNT(u.id_usuario) AS cantidad_usuarios
@@ -4373,14 +4576,16 @@ BEGIN
         ON u.id_sucursal = s.id_sucursal
        AND u.id_perfil = p.id_perfil
        AND u.eliminado_en IS NULL
-    WHERE s.eliminado_en IS NULL
-      AND p.eliminado_en IS NULL
+    WHERE p.eliminado_en IS NULL
     GROUP BY
         s.id_sucursal,
         s.nombre,
         d.calle,
+        d.id_localidad,
         l.nombre,
+        l.id_provincia,
         pr.nombre,
+        s.eliminado_en,
         p.id_perfil,
         p.nombre
     ORDER BY s.nombre, p.nombre;

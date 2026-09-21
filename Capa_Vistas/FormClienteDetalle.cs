@@ -1,5 +1,6 @@
 ﻿using Capa_Logica;
 
+using System.Globalization;
 using System.Net.Mail;
 using System.Text.RegularExpressions;
 
@@ -145,7 +146,7 @@ namespace Capa_Vistas
             AjustarFilaDoble(lblNombre, txtNombre, relleno, lblApellido, txtApellido, segundaColumna, 255, anchoColumna);
             AjustarFilaDoble(lblTelefono, txtTelefono, relleno, lblEmail, txtEmail, segundaColumna, 345, anchoColumna);
             AjustarFilaDoble(lblProvincia, cmbProvincia, relleno, lblLocalidad, cmbLocalidad, segundaColumna, 435, anchoColumna);
-            AjustarFilaCompleta(lblDireccion, txtDireccion, relleno, 525, anchoCampos);
+            AjustarCamposDireccion(relleno, 525, anchoCampos);
 
             btnCancelar.Location = new Point(relleno, 610);
             btnGuardar.Location = new Point(anchoContenido - relleno - btnGuardar.Width, 610);
@@ -185,6 +186,24 @@ namespace Capa_Vistas
             etiquetaDerecha.Location = new Point(derecha, superiorEtiqueta);
             campoDerecho.Location = new Point(derecha, superiorEtiqueta + 28);
             campoDerecho.Width = ancho;
+        }
+
+        // Distribuye Calle, Altura y Piso en una fila compacta sin perder legibilidad en ventanas estrechas.
+        private void AjustarCamposDireccion(int izquierda, int superiorEtiqueta, int anchoDisponible)
+        {
+            const int separacion = 16;
+            int anchoPiso = Math.Clamp(anchoDisponible / 9, 72, 100);
+            int anchoAltura = Math.Clamp(anchoDisponible / 5, 90, 130);
+            int anchoCalle = Math.Max(140, anchoDisponible - anchoAltura - anchoPiso - separacion * 2);
+            int izquierdaAltura = izquierda + anchoCalle + separacion;
+            int izquierdaPiso = izquierdaAltura + anchoAltura + separacion;
+
+            lblCalle.Location = new Point(izquierda, superiorEtiqueta);
+            txtCalle.SetBounds(izquierda, superiorEtiqueta + 28, anchoCalle, txtCalle.Height);
+            lblAltura.Location = new Point(izquierdaAltura, superiorEtiqueta);
+            txtAltura.SetBounds(izquierdaAltura, superiorEtiqueta + 28, anchoAltura, txtAltura.Height);
+            lblPiso.Location = new Point(izquierdaPiso, superiorEtiqueta);
+            txtPiso.SetBounds(izquierdaPiso, superiorEtiqueta + 28, anchoPiso, txtPiso.Height);
         }
 
 
@@ -252,6 +271,7 @@ namespace Capa_Vistas
         // =========================================================
         // CARGAR CLIENTE (modo edición)
         // =========================================================
+        // Carga los componentes separados de la dirección junto con los datos actuales del cliente.
         private void CargarCliente()
         {
             if (!idCliente.HasValue)
@@ -270,7 +290,7 @@ namespace Capa_Vistas
                         "No se encontró el cliente solicitado."
                     );
 
-                mensaje.ShowDialog(this);
+                mensaje.ShowDialog(formPrincipal);
 
                 VolverAClientes();
 
@@ -285,12 +305,9 @@ namespace Capa_Vistas
             txtTelefono.Text = cliente.Telefono;
             txtEmail.Text = cliente.Correo;
 
-            // La dirección se muestra en un solo campo de texto
-            // (no hay altura separada en este diseño).
-            txtDireccion.Text =
-                string.IsNullOrWhiteSpace(cliente.Altura)
-                    ? cliente.Calle
-                    : $"{cliente.Calle} {cliente.Altura}";
+            txtCalle.Text = cliente.Calle;
+            txtAltura.Text = cliente.Altura;
+            txtPiso.Text = cliente.Piso;
 
             if (cliente.IdProvincia.HasValue)
             {
@@ -307,6 +324,7 @@ namespace Capa_Vistas
         // =========================================================
         // EVENTOS
         // =========================================================
+        // Conecta cambios de cualquiera de los componentes de dirección al control de salida sin guardar.
         private void ConfigurarEventos()
         {
             btnVolver.Click += BtnVolver_Click;
@@ -321,7 +339,9 @@ namespace Capa_Vistas
             txtApellido.TextChanged += ControlModificado;
             txtTelefono.TextChanged += ControlModificado;
             txtEmail.TextChanged += ControlModificado;
-            txtDireccion.TextChanged += ControlModificado;
+            txtCalle.TextChanged += ControlModificado;
+            txtAltura.TextChanged += ControlModificado;
+            txtPiso.TextChanged += ControlModificado;
             cmbLocalidad.TextChanged += ControlModificado;
         }
 
@@ -333,12 +353,17 @@ namespace Capa_Vistas
             txtApellido.MaxLength = 100;
             txtTelefono.MaxLength = 30;
             txtEmail.MaxLength = 150;
-            txtDireccion.MaxLength = 150;
+            txtCalle.MaxLength = 150;
+            txtAltura.MaxLength = 20;
+            txtPiso.MaxLength = 2;
             cmbLocalidad.MaxLength = 100;
             txtDni.KeyPress += SoloNumeros_KeyPress;
             txtNombre.KeyPress += SoloLetras_KeyPress;
             txtApellido.KeyPress += SoloLetras_KeyPress;
             txtTelefono.KeyPress += Telefono_KeyPress;
+            txtCalle.KeyPress += Calle_KeyPress;
+            txtAltura.KeyPress += SoloNumeros_KeyPress;
+            txtPiso.KeyPress += SoloNumeros_KeyPress;
         }
 
         // Impide caracteres ajenos a los nombres sin reemplazar la validación
@@ -354,6 +379,7 @@ namespace Capa_Vistas
             e.Handled = true;
         }
 
+        // Mantiene Calle, Altura y Piso de solo lectura cuando la vista no permite modificar al cliente.
         private void ConfigurarModoEdicion()
         {
             if (EsAlta || clienteLogica.PuedeModificarCliente())
@@ -367,7 +393,9 @@ namespace Capa_Vistas
             txtApellido.ReadOnly = true;
             txtTelefono.ReadOnly = true;
             txtEmail.ReadOnly = true;
-            txtDireccion.ReadOnly = true;
+            txtCalle.ReadOnly = true;
+            txtAltura.ReadOnly = true;
+            txtPiso.ReadOnly = true;
             cmbProvincia.Enabled = false;
             cmbLocalidad.Enabled = false;
             btnGuardar.Visible = false;
@@ -380,6 +408,21 @@ namespace Capa_Vistas
             {
                 e.Handled = true;
             }
+        }
+
+        // Permite caracteres habituales de calle, incluidos números y letras Unicode.
+        private static void Calle_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            char caracter = e.KeyChar;
+            UnicodeCategory categoria = char.GetUnicodeCategory(caracter);
+            bool marcaUnicode = categoria is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark;
+            if (char.IsControl(caracter) || char.IsLetter(caracter) || char.IsDigit(caracter) ||
+                char.IsWhiteSpace(caracter) || marcaUnicode || ".,'’/#º°-".Contains(caracter))
+            {
+                return;
+            }
+
+            e.Handled = true;
         }
 
         // Restringe el teléfono a caracteres admitidos mientras se escribe;
@@ -444,7 +487,7 @@ namespace Capa_Vistas
                     true
                 );
 
-            return mensaje.ShowDialog(this) == DialogResult.OK;
+            return mensaje.ShowDialog(formPrincipal) == DialogResult.OK;
         }
 
 
@@ -480,7 +523,9 @@ namespace Capa_Vistas
                     txtTelefono.Text,
                     idProvincia,
                     idLocalidad,
-                    txtDireccion.Text
+                    txtCalle.Text,
+                    txtAltura.Text,
+                    txtPiso.Text
                 );
 
             if (error != null)
@@ -488,7 +533,7 @@ namespace Capa_Vistas
                 using FormMensaje mensajeError =
                     new FormMensaje("Cliente", error);
 
-                mensajeError.ShowDialog(this);
+                mensajeError.ShowDialog(formPrincipal);
 
                 return;
             }
@@ -506,8 +551,9 @@ namespace Capa_Vistas
                         txtTelefono.Text,
                         idProvincia,
                         idLocalidad,
-                        txtDireccion.Text,
-                        null // no hay campo de altura separado
+                        txtCalle.Text,
+                        txtAltura.Text,
+                        txtPiso.Text
                     );
             }
             else
@@ -523,8 +569,9 @@ namespace Capa_Vistas
                         txtTelefono.Text,
                         idProvincia,
                         idLocalidad,
-                        txtDireccion.Text,
-                        null
+                        txtCalle.Text,
+                        txtAltura.Text,
+                        txtPiso.Text
                     );
             }
 
@@ -533,7 +580,7 @@ namespace Capa_Vistas
                 using FormMensaje mensajeError =
                     new FormMensaje("No se pudo guardar", resultado.Mensaje);
 
-                mensajeError.ShowDialog(this);
+                mensajeError.ShowDialog(formPrincipal);
 
                 return;
             }
@@ -543,7 +590,7 @@ namespace Capa_Vistas
             using FormMensaje mensaje =
                 new FormMensaje("Cliente guardado", resultado.Mensaje);
 
-            mensaje.ShowDialog(this);
+            mensaje.ShowDialog(formPrincipal);
 
             VolverAClientes();
         }
@@ -596,9 +643,25 @@ namespace Capa_Vistas
                 return ErrorCampo(cmbLocalidad, "Seleccioná o ingresá una localidad.");
             }
 
-            if (string.IsNullOrWhiteSpace(txtDireccion.Text))
+            string calle = txtCalle.Text.Trim();
+            if (string.IsNullOrWhiteSpace(calle) || calle.Length > 150 ||
+                !Regex.IsMatch(calle, @"^[\p{L}\p{M}\p{N}\s.,'’/#º°-]+$"))
             {
-                return ErrorCampo(txtDireccion, "Ingresá la calle de la dirección.");
+                return ErrorCampo(txtCalle, "Ingresá una calle válida de hasta 150 caracteres.");
+            }
+
+            if (string.IsNullOrEmpty(txtAltura.Text) ||
+                !txtAltura.Text.All(char.IsAsciiDigit) ||
+                !int.TryParse(txtAltura.Text, out int altura) || altura <= 0)
+            {
+                return ErrorCampo(txtAltura, "La altura es obligatoria y debe ser un número entero positivo.");
+            }
+
+            if (!string.IsNullOrEmpty(txtPiso.Text) &&
+                (!txtPiso.Text.All(char.IsAsciiDigit) ||
+                 !int.TryParse(txtPiso.Text, out int piso) || piso > 99))
+            {
+                return ErrorCampo(txtPiso, "El piso debe contener solo dígitos y estar entre 0 y 99.");
             }
 
             return true;
@@ -665,7 +728,7 @@ namespace Capa_Vistas
                 "Crear localidad",
                 true);
 
-            if (confirmacion.ShowDialog(this) != DialogResult.OK)
+            if (confirmacion.ShowDialog(formPrincipal) != DialogResult.OK)
             {
                 return false;
             }
@@ -689,7 +752,7 @@ namespace Capa_Vistas
         private void MostrarMensaje(string titulo, string mensaje)
         {
             using FormMensaje dialogo = new FormMensaje(titulo, mensaje);
-            dialogo.ShowDialog(this);
+            dialogo.ShowDialog(formPrincipal);
         }
 
 

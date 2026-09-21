@@ -273,7 +273,7 @@ namespace Capa_Logica
         public bool PuedeReactivarUsuario()
         {
             return SesionActual.TienePermiso(
-                "USUARIOS_ALTA"
+                "USUARIOS_BAJA"
             );
         }
 
@@ -511,6 +511,74 @@ namespace Capa_Logica
                 Activo =
                     usuario.Activo
             };
+        }
+
+        // Carga solo los datos personales del usuario autenticado, sin exponer su hash a la Vista.
+        public UsuarioDetalleModelo? ObtenerMiPerfil()
+        {
+            if (!SesionActual.SesionIniciada) return null;
+            UsuarioPerfilPropioDatos? datos = usuarioDatos.ObtenerPerfilPropio(SesionActual.IdUsuario);
+            if (datos == null) return null;
+            UsuarioDetalleDatos usuario = datos.Usuario;
+            return new UsuarioDetalleModelo
+            {
+                IdUsuario = usuario.IdUsuario,
+                IdPerfil = usuario.IdPerfil,
+                IdSucursal = usuario.IdSucursal,
+                Nombre = usuario.Nombre,
+                Apellido = usuario.Apellido,
+                Dni = usuario.Dni,
+                Telefono = usuario.Telefono,
+                NombreUsuario = usuario.NombreUsuario,
+                Correo = usuario.Correo,
+                Sexo = usuario.Sexo,
+                FechaNacimiento = usuario.FechaNacimiento,
+                Perfil = usuario.Perfil,
+                Sucursal = usuario.Sucursal,
+                Activo = usuario.Activo
+            };
+        }
+
+        // Revalida los datos con las reglas comunes y exige confirmar la contraseña antes de guardar el usuario de sesión.
+        public ResultadoUsuario GuardarMiPerfil(
+            UsuarioGuardarModelo usuario, string contrasenaActual,
+            string nuevaContrasena, string confirmarContrasena)
+        {
+            if (!SesionActual.SesionIniciada) return ResultadoNoPermitido("Debe iniciar sesión para editar su perfil.");
+            if (string.IsNullOrWhiteSpace(contrasenaActual)) return ResultadoInvalido("Debe ingresar la contraseña actual.");
+            if (usuario == null) return ResultadoInvalido("Debe ingresar sus datos personales.");
+
+            UsuarioPerfilPropioDatos? actual = usuarioDatos.ObtenerPerfilPropio(SesionActual.IdUsuario);
+            if (actual == null) return ResultadoNoPermitido("La cuenta actual no está disponible.");
+            if (!PasswordHelper.Verificar(contrasenaActual, actual.ContrasenaHash))
+            {
+                return new ResultadoUsuario { Codigo = 5, Mensaje = "Contraseña incorrecta" };
+            }
+
+            usuario.IdPerfil = SesionActual.IdPerfil;
+            ResultadoUsuario validacion = ValidarUsuario(usuario, esAlta: false);
+            if (!validacion.Exitoso) return validacion;
+
+            bool cambiaContrasena = !string.IsNullOrEmpty(nuevaContrasena) || !string.IsNullOrEmpty(confirmarContrasena);
+            string? nuevoHash = null;
+            if (cambiaContrasena)
+            {
+                if (string.IsNullOrEmpty(nuevaContrasena) || string.IsNullOrEmpty(confirmarContrasena))
+                    return ResultadoInvalido("Complete y confirme la nueva contraseña.");
+                if (!string.Equals(nuevaContrasena, confirmarContrasena, StringComparison.Ordinal))
+                    return ResultadoInvalido("La nueva contraseña y su confirmación no coinciden.");
+                if (nuevaContrasena.Length < 8 || nuevaContrasena.Length > 100)
+                    return ResultadoInvalido("La contraseña debe tener entre 8 y 100 caracteres.");
+                nuevoHash = PasswordHelper.GenerarHash(nuevaContrasena);
+            }
+
+            UsuarioGuardarDatos guardar = CrearDatosGuardar(usuario, actual.Usuario.IdSucursal);
+            ResultadoUsuario resultado = ConvertirResultado(usuarioDatos.ModificarPerfilPropio(
+                SesionActual.IdUsuario, actual.ContrasenaHash, nuevoHash, guardar,
+                SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa));
+            if (resultado.Exitoso)
+                SesionActual.ActualizarDatosPersonales(SesionActual.IdUsuario, usuario.Nombre, usuario.Apellido, usuario.NombreUsuario);
+            return resultado;
         }
 
 

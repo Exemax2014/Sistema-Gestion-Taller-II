@@ -22,8 +22,14 @@ public partial class FormMarcas : Form
         btnNuevo.Click += (_, _) => NuevaMarca();
         btnGuardar.Click += (_, _) => GuardarMarca();
         btnEstado.Click += (_, _) => CambiarEstado();
+        Resize += (_, _) => AjustarNavegacionResponsive();
+        tlpNavegacion.SizeChanged += (_, _) => AjustarNavegacionResponsive();
+        flpCategorias.SizeChanged += (_, _) => AjustarColumnasCategorias();
+        flpAcciones.SizeChanged += (_, _) => AjustarAccionesResponsive();
         dgvMarcas.SelectionChanged += (_, _) => SeleccionarMarca();
         ConfigurarPermisos();
+        ConfigurarNavegacion();
+        AjustarAccionesResponsive();
         CargarCategoriasActivas();
         CargarListado();
     }
@@ -52,6 +58,7 @@ public partial class FormMarcas : Form
     // Oculta navegación y acciones que la sesión no tiene permitidas.
     private void ConfigurarPermisos()
     {
+        btnProductos.Visible = logica.Puede("PRODUCTOS_VER");
         btnCategorias.Visible = logica.Puede("CATEGORIAS_VER");
         btnMarcas.Visible = logica.Puede("MARCAS_VER");
         btnNuevo.Visible = logica.Puede("MARCAS_ALTA");
@@ -59,12 +66,97 @@ public partial class FormMarcas : Form
         btnEstado.Visible = logica.Puede("MARCAS_BAJA");
     }
 
+    // Resalta la vista actual y conserva los accesos autorizados dinámicamente.
+    private void ConfigurarNavegacion()
+    {
+        AplicarEstiloNavegacion(btnProductos, false);
+        AplicarEstiloNavegacion(btnCategorias, false);
+        AplicarEstiloNavegacion(btnMarcas, true);
+        AjustarNavegacionResponsive();
+    }
+
+    // Ajusta la fila de pestañas si el ancho disponible obliga a envolverlas.
+    private void AjustarNavegacionResponsive()
+    {
+        if (tlpNavegacion.ClientSize.Width <= 0 || tlpPrincipal.RowStyles.Count < 2) return;
+        List<Button> botonesVisibles = new();
+        if (logica.Puede("PRODUCTOS_VER")) botonesVisibles.Add(btnProductos);
+        if (logica.Puede("CATEGORIAS_VER")) botonesVisibles.Add(btnCategorias);
+        if (logica.Puede("MARCAS_VER")) botonesVisibles.Add(btnMarcas);
+        int filas = CalcularFilasNavegacion(botonesVisibles, tlpNavegacion.ClientSize.Width);
+        tlpPrincipal.RowStyles[1].Height = filas * 43;
+    }
+
+    // Calcula el alto requerido usando solo pestañas permitidas para esta sesión.
+    private static int CalcularFilasNavegacion(IEnumerable<Button> botones, int anchoDisponible)
+    {
+        int filas = 1;
+        int anchoFila = 0;
+        foreach (Button boton in botones)
+        {
+            int anchoBoton = boton.Width + boton.Margin.Horizontal;
+            if (anchoFila > 0 && anchoFila + anchoBoton > anchoDisponible)
+            {
+                filas++;
+                anchoFila = 0;
+            }
+            anchoFila += anchoBoton;
+        }
+        return filas;
+    }
+
+    // Aplica el estado activo dorado y el fondo neutro de las demás pestañas.
+    private static void AplicarEstiloNavegacion(Button boton, bool activo)
+    {
+        boton.BackColor = activo ? Color.FromArgb(190, 137, 45) : Color.FromArgb(235, 237, 240);
+        boton.ForeColor = activo ? Color.White : Color.FromArgb(55, 59, 64);
+    }
+
     // Carga únicamente categorías activas como opciones para nuevas asociaciones.
     private void CargarCategoriasActivas()
     {
-        clbCategorias.Items.Clear();
+        flpCategorias.SuspendLayout();
+        flpCategorias.Controls.Clear();
         foreach (CategoriaCatalogoModelo categoria in logica.ListarCategorias().Where(x => x.Activo))
-            clbCategorias.Items.Add(new CategoriaSeleccion(categoria.Id, categoria.Nombre));
+        {
+            flpCategorias.Controls.Add(new CheckBox
+            {
+                Text = categoria.Nombre,
+                Tag = categoria.Id,
+                AutoSize = false,
+                Height = 28,
+                Margin = new Padding(3, 2, 3, 2),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Font = new Font("Segoe UI", 9F)
+            });
+        }
+        AjustarColumnasCategorias();
+        flpCategorias.ResumeLayout();
+    }
+
+    // Reparte las categorías dinámicas en columnas según el ancho disponible, sin scroll horizontal.
+    private void AjustarColumnasCategorias()
+    {
+        int anchoDisponible = flpCategorias.ClientSize.Width - SystemInformation.VerticalScrollBarWidth;
+        if (anchoDisponible <= 0) return;
+
+        int columnas = anchoDisponible >= 600 ? 6
+            : anchoDisponible >= 420 ? 4
+            : anchoDisponible >= 300 ? 3
+            : anchoDisponible >= 180 ? 2
+            : 1;
+        int anchoColumna = Math.Max(80, (anchoDisponible - columnas * 6) / columnas);
+
+        foreach (CheckBox check in flpCategorias.Controls.OfType<CheckBox>())
+            check.Width = anchoColumna;
+    }
+
+    // Mantiene las acciones en una fila mientras caben y las envuelve solo en ventanas estrechas.
+    private void AjustarAccionesResponsive()
+    {
+        if (flpAcciones.ClientSize.Width <= 0) return;
+        flpAcciones.FlowDirection = FlowDirection.LeftToRight;
+        flpAcciones.WrapContents = flpAcciones.ClientSize.Width < 400;
     }
 
     // Lista marcas activas e inactivas sin borrar sus asociaciones históricas.
@@ -73,7 +165,7 @@ public partial class FormMarcas : Form
         dgvMarcas.DataSource = logica.ListarMarcas();
         idSeleccionado = null;
         txtNombre.Clear();
-        for (int i = 0; i < clbCategorias.Items.Count; i++) clbCategorias.SetItemChecked(i, false);
+        foreach (CheckBox check in flpCategorias.Controls.OfType<CheckBox>()) check.Checked = false;
         btnEstado.Enabled = false;
         btnGuardar.Enabled = logica.Puede("MARCAS_ALTA");
     }
@@ -86,9 +178,10 @@ public partial class FormMarcas : Form
         estadoSeleccionado = item.Activo;
         txtNombre.Text = item.Nombre;
         HashSet<int> seleccionadas = logica.ObtenerCategoriasMarca(item.Id).ToHashSet();
-        for (int i = 0; i < clbCategorias.Items.Count; i++)
-            clbCategorias.SetItemChecked(i, clbCategorias.Items[i] is CategoriaSeleccion cat && seleccionadas.Contains(cat.Id));
+        foreach (CheckBox check in flpCategorias.Controls.OfType<CheckBox>())
+            check.Checked = check.Tag is int id && seleccionadas.Contains(id);
         btnEstado.Text = item.Activo ? "Dar de baja" : "Dar de alta";
+        btnEstado.BackColor = item.Activo ? Color.FromArgb(165, 55, 55) : Color.FromArgb(46, 125, 74);
         btnEstado.Enabled = logica.Puede("MARCAS_BAJA");
         btnGuardar.Enabled = item.Activo && logica.Puede("MARCAS_MODIFICAR");
     }
@@ -98,7 +191,7 @@ public partial class FormMarcas : Form
     {
         idSeleccionado = null;
         txtNombre.Clear();
-        for (int i = 0; i < clbCategorias.Items.Count; i++) clbCategorias.SetItemChecked(i, false);
+        foreach (CheckBox check in flpCategorias.Controls.OfType<CheckBox>()) check.Checked = false;
         btnEstado.Enabled = false;
         btnGuardar.Enabled = logica.Puede("MARCAS_ALTA");
         txtNombre.Focus();
@@ -108,9 +201,10 @@ public partial class FormMarcas : Form
     private void GuardarMarca()
     {
         if (idSeleccionado.HasValue && !estadoSeleccionado) return;
-        int[] categorias = Enumerable.Range(0, clbCategorias.Items.Count)
-            .Where(i => clbCategorias.GetItemChecked(i) && clbCategorias.Items[i] is CategoriaSeleccion)
-            .Select(i => ((CategoriaSeleccion)clbCategorias.Items[i]).Id).ToArray();
+        int[] categorias = flpCategorias.Controls.OfType<CheckBox>()
+            .Where(check => check.Checked && check.Tag is int)
+            .Select(check => (int)check.Tag!)
+            .ToArray();
         ResultadoCatalogo resultado = logica.GuardarMarca(idSeleccionado ?? 0, txtNombre.Text, categorias);
         MostrarMensaje(resultado.Exitoso ? "Marcas" : "No se pudo guardar", resultado.Mensaje);
         if (resultado.Exitoso) CargarListado();
@@ -128,7 +222,11 @@ public partial class FormMarcas : Form
     }
 
     // Regresa a la lista de productos dentro de FormPrincipal.
-    private void AbrirProductos() => principal.AbrirFormularioEnPanel(new FormProductos(principal), principal.BotonProductos);
+    private void AbrirProductos()
+    {
+        if (!logica.Puede("PRODUCTOS_VER")) return;
+        principal.AbrirFormularioEnPanel(new FormProductos(principal), principal.BotonProductos);
+    }
 
     // Cambia a la gestión embebida de categorías cuando la sesión tiene acceso.
     private void AbrirCategorias()
@@ -143,9 +241,4 @@ public partial class FormMarcas : Form
         form.ShowDialog(principal);
     }
 
-    private sealed record CategoriaSeleccion(int Id, string Nombre)
-    {
-        // Muestra el nombre sin perder el identificador necesario para guardar la relación.
-        public override string ToString() => Nombre;
-    }
 }

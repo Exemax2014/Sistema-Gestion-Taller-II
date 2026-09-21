@@ -606,9 +606,9 @@ namespace Capa_Vistas
             // lblBienvenida
             // 
             lblBienvenida.AutoSize = true;
-            lblBienvenida.Font = new Font("Segoe UI", 17F, FontStyle.Bold);
+            lblBienvenida.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
             lblBienvenida.ForeColor = Color.FromArgb(45, 49, 54);
-            lblBienvenida.Location = new Point(3, 8);
+            lblBienvenida.Location = new Point(0, 2);
             lblBienvenida.Name = "lblBienvenida";
             lblBienvenida.Size = new Size(172, 40);
             lblBienvenida.TabIndex = 0;
@@ -619,7 +619,7 @@ namespace Capa_Vistas
             lblPerfilSucursal.AutoSize = true;
             lblPerfilSucursal.Font = new Font("Segoe UI", 9F);
             lblPerfilSucursal.ForeColor = Color.FromArgb(105, 110, 116);
-            lblPerfilSucursal.Location = new Point(883, 28);
+            lblPerfilSucursal.Location = new Point(883, 26);
             lblPerfilSucursal.Name = "lblPerfilSucursal";
             lblPerfilSucursal.Size = new Size(107, 20);
             lblPerfilSucursal.TabIndex = 1;
@@ -633,17 +633,17 @@ namespace Capa_Vistas
             pnlEncabezado.Controls.Add(lblBienvenida);
             pnlEncabezado.Controls.Add(lblSubtitulo);
             pnlEncabezado.Controls.Add(pnlLineaDorada);
-            pnlEncabezado.Location = new Point(32, 18);
+            pnlEncabezado.Location = new Point(32, 20);
             pnlEncabezado.Name = "pnlEncabezado";
-            pnlEncabezado.Size = new Size(1116, 82);
+            pnlEncabezado.Size = new Size(1116, 100);
             pnlEncabezado.TabIndex = 7;
             // 
             // lblSubtitulo
             // 
             lblSubtitulo.AutoSize = true;
-            lblSubtitulo.Font = new Font("Segoe UI", 9F);
+            lblSubtitulo.Font = new Font("Segoe UI", 9.5F);
             lblSubtitulo.ForeColor = Color.FromArgb(105, 110, 116);
-            lblSubtitulo.Location = new Point(2, 48);
+            lblSubtitulo.Location = new Point(2, 54);
             lblSubtitulo.Name = "lblSubtitulo";
             lblSubtitulo.Size = new Size(205, 20);
             lblSubtitulo.TabIndex = 1;
@@ -652,9 +652,9 @@ namespace Capa_Vistas
             // pnlLineaDorada
             // 
             pnlLineaDorada.BackColor = Color.FromArgb(190, 137, 45);
-            pnlLineaDorada.Location = new Point(2, 74);
+            pnlLineaDorada.Location = new Point(2, 84);
             pnlLineaDorada.Name = "pnlLineaDorada";
-            pnlLineaDorada.Size = new Size(95, 3);
+            pnlLineaDorada.Size = new Size(92, 3);
             pnlLineaDorada.TabIndex = 2;
             // 
             // FormInicio

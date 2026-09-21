@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Microsoft.Data.SqlClient;
 
 namespace Capa_Datos
@@ -12,7 +12,6 @@ namespace Capa_Datos
         public int IdUsuario { get; set; }
         public int IdPerfil { get; set; }
         public int? IdSucursal { get; set; }
-        public bool AlcanceGlobal { get; set; }
 
         public string Nombre { get; set; } = string.Empty;
         public string Apellido { get; set; } = string.Empty;
@@ -66,14 +65,6 @@ namespace Capa_Datos
 
         public string Perfil { get; set; } = string.Empty;
         public string Sucursal { get; set; } = string.Empty;
-
-        public bool Activo { get; set; }
-    }
-
-    public class UsuarioPerfilPropioDatos
-    {
-        public UsuarioDetalleDatos Usuario { get; set; } = new();
-        public string ContrasenaHash { get; set; } = string.Empty;
     }
 
 
@@ -133,79 +124,6 @@ namespace Capa_Datos
         // ========================================================
         // AUTENTICACIÓN
         // ========================================================
-
-        // Obtiene los datos personales y el hash únicamente para validar la confirmación de cuenta propia.
-        public UsuarioPerfilPropioDatos? ObtenerPerfilPropio(int idUsuario)
-        {
-            using SqlConnection conexion = Conexion.CrearConexion();
-            using SqlCommand comando = new("dbo.sp_Usuario_ObtenerPerfilPropio", conexion)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-            comando.Parameters.Add("@idUsuario", SqlDbType.Int).Value = idUsuario;
-            conexion.Open();
-            using SqlDataReader lector = comando.ExecuteReader();
-            if (!lector.Read()) return null;
-
-            UsuarioDetalleDatos usuario = new()
-            {
-                IdUsuario = Convert.ToInt32(lector["id_usuario"]),
-                Nombre = lector["nombre"].ToString() ?? string.Empty,
-                Apellido = lector["apellido"].ToString() ?? string.Empty,
-                Dni = lector["dni"].ToString() ?? string.Empty,
-                Telefono = lector["telefono"] == DBNull.Value ? string.Empty : lector["telefono"].ToString() ?? string.Empty,
-                NombreUsuario = lector["nombre_usuario"].ToString() ?? string.Empty,
-                Correo = lector["correo"].ToString() ?? string.Empty,
-                Sexo = lector["sexo"] == DBNull.Value ? string.Empty : lector["sexo"].ToString() ?? string.Empty,
-                FechaNacimiento = lector["fecha_nacimiento"] == DBNull.Value ? null : Convert.ToDateTime(lector["fecha_nacimiento"]),
-                IdPerfil = Convert.ToInt32(lector["id_perfil"]),
-                IdSucursal = lector["id_sucursal"] == DBNull.Value ? null : Convert.ToInt32(lector["id_sucursal"]),
-                Perfil = lector["perfil"].ToString() ?? string.Empty,
-                Sucursal = lector["sucursal"].ToString() ?? string.Empty,
-                Activo = true
-            };
-
-            return new UsuarioPerfilPropioDatos
-            {
-                Usuario = usuario,
-                ContrasenaHash = lector["contrasena_hash"].ToString() ?? string.Empty
-            };
-        }
-
-        // Actualiza solo datos personales y registra auditoría dentro de la transacción del SP.
-        public ResultadoUsuarioDatos ModificarPerfilPropio(
-            int idUsuario, string hashActualEsperado, string? nuevoHash,
-            UsuarioGuardarDatos usuario, int? idSucursalAuditoria)
-        {
-            using SqlConnection conexion = Conexion.CrearConexion();
-            using SqlCommand comando = new("dbo.sp_Usuario_ModificarPerfilPropio", conexion)
-            {
-                CommandType = CommandType.StoredProcedure
-            };
-            comando.Parameters.Add("@idUsuario", SqlDbType.Int).Value = idUsuario;
-            comando.Parameters.Add("@hashActualEsperado", SqlDbType.NVarChar, 255).Value = hashActualEsperado;
-            comando.Parameters.Add("@nuevoHash", SqlDbType.NVarChar, 255).Value = (object?)nuevoHash ?? DBNull.Value;
-            comando.Parameters.Add("@nombre", SqlDbType.NVarChar, 100).Value = usuario.Nombre.Trim();
-            comando.Parameters.Add("@apellido", SqlDbType.NVarChar, 100).Value = usuario.Apellido.Trim();
-            comando.Parameters.Add("@dni", SqlDbType.NVarChar, 20).Value = usuario.Dni.Trim();
-            comando.Parameters.Add("@telefono", SqlDbType.NVarChar, 30).Value = string.IsNullOrWhiteSpace(usuario.Telefono) ? DBNull.Value : usuario.Telefono.Trim();
-            comando.Parameters.Add("@nombreUsuario", SqlDbType.NVarChar, 50).Value = usuario.NombreUsuario.Trim();
-            comando.Parameters.Add("@correo", SqlDbType.NVarChar, 150).Value = usuario.Correo.Trim();
-            comando.Parameters.Add("@sexo", SqlDbType.NVarChar, 20).Value = string.IsNullOrWhiteSpace(usuario.Sexo) ? DBNull.Value : usuario.Sexo.Trim();
-            comando.Parameters.Add("@fechaNacimiento", SqlDbType.Date).Value = usuario.FechaNacimiento.HasValue ? usuario.FechaNacimiento.Value.Date : DBNull.Value;
-            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
-            SqlParameter codigo = comando.Parameters.Add("@CodigoResultado", SqlDbType.Int);
-            codigo.Direction = ParameterDirection.Output;
-            SqlParameter mensaje = comando.Parameters.Add("@MensajeResultado", SqlDbType.NVarChar, 250);
-            mensaje.Direction = ParameterDirection.Output;
-            conexion.Open();
-            comando.ExecuteNonQuery();
-            return new ResultadoUsuarioDatos
-            {
-                Codigo = codigo.Value == DBNull.Value ? 500 : Convert.ToInt32(codigo.Value),
-                Mensaje = mensaje.Value?.ToString() ?? string.Empty
-            };
-        }
 
         public UsuarioLoginDatos? BuscarPorNombreUsuario(
             string nombreUsuario)
@@ -280,10 +198,7 @@ namespace Capa_Datos
 
                 Sucursal =
                     lector["sucursal"].ToString()
-                    ?? string.Empty,
-
-                AlcanceGlobal =
-                    Convert.ToBoolean(lector["alcance_global"])
+                    ?? string.Empty
             };
         }
 
@@ -558,12 +473,7 @@ namespace Capa_Datos
 
                 Sucursal =
                     lector["sucursal"].ToString()
-                    ?? string.Empty,
-
-                Activo =
-                    Convert.ToBoolean(
-                        lector["activo"]
-                    )
+                    ?? string.Empty
             };
         }
 
@@ -629,7 +539,7 @@ namespace Capa_Datos
         // ========================================================
 
         public ResultadoUsuarioDatos Alta(
-            UsuarioGuardarDatos usuario, int idUsuarioEjecutor, int? idSucursalAuditoria)
+            UsuarioGuardarDatos usuario)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -648,8 +558,6 @@ namespace Capa_Datos
                 usuario,
                 incluirContrasena: true
             );
-            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
-            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter idGenerado =
                 comando.Parameters.Add(
@@ -712,7 +620,7 @@ namespace Capa_Datos
 
         public ResultadoUsuarioDatos Modificar(
             int idUsuario,
-            UsuarioGuardarDatos usuario, int idUsuarioEjecutor, int? idSucursalAuditoria)
+            UsuarioGuardarDatos usuario)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -737,8 +645,6 @@ namespace Capa_Datos
                 usuario,
                 incluirContrasena: false
             );
-            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
-            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter codigoResultado =
                 comando.Parameters.Add(
@@ -784,7 +690,7 @@ namespace Capa_Datos
         // ========================================================
 
         public ResultadoUsuarioDatos Baja(
-            int idUsuario, int idUsuarioEjecutor, int? idSucursalAuditoria)
+            int idUsuario)
         {
             using SqlConnection conexion =
                 Conexion.CrearConexion();
@@ -803,8 +709,6 @@ namespace Capa_Datos
                 SqlDbType.Int
             ).Value =
                 idUsuario;
-            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
-            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
 
             SqlParameter codigoResultado =
                 comando.Parameters.Add(
@@ -828,76 +732,6 @@ namespace Capa_Datos
             conexion.Open();
 
             comando.ExecuteNonQuery();
-
-            return new ResultadoUsuarioDatos
-            {
-                Codigo =
-                    codigoResultado.Value == DBNull.Value
-                        ? 500
-                        : Convert.ToInt32(
-                            codigoResultado.Value
-                        ),
-
-                Mensaje =
-                    mensajeResultado.Value?.ToString()
-                    ?? string.Empty
-            };
-        }
-
-
-        // ========================================================
-        // REACTIVAR USUARIO
-        // ========================================================
-
-        public ResultadoUsuarioDatos Reactivar(
-            int idUsuario, int idUsuarioEjecutor, int? idSucursalAuditoria)
-        {
-            using SqlConnection conexion =
-                Conexion.CrearConexion();
-
-            using SqlCommand comando =
-                new SqlCommand(
-                    "dbo.sp_Usuario_Reactivar",
-                    conexion
-                );
-
-            comando.CommandType =
-                CommandType.StoredProcedure;
-
-            comando.Parameters.Add(
-                "@idUsuario",
-                SqlDbType.Int
-            ).Value =
-                idUsuario;
-            comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
-            comando.Parameters.Add("@idSucursalAuditoria", SqlDbType.Int).Value = (object?)idSucursalAuditoria ?? DBNull.Value;
-
-
-            SqlParameter codigoResultado =
-                comando.Parameters.Add(
-                    "@CodigoResultado",
-                    SqlDbType.Int
-                );
-
-            codigoResultado.Direction =
-                ParameterDirection.Output;
-
-
-            SqlParameter mensajeResultado =
-                comando.Parameters.Add(
-                    "@MensajeResultado",
-                    SqlDbType.NVarChar,
-                    250
-                );
-
-            mensajeResultado.Direction =
-                ParameterDirection.Output;
-
-
-            conexion.Open();
-
-            comando.ExecuteNonQuery();
-
 
             return new ResultadoUsuarioDatos
             {

@@ -502,7 +502,7 @@ namespace Capa_Vistas
 
 
             formMensaje.ShowDialog(
-                this
+                (Form?)formPrincipal ?? this
             );
         }
     }

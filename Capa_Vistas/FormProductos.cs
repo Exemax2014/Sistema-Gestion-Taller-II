@@ -269,8 +269,12 @@ namespace Capa_Vistas
             btnLimpiarFiltros.Click +=
                 BtnLimpiarFiltros_Click;
 
+
             btnCategorias.Click += BtnCategorias_Click;
             btnMarcas.Click += BtnMarcas_Click;
+            btnVistaProductos.Click += (_, _) => RestaurarListadoCompleto();
+            Resize += (_, _) => AjustarNavegacionResponsive();
+            flpNavegacion.SizeChanged += (_, _) => AjustarNavegacionResponsive();
 
 
             txtBuscar.KeyDown +=
@@ -299,9 +303,57 @@ namespace Capa_Vistas
             btnCategorias.Visible = SesionActual.TienePermiso("CATEGORIAS_VER");
             btnMarcas.Visible = SesionActual.TienePermiso("MARCAS_VER");
             bool puedeVerProductos = productoLogica.PuedeVerProductos();
+            btnVistaProductos.Visible = puedeVerProductos;
             pnlFiltros.Visible = puedeVerProductos;
             lblCantidad.Visible = puedeVerProductos;
             dgvProductos.Visible = puedeVerProductos;
+            AplicarEstiloNavegacion(btnVistaProductos, true);
+            AplicarEstiloNavegacion(btnCategorias, false);
+            AplicarEstiloNavegacion(btnMarcas, false);
+            AjustarNavegacionResponsive();
+        }
+
+
+        // Adapta la altura de la navegación cuando sus pestañas necesitan más de una fila.
+        private void AjustarNavegacionResponsive()
+        {
+            if (flpNavegacion.ClientSize.Width <= 0 || tlpPrincipal.RowStyles.Count < 2)
+            {
+                return;
+            }
+
+            List<Button> botonesVisibles = new();
+            if (productoLogica.PuedeVerProductos()) botonesVisibles.Add(btnVistaProductos);
+            if (SesionActual.TienePermiso("CATEGORIAS_VER")) botonesVisibles.Add(btnCategorias);
+            if (SesionActual.TienePermiso("MARCAS_VER")) botonesVisibles.Add(btnMarcas);
+            int filas = CalcularFilasNavegacion(botonesVisibles, flpNavegacion.ClientSize.Width);
+            tlpPrincipal.RowStyles[1].Height = filas * 43;
+        }
+
+        // Cuenta filas según las pestañas autorizadas para que las ocultas no reserven espacio.
+        private static int CalcularFilasNavegacion(IEnumerable<Button> botones, int anchoDisponible)
+        {
+            int filas = 1;
+            int anchoFila = 0;
+            foreach (Button boton in botones)
+            {
+                int anchoBoton = boton.Width + boton.Margin.Horizontal;
+                if (anchoFila > 0 && anchoFila + anchoBoton > anchoDisponible)
+                {
+                    filas++;
+                    anchoFila = 0;
+                }
+                anchoFila += anchoBoton;
+            }
+            return filas;
+        }
+
+
+        // Mantiene la pestaña activa dorada y las demás con el tono neutro del sistema.
+        private static void AplicarEstiloNavegacion(Button boton, bool activo)
+        {
+            boton.BackColor = activo ? Color.FromArgb(190, 137, 45) : Color.FromArgb(235, 237, 240);
+            boton.ForeColor = activo ? Color.White : Color.FromArgb(55, 59, 64);
         }
 
 
@@ -377,6 +429,7 @@ namespace Capa_Vistas
         // CARGAR PRODUCTOS
         // ========================================================
 
+        // Carga el catálogo filtrado y alterna entre grilla y estado vacío dentro del área de resultados.
         private void CargarProductos()
         {
             IEnumerable<ProductoListaModelo> productos =
@@ -468,9 +521,30 @@ namespace Capa_Vistas
             dgvProductos.DataSource =
                 productos.ToList();
 
+            bool sinResultados = dgvProductos.Rows.Count == 0;
+            bool puedeVerProductos = productoLogica.PuedeVerProductos();
+            bool criteriosActivos = !string.IsNullOrWhiteSpace(texto)
+                || categoria != "Todas"
+                || marca != "Todas"
+                || estado != "Todos";
 
-            lblCantidad.Text =
-                $"{dgvProductos.Rows.Count} producto(s)";
+            if (sinResultados)
+            {
+                lblEstadoVacio.Text = criteriosActivos
+                    ? "No se encontraron productos para la búsqueda ingresada."
+                    : "No hay productos registrados.";
+                lblCantidad.Text = string.Empty;
+                dgvProductos.Visible = false;
+                lblEstadoVacio.Visible = puedeVerProductos;
+                if (puedeVerProductos) lblEstadoVacio.BringToFront();
+            }
+            else
+            {
+                lblEstadoVacio.Visible = false;
+                dgvProductos.Visible = puedeVerProductos;
+                if (puedeVerProductos) dgvProductos.BringToFront();
+                lblCantidad.Text = $"{dgvProductos.Rows.Count} producto(s)";
+            }
         }
 
 
@@ -551,6 +625,13 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
+            RestaurarListadoCompleto();
+        }
+
+
+        // Restablece todos los filtros al estado inicial y recarga el catálogo permitido.
+        private void RestaurarListadoCompleto()
+        {
             txtBuscar.Clear();
 
 
@@ -619,14 +700,15 @@ namespace Capa_Vistas
 
             if (nombreColumna == "colDetalle")
             {
+                bool puedeReactivar = productoLogica.PuedeEliminarProducto();
                 e.Value =
                     producto.Activo
                         ? "Ver detalle"
-                        : "Dar de alta";
+                        : puedeReactivar ? "Dar de alta" : "Ver detalle";
 
                 AplicarEstiloAccionPrincipal(
                     e.CellStyle,
-                    producto.Activo
+                    producto.Activo || !puedeReactivar
                 );
 
                 e.FormattingApplied =
@@ -734,6 +816,23 @@ namespace Capa_Vistas
                         .Value
                 );
 
+            if (dgvProductos.Rows[e.RowIndex].DataBoundItem is ProductoListaModelo producto
+                && !producto.Activo
+                && productoLogica.PuedeEliminarProducto())
+            {
+                using FormMensaje confirmacion = new FormMensaje(
+                    "Reactivar producto",
+                    $"¿Deseás reactivar el producto \"{producto.Nombre}\"?",
+                    "Reactivar",
+                    true);
+                if (confirmacion.ShowDialog(formPrincipal) != DialogResult.OK) return;
+
+                ResultadoProducto resultado = productoLogica.Reactivar(idProducto);
+                MostrarMensaje(resultado.Exitoso ? "Producto reactivado" : "No se pudo reactivar", resultado.Mensaje);
+                if (resultado.Exitoso) CargarProductos();
+                return;
+            }
+
 
             formPrincipal.AbrirFormularioEnPanel(
                 new FormProductoDetalle(
@@ -742,6 +841,14 @@ namespace Capa_Vistas
                 ),
                 formPrincipal.BotonProductos
             );
+        }
+
+
+        // Presenta el resultado de la operación centrado sobre la ventana principal.
+        private void MostrarMensaje(string titulo, string mensaje)
+        {
+            using FormMensaje dialogo = new FormMensaje(titulo, mensaje);
+            dialogo.ShowDialog(formPrincipal);
         }
     }
 }

@@ -269,8 +269,8 @@ namespace Capa_Logica
             }
 
 
-            string nombreNormalizado = (nombre ?? string.Empty).Trim();
-            string codigoNormalizado = (codigoBarra ?? string.Empty).Trim();
+            string nombreNormalizado = NormalizarNombre(nombre);
+            string codigoNormalizado = codigoBarra ?? string.Empty;
 
             if (string.IsNullOrWhiteSpace(nombreNormalizado))
             {
@@ -282,16 +282,27 @@ namespace Capa_Logica
                 return "El nombre supera el máximo de 100 caracteres.";
             }
 
-            if (nombreNormalizado.Any(char.IsControl))
+            if (nombreNormalizado.Any(c =>
+                char.IsControl(c) ||
+                (!char.IsLetterOrDigit(c) && !char.IsWhiteSpace(c) && !"-_.()/+'#%&°,:×º".Contains(c))))
             {
-                return
-                    "El nombre contiene caracteres no válidos.";
+                return "El nombre contiene caracteres no válidos.";
+            }
+
+            if (string.IsNullOrWhiteSpace(codigoNormalizado))
+            {
+                codigoNormalizado = string.Empty;
             }
 
             if (codigoNormalizado.Length > 50)
             {
                 return
                     "El código de barras supera el máximo de 50 caracteres.";
+            }
+
+            if (codigoNormalizado.Any(c => c < '0' || c > '9'))
+            {
+                return "El código de barras solo puede contener dígitos.";
             }
 
             if (precioCosto < 0 || precioCosto > PrecioMaximo ||
@@ -362,7 +373,7 @@ namespace Capa_Logica
                     idCategoria,
                     idMarca,
                     codigoBarra,
-                    nombre,
+                    NormalizarNombre(nombre),
                     descripcion,
                     precioCosto,
                     porcentajeGanancia,
@@ -414,6 +425,17 @@ namespace Capa_Logica
                 };
             }
 
+            ProductoDetalleInfo? productoActual = productoDatos.ObtenerPorId(idProducto);
+            if (productoActual == null)
+            {
+                return new ResultadoProducto { Codigo = 1, Mensaje = "El producto no existe o fue dado de baja." };
+            }
+
+            if (productoActual.Activo != activo && !PuedeEliminarProducto())
+            {
+                return new ResultadoProducto { Codigo = 5, Mensaje = "No tenés permiso para cambiar el estado del producto." };
+            }
+
             string? error = ValidarProducto(
                 idCategoria,
                 codigoBarra,
@@ -432,7 +454,7 @@ namespace Capa_Logica
                     idCategoria,
                     idMarca,
                     codigoBarra,
-                    nombre,
+                    NormalizarNombre(nombre),
                     descripcion,
                     precioCosto,
                     porcentajeGanancia,
@@ -478,6 +500,35 @@ namespace Capa_Logica
         }
 
 
+        // Reactiva un producto inactivo usando sus datos actuales y el permiso específico de baja/estado.
+        public ResultadoProducto Reactivar(int idProducto)
+        {
+            if (!PuedeEliminarProducto())
+                return new ResultadoProducto { Codigo = 5, Mensaje = "No tenés permiso para reactivar productos." };
+            if (idProducto <= 0)
+                return new ResultadoProducto { Codigo = 3, Mensaje = "El producto indicado no es válido." };
+
+            ProductoDetalleInfo? producto = productoDatos.ObtenerPorId(idProducto);
+            if (producto == null)
+                return new ResultadoProducto { Codigo = 1, Mensaje = "El producto no existe o fue dado de baja." };
+            if (producto.Activo)
+                return new ResultadoProducto { Codigo = 3, Mensaje = "El producto ya se encuentra activo." };
+
+            return ConvertirResultado(productoDatos.Modificar(
+                producto.IdProducto,
+                producto.IdCategoria,
+                producto.IdMarca,
+                producto.CodigoBarra,
+                producto.Nombre,
+                producto.Descripcion,
+                producto.PrecioCosto,
+                producto.PorcentajeGanancia,
+                true,
+                SesionActual.IdUsuario,
+                SesionActual.IdSucursal ?? SesionActual.IdSucursalOperativa));
+        }
+
+
         // ========================================================
         // CONVERSIÓN RESULTADO DATOS -> LOGICA
         // ========================================================
@@ -510,6 +561,13 @@ namespace Capa_Logica
         {
             decimal factor = 1m + porcentajeGanancia / 100m;
             return precioCosto <= PrecioMaximo / factor;
+        }
+
+        // Recorta extremos y reduce espacios repetidos sin alterar nombres/modelos legítimos.
+        private static string NormalizarNombre(string? nombre)
+        {
+            return string.Join(" ", (nombre ?? string.Empty)
+                .Split((char[]?)null, StringSplitOptions.RemoveEmptyEntries));
         }
     }
 }

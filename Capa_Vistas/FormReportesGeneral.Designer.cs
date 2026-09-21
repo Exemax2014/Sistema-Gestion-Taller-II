@@ -17,6 +17,7 @@ namespace Capa_Vistas
         private Button btnPorUsuario;
         private Button btnVentasDetalladas;
         private Button btnStockBajo;
+        private Panel pnlAreaContenido;
 
 
         private Panel pnlFiltros;
@@ -106,6 +107,7 @@ namespace Capa_Vistas
             btnPorUsuario = new Button();
             btnVentasDetalladas = new Button();
             btnStockBajo = new Button();
+            pnlAreaContenido = new Panel();
             pnlFiltros = new Panel();
             lblFiltrosTitulo = new Label();
             lblDesde = new Label();
@@ -145,6 +147,7 @@ namespace Capa_Vistas
             dgvProductosVendidos = new DataGridView();
             pnlCabecera.SuspendLayout();
             pnlNavegacion.SuspendLayout();
+            pnlAreaContenido.SuspendLayout();
             pnlFiltros.SuspendLayout();
             pnlTarjetaVentas.SuspendLayout();
             pnlTarjetaIngresos.SuspendLayout();
@@ -162,9 +165,9 @@ namespace Capa_Vistas
             pnlCabecera.Controls.Add(lblTitulo);
             pnlCabecera.Controls.Add(lblSubtitulo);
             pnlCabecera.Controls.Add(pnlLineaTitulo);
-            pnlCabecera.Location = new Point(32, 18);
+            pnlCabecera.Location = new Point(32, 20);
             pnlCabecera.Name = "pnlCabecera";
-            pnlCabecera.Size = new Size(1116, 82);
+            pnlCabecera.Size = new Size(1116, 100);
             pnlCabecera.TabIndex = 0;
             // 
             // lblTitulo
@@ -172,7 +175,7 @@ namespace Capa_Vistas
             lblTitulo.AutoSize = true;
             lblTitulo.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
             lblTitulo.ForeColor = Color.FromArgb(45, 49, 54);
-            lblTitulo.Location = new Point(0, 0);
+            lblTitulo.Location = new Point(0, 2);
             lblTitulo.Name = "lblTitulo";
             lblTitulo.Size = new Size(177, 50);
             lblTitulo.TabIndex = 0;
@@ -181,9 +184,9 @@ namespace Capa_Vistas
             // lblSubtitulo
             // 
             lblSubtitulo.AutoSize = true;
-            lblSubtitulo.Font = new Font("Segoe UI", 9F);
+            lblSubtitulo.Font = new Font("Segoe UI", 9.5F);
             lblSubtitulo.ForeColor = Color.FromArgb(105, 110, 116);
-            lblSubtitulo.Location = new Point(2, 48);
+            lblSubtitulo.Location = new Point(2, 54);
             lblSubtitulo.Name = "lblSubtitulo";
             lblSubtitulo.Size = new Size(307, 20);
             lblSubtitulo.TabIndex = 1;
@@ -192,70 +195,74 @@ namespace Capa_Vistas
             // pnlLineaTitulo
             // 
             pnlLineaTitulo.BackColor = Color.FromArgb(190, 137, 45);
-            pnlLineaTitulo.Location = new Point(2, 74);
+            pnlLineaTitulo.Location = new Point(2, 84);
             pnlLineaTitulo.Name = "pnlLineaTitulo";
-            pnlLineaTitulo.Size = new Size(95, 3);
+            pnlLineaTitulo.Size = new Size(92, 3);
             pnlLineaTitulo.TabIndex = 2;
             //
             // pnlNavegacion
             //
-            pnlNavegacion.BackColor = Color.FromArgb(45, 49, 54);
+            pnlNavegacion.BackColor = Color.FromArgb(241, 243, 245);
             pnlNavegacion.Controls.Add(btnGeneral);
             pnlNavegacion.Controls.Add(btnPorUsuario);
             pnlNavegacion.Controls.Add(btnVentasDetalladas);
             pnlNavegacion.Controls.Add(btnStockBajo);
-            pnlNavegacion.Location = new Point(32, 106);
+            pnlNavegacion.Location = new Point(32, 120);
             pnlNavegacion.Name = "pnlNavegacion";
-            pnlNavegacion.Size = new Size(1116, 46);
+            pnlNavegacion.Size = new Size(1116, 43);
             pnlNavegacion.TabIndex = 1;
             //
             // btnGeneral
             //
             btnGeneral.FlatAppearance.BorderSize = 0;
             btnGeneral.FlatStyle = FlatStyle.Flat;
+            btnGeneral.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnGeneral.ForeColor = Color.White;
             btnGeneral.Location = new Point(8, 5);
             btnGeneral.Name = "btnGeneral";
-            btnGeneral.Size = new Size(150, 36);
+            btnGeneral.Size = new Size(120, 39);
             btnGeneral.TabIndex = 0;
             btnGeneral.Text = "General";
-            btnGeneral.UseVisualStyleBackColor = true;
+            btnGeneral.UseVisualStyleBackColor = false;
             //
             // btnPorUsuario
             //
             btnPorUsuario.FlatAppearance.BorderSize = 0;
             btnPorUsuario.FlatStyle = FlatStyle.Flat;
+            btnPorUsuario.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnPorUsuario.ForeColor = Color.White;
             btnPorUsuario.Location = new Point(164, 5);
             btnPorUsuario.Name = "btnPorUsuario";
-            btnPorUsuario.Size = new Size(150, 36);
+            btnPorUsuario.Size = new Size(120, 39);
             btnPorUsuario.TabIndex = 1;
             btnPorUsuario.Text = "Por usuario";
-            btnPorUsuario.UseVisualStyleBackColor = true;
+            btnPorUsuario.UseVisualStyleBackColor = false;
             //
             // btnVentasDetalladas
             //
             btnVentasDetalladas.FlatAppearance.BorderSize = 0;
             btnVentasDetalladas.FlatStyle = FlatStyle.Flat;
+            btnVentasDetalladas.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnVentasDetalladas.ForeColor = Color.White;
             btnVentasDetalladas.Location = new Point(320, 5);
             btnVentasDetalladas.Name = "btnVentasDetalladas";
-            btnVentasDetalladas.Size = new Size(170, 36);
+            btnVentasDetalladas.Size = new Size(170, 39);
             btnVentasDetalladas.TabIndex = 2;
             btnVentasDetalladas.Text = "Ventas detalladas";
-            btnVentasDetalladas.UseVisualStyleBackColor = true;
+            btnVentasDetalladas.UseVisualStyleBackColor = false;
             //
             // btnStockBajo
             //
             btnStockBajo.FlatAppearance.BorderSize = 0;
             btnStockBajo.FlatStyle = FlatStyle.Flat;
+            btnStockBajo.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnStockBajo.ForeColor = Color.White;
             btnStockBajo.Location = new Point(496, 5);
             btnStockBajo.Name = "btnStockBajo";
-            btnStockBajo.Size = new Size(150, 36);
+            btnStockBajo.Size = new Size(110, 39);
             btnStockBajo.TabIndex = 3;
             btnStockBajo.Text = "Stock bajo";
-            btnStockBajo.UseVisualStyleBackColor = true;
+            btnStockBajo.UseVisualStyleBackColor = false;
             // 
             // pnlFiltros
             // 
@@ -701,6 +708,23 @@ namespace Capa_Vistas
             dgvProductosVendidos.Size = new Size(1074, 116);
             dgvProductosVendidos.TabIndex = 2;
             // 
+            // pnlAreaContenido
+            //
+            pnlAreaContenido.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlAreaContenido.AutoScroll = true;
+            pnlAreaContenido.BackColor = Color.FromArgb(245, 246, 248);
+            pnlAreaContenido.Location = new Point(32, 163);
+            pnlAreaContenido.Name = "pnlAreaContenido";
+            pnlAreaContenido.Size = new Size(1116, 572);
+            pnlAreaContenido.TabIndex = 2;
+            pnlAreaContenido.Controls.Add(pnlFiltros);
+            pnlAreaContenido.Controls.Add(pnlTarjetaVentas);
+            pnlAreaContenido.Controls.Add(pnlTarjetaIngresos);
+            pnlAreaContenido.Controls.Add(pnlTarjetaProductos);
+            pnlAreaContenido.Controls.Add(pnlTarjetaStock);
+            pnlAreaContenido.Controls.Add(pnlGrafico);
+            pnlAreaContenido.Controls.Add(pnlProductosVendidos);
+            // 
             // FormReportesGeneral
             // 
             AutoScaleMode = AutoScaleMode.None;
@@ -708,19 +732,14 @@ namespace Capa_Vistas
             ClientSize = new Size(1180, 760);
             Controls.Add(pnlCabecera);
             Controls.Add(pnlNavegacion);
-            Controls.Add(pnlFiltros);
-            Controls.Add(pnlTarjetaVentas);
-            Controls.Add(pnlTarjetaIngresos);
-            Controls.Add(pnlTarjetaProductos);
-            Controls.Add(pnlTarjetaStock);
-            Controls.Add(pnlGrafico);
-            Controls.Add(pnlProductosVendidos);
+            Controls.Add(pnlAreaContenido);
             FormBorderStyle = FormBorderStyle.None;
             Name = "FormReportesGeneral";
             Text = "Reportes";
             pnlCabecera.ResumeLayout(false);
             pnlCabecera.PerformLayout();
             pnlNavegacion.ResumeLayout(false);
+            pnlAreaContenido.ResumeLayout(false);
             pnlFiltros.ResumeLayout(false);
             pnlFiltros.PerformLayout();
             pnlTarjetaVentas.ResumeLayout(false);

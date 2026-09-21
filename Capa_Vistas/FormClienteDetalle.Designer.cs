@@ -38,8 +38,12 @@ namespace Capa_Vistas
             cmbProvincia = new ComboBox();
             lblLocalidad = new Label();
             cmbLocalidad = new ComboBox();
-            lblDireccion = new Label();
-            txtDireccion = new TextBox();
+            lblCalle = new Label();
+            txtCalle = new TextBox();
+            lblAltura = new Label();
+            txtAltura = new TextBox();
+            lblPiso = new Label();
+            txtPiso = new TextBox();
             btnCancelar = new Button();
             btnGuardar = new Button();
             pnlPrincipal.SuspendLayout();
@@ -89,8 +93,12 @@ namespace Capa_Vistas
             pnlContenido.Controls.Add(cmbProvincia);
             pnlContenido.Controls.Add(lblLocalidad);
             pnlContenido.Controls.Add(cmbLocalidad);
-            pnlContenido.Controls.Add(lblDireccion);
-            pnlContenido.Controls.Add(txtDireccion);
+            pnlContenido.Controls.Add(lblCalle);
+            pnlContenido.Controls.Add(txtCalle);
+            pnlContenido.Controls.Add(lblAltura);
+            pnlContenido.Controls.Add(txtAltura);
+            pnlContenido.Controls.Add(lblPiso);
+            pnlContenido.Controls.Add(txtPiso);
             pnlContenido.Controls.Add(btnCancelar);
             pnlContenido.Controls.Add(btnGuardar);
             pnlContenido.Location = new Point(164, 44);
@@ -274,25 +282,65 @@ namespace Capa_Vistas
             cmbLocalidad.Size = new Size(405, 31);
             cmbLocalidad.TabIndex = 6;
             //
-            // lblDireccion
+            // lblCalle
             //
-            lblDireccion.AutoSize = true;
-            lblDireccion.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
-            lblDireccion.ForeColor = Color.FromArgb(55, 60, 66);
-            lblDireccion.Location = new Point(68, 525);
-            lblDireccion.Name = "lblDireccion";
-            lblDireccion.Size = new Size(83, 21);
-            lblDireccion.TabIndex = 10;
-            lblDireccion.Text = "Dirección";
+            lblCalle.AutoSize = true;
+            lblCalle.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            lblCalle.ForeColor = Color.FromArgb(55, 60, 66);
+            lblCalle.Location = new Point(68, 525);
+            lblCalle.Name = "lblCalle";
+            lblCalle.Size = new Size(45, 21);
+            lblCalle.TabIndex = 10;
+            lblCalle.Text = "Calle";
             //
-            // txtDireccion
+            // txtCalle
             //
-            txtDireccion.BorderStyle = BorderStyle.FixedSingle;
-            txtDireccion.Font = new Font("Segoe UI", 10.5F);
-            txtDireccion.Location = new Point(68, 553);
-            txtDireccion.Name = "txtDireccion";
-            txtDireccion.Size = new Size(844, 31);
-            txtDireccion.TabIndex = 7;
+            txtCalle.BorderStyle = BorderStyle.FixedSingle;
+            txtCalle.Font = new Font("Segoe UI", 10.5F);
+            txtCalle.Location = new Point(68, 553);
+            txtCalle.Name = "txtCalle";
+            txtCalle.Size = new Size(500, 31);
+            txtCalle.TabIndex = 7;
+            //
+            // lblAltura
+            //
+            lblAltura.AutoSize = true;
+            lblAltura.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            lblAltura.ForeColor = Color.FromArgb(55, 60, 66);
+            lblAltura.Location = new Point(590, 525);
+            lblAltura.Name = "lblAltura";
+            lblAltura.Size = new Size(52, 21);
+            lblAltura.TabIndex = 11;
+            lblAltura.Text = "Altura";
+            //
+            // txtAltura
+            //
+            txtAltura.BorderStyle = BorderStyle.FixedSingle;
+            txtAltura.Font = new Font("Segoe UI", 10.5F);
+            txtAltura.Location = new Point(590, 553);
+            txtAltura.Name = "txtAltura";
+            txtAltura.Size = new Size(160, 31);
+            txtAltura.TabIndex = 8;
+            //
+            // lblPiso
+            //
+            lblPiso.AutoSize = true;
+            lblPiso.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
+            lblPiso.ForeColor = Color.FromArgb(55, 60, 66);
+            lblPiso.Location = new Point(770, 525);
+            lblPiso.Name = "lblPiso";
+            lblPiso.Size = new Size(105, 21);
+            lblPiso.TabIndex = 12;
+            lblPiso.Text = "Piso (opcional)";
+            //
+            // txtPiso
+            //
+            txtPiso.BorderStyle = BorderStyle.FixedSingle;
+            txtPiso.Font = new Font("Segoe UI", 10.5F);
+            txtPiso.Location = new Point(770, 553);
+            txtPiso.Name = "txtPiso";
+            txtPiso.Size = new Size(142, 31);
+            txtPiso.TabIndex = 9;
             //
             // btnCancelar
             //
@@ -305,7 +353,7 @@ namespace Capa_Vistas
             btnCancelar.Location = new Point(68, 659);
             btnCancelar.Name = "btnCancelar";
             btnCancelar.Size = new Size(205, 42);
-            btnCancelar.TabIndex = 9;
+            btnCancelar.TabIndex = 10;
             btnCancelar.Text = "Cancelar";
             btnCancelar.UseVisualStyleBackColor = false;
             //
@@ -321,7 +369,7 @@ namespace Capa_Vistas
             btnGuardar.Location = new Point(707, 659);
             btnGuardar.Name = "btnGuardar";
             btnGuardar.Size = new Size(205, 42);
-            btnGuardar.TabIndex = 8;
+            btnGuardar.TabIndex = 11;
             btnGuardar.Text = "Guardar cliente";
             btnGuardar.UseVisualStyleBackColor = false;
             //
@@ -375,8 +423,12 @@ namespace Capa_Vistas
         private Label lblLocalidad;
         private ComboBox cmbLocalidad;
 
-        private Label lblDireccion;
-        private TextBox txtDireccion;
+        private Label lblCalle;
+        private TextBox txtCalle;
+        private Label lblAltura;
+        private TextBox txtAltura;
+        private Label lblPiso;
+        private TextBox txtPiso;
 
         private Button btnCancelar;
         private Button btnGuardar;

@@ -1038,7 +1038,7 @@ namespace Capa_Vistas
 
 
             if (
-                confirmacion.ShowDialog(this)
+                confirmacion.ShowDialog(formPrincipal)
                 !=
                 DialogResult.OK)
             {

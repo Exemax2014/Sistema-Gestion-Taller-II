@@ -12,6 +12,15 @@ namespace Capa_Vistas
 
         private Form? formularioActivo;
         private Button? botonActivo;
+        private readonly UsuarioLogica usuarioLogicaSucursal = new UsuarioLogica();
+        private bool cargandoSucursalesOperativas;
+        private ToolTip? toolTipSesion;
+
+        private sealed class OpcionSucursalOperativa
+        {
+            public int? IdSucursal { get; set; }
+            public string Nombre { get; set; } = string.Empty;
+        }
 
 
         // =========================================================
@@ -69,6 +78,8 @@ namespace Capa_Vistas
         public FormPrincipal()
         {
             InitializeComponent();
+            components ??= new System.ComponentModel.Container();
+            toolTipSesion = new ToolTip(components);
 
             ConfigurarEventos();
 
@@ -197,8 +208,21 @@ namespace Capa_Vistas
                     "Todas";
             }
 
+            ActualizarDatosSesionVisuales();
 
             ActualizarFechaHora();
+        }
+
+        // Ajusta los datos de sesión al ancho del menú y conserva el texto completo como ayuda contextual.
+        private void ActualizarDatosSesionVisuales()
+        {
+            lblUsuarioActual.AutoEllipsis = true;
+            lblUsuarioActual.Width = Math.Max(40, pnlCuenta.ClientSize.Width - lblUsuarioActual.Left - 14);
+            lblSucursalActual.AutoEllipsis = true;
+            lblSucursalActual.Width = Math.Max(40, pnlSucursal.ClientSize.Width - lblSucursalActual.Left - 14);
+            toolTipSesion?.SetToolTip(lblUsuarioActual, lblUsuarioActual.Text);
+            toolTipSesion?.SetToolTip(lblPerfil, lblPerfil.Text);
+            toolTipSesion?.SetToolTip(lblSucursalActual, lblSucursalActual.Text);
         }
 
 
@@ -228,6 +252,7 @@ namespace Capa_Vistas
                         SesionActual.SucursalOperativa)
                         ? SesionActual.Sucursal
                         : SesionActual.SucursalOperativa;
+                ActualizarDatosSesionVisuales();
 
                 return;
             }
@@ -379,6 +404,7 @@ namespace Capa_Vistas
 
             lblSucursalActual.Text =
                 SesionActual.SucursalOperativa;
+            ActualizarDatosSesionVisuales();
 
 
             /*
@@ -766,6 +792,7 @@ namespace Capa_Vistas
             EventArgs e)
         {
             ActualizarBotonMaximizar();
+            ActualizarDatosSesionVisuales();
         }
 
 
@@ -851,23 +878,9 @@ namespace Capa_Vistas
             );
 
 
-            bool puedeVerReportes =
-                SesionActual.TienePermiso(
-                    "REPORTES_ADMINISTRADOR"
-                )
-                ||
-                SesionActual.TienePermiso(
-                    "REPORTES_GERENTE"
-                )
-                ||
-                SesionActual.TienePermiso(
-                    "REPORTES_VENDEDOR"
-                );
-
-
             ConfigurarPermisoBoton(
                 btnReportes,
-                puedeVerReportes
+                SesionActual.TienePermiso("REPORTES_VER")
             );
         }
 
@@ -1209,13 +1222,20 @@ namespace Capa_Vistas
         }
 
 
+        // Expone el botón de origen para que la navegación embebida conserve Usuarios seleccionado.
+        public Button BotonUsuarios
+        {
+            get
+            {
+                return btnUsuarios;
+            }
+        }
+
+
         // Permite entrar al contenedor Usuarios si se autorizó alguna de sus vistas internas.
         private bool PuedeAccederUsuarios()
         {
             return SesionActual.TienePermiso("USUARIOS_VER")
-                || SesionActual.TienePermiso("USUARIOS_ALTA")
-                || SesionActual.TienePermiso("USUARIOS_MODIFICAR")
-                || SesionActual.TienePermiso("USUARIOS_BAJA")
                 || SesionActual.TienePermiso("PERMISOS_GESTIONAR")
                 || SesionActual.TienePermiso("SUCURSALES_VER");
         }
@@ -1378,15 +1398,15 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            using FormMensaje mensaje =
-                new FormMensaje(
-                    "Editar perfil",
-                    "Esta funcionalidad se implementará posteriormente."
-                );
-
-
-            mensaje.ShowDialog(this);
+            if (!SesionActual.SesionIniciada) return;
+            AbrirFormularioEnPanel(new FormMiPerfil(this), btnEditarPerfil);
         }
+
+        // Actualiza inmediatamente el nombre visible tras editar la cuenta propia.
+        public void ActualizarSesionVisibleDesdePerfil() => CargarDatosSesion();
+
+        // Regresa al Inicio al cancelar o completar la edición del perfil propio.
+        public void VolverAInicioDesdePerfil() => MostrarInicio();
 
 
         // =========================================================

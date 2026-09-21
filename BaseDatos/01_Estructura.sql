@@ -48,7 +48,6 @@ BEGIN
 END;
 GO
 
-
 /* ========================
    LOCALIDAD
    ======================== */
@@ -88,12 +87,22 @@ BEGIN
 
         calle NVARCHAR(150) NOT NULL,
         altura NVARCHAR(20) NULL,
+        piso NVARCHAR(2) NULL,
         eliminado_en DATETIME2 NULL,
 
         CONSTRAINT FK_DIRECCION_LOCALIDAD
             FOREIGN KEY (id_localidad)
             REFERENCES dbo.LOCALIDAD(id_localidad)
     );
+END;
+GO
+
+/* Piso es opcional; en bases existentes se agrega sin reescribir las direcciones guardadas. */
+IF OBJECT_ID('dbo.DIRECCION', 'U') IS NOT NULL
+   AND COL_LENGTH('dbo.DIRECCION', 'piso') IS NULL
+BEGIN
+    ALTER TABLE dbo.DIRECCION
+        ADD piso NVARCHAR(2) NULL;
 END;
 GO
 

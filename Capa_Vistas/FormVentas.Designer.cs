@@ -119,28 +119,28 @@ namespace Capa_Vistas
             pnlCabecera.Controls.Add(lblTitulo);
             pnlCabecera.Controls.Add(lblSubtitulo);
             pnlCabecera.Controls.Add(pnlLineaTitulo);
-            pnlCabecera.Location = new Point(28, 16);
+            pnlCabecera.Location = new Point(32, 20);
             pnlCabecera.Name = "pnlCabecera";
-            pnlCabecera.Size = new Size(1294, 84);
+            pnlCabecera.Size = new Size(1286, 100);
 
             lblTitulo.AutoSize = true;
             lblTitulo.Font = new Font("Segoe UI", 22F, FontStyle.Bold);
-            lblTitulo.ForeColor = Color.FromArgb(25, 35, 46);
-            lblTitulo.Location = new Point(0, 0);
+            lblTitulo.ForeColor = Color.FromArgb(45, 49, 54);
+            lblTitulo.Location = new Point(0, 2);
             lblTitulo.Name = "lblTitulo";
             lblTitulo.Text = "Nueva venta";
 
             lblSubtitulo.AutoSize = true;
-            lblSubtitulo.Font = new Font("Segoe UI", 9F);
-            lblSubtitulo.ForeColor = Color.FromArgb(85, 98, 112);
-            lblSubtitulo.Location = new Point(2, 50);
+            lblSubtitulo.Font = new Font("Segoe UI", 9.5F);
+            lblSubtitulo.ForeColor = Color.FromArgb(105, 110, 116);
+            lblSubtitulo.Location = new Point(2, 54);
             lblSubtitulo.Name = "lblSubtitulo";
             lblSubtitulo.Text = "Buscá productos, armá la venta y luego completá cliente y pagos.";
 
             pnlLineaTitulo.BackColor = Color.FromArgb(190, 137, 45);
-            pnlLineaTitulo.Location = new Point(2, 77);
+            pnlLineaTitulo.Location = new Point(2, 84);
             pnlLineaTitulo.Name = "pnlLineaTitulo";
-            pnlLineaTitulo.Size = new Size(95, 3);
+            pnlLineaTitulo.Size = new Size(92, 3);
 
             btnMisVentas.Anchor = AnchorStyles.Top | AnchorStyles.Right;
             btnMisVentas.BackColor = Color.FromArgb(45, 49, 54);
@@ -164,9 +164,9 @@ namespace Capa_Vistas
             pnlContexto.Controls.Add(lblSucursalValor);
             pnlContexto.Controls.Add(lblFechaTitulo);
             pnlContexto.Controls.Add(lblFechaValor);
-            pnlContexto.Location = new Point(28, 108);
+            pnlContexto.Location = new Point(32, 120);
             pnlContexto.Name = "pnlContexto";
-            pnlContexto.Size = new Size(1294, 66);
+            pnlContexto.Size = new Size(1286, 66);
 
             lblVendedorTitulo.AutoSize = true;
             lblVendedorTitulo.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
@@ -201,9 +201,9 @@ namespace Capa_Vistas
             pnlPasoProductos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
             pnlPasoProductos.Controls.Add(pnlCarrito);
             pnlPasoProductos.Controls.Add(pnlBuscarProductos);
-            pnlPasoProductos.Location = new Point(28, 188);
+            pnlPasoProductos.Location = new Point(32, 200);
             pnlPasoProductos.Name = "pnlPasoProductos";
-            pnlPasoProductos.Size = new Size(1294, 548);
+            pnlPasoProductos.Size = new Size(1286, 548);
 
             pnlBuscarProductos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left;
             pnlBuscarProductos.BackColor = Color.White;
@@ -362,9 +362,9 @@ namespace Capa_Vistas
             pnlPasoFinalizar.Controls.Add(pnlResumen);
             pnlPasoFinalizar.Controls.Add(pnlPagos);
             pnlPasoFinalizar.Controls.Add(pnlCliente);
-            pnlPasoFinalizar.Location = new Point(28, 188);
+            pnlPasoFinalizar.Location = new Point(32, 200);
             pnlPasoFinalizar.Name = "pnlPasoFinalizar";
-            pnlPasoFinalizar.Size = new Size(1294, 548);
+            pnlPasoFinalizar.Size = new Size(1286, 548);
             pnlPasoFinalizar.Visible = false;
 
             pnlCliente.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;

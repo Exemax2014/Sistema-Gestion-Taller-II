@@ -21,6 +21,13 @@ namespace Capa_Vistas
         private readonly Dictionary<SeccionReporte, TabPage> paginas = new();
         private readonly Dictionary<SeccionReporte, Label> estadosVacios = new();
         private List<ReporteDiaModelo> dias = new();
+        private decimal subtotalActual;
+        private decimal descuentosActuales;
+        private decimal recaudacionActual;
+        private int ventasActuales;
+        private int unidadesActuales;
+        private int stockBajoActual;
+        private string usuarioReporteActual = string.Empty;
         private SeccionReporte seccionActual = SeccionReporte.General;
 
         // Mantiene la navegación embebida y los mensajes centrados en el formulario principal.
@@ -28,7 +35,7 @@ namespace Capa_Vistas
         {
             InitializeComponent();
             this.formPrincipal = formPrincipal;
-            AutoScroll = true;
+            AutoScroll = false;
             ConfigurarGrillas();
             ConfigurarContenidoInterno();
             ConfigurarEventos();
@@ -39,7 +46,7 @@ namespace Capa_Vistas
         private void ConfigurarGrillas()
         {
             ConfigurarColumnas(dgvActividadUsuario, new[] { "Fecha", "Acción", "Entidad", "Detalle", "Sucursal" });
-            ConfigurarColumnas(dgvProductosVendidos, new[] { "Producto", "Categoría", "Marca", "Unidades", "Importe" });
+            ConfigurarColumnas(dgvProductosVendidos, new[] { "Producto", "Categoría", "Marca", "Unidades", "Precio promedio", "Importe", "Participación" });
             ConfigurarColumnas(dgvUsuarioVentas, new[] { "N°", "Fecha", "Cliente", "Sucursal", "Subtotal", "Descuento", "Total", "Ver detalle" });
             ConfigurarColumnas(dgvDetalleVentas, new[] { "N°", "Fecha", "Cliente", "Vendedor", "Sucursal", "Subtotal", "Descuento", "Total", "Pagos", "Ver detalle" });
             ConfigurarColumnas(dgvStockBajo, new[] { "Código", "Producto", "Categoría", "Sucursal", "Stock", "Stock mínimo", "Diferencia" });
@@ -59,8 +66,8 @@ namespace Capa_Vistas
             ConfigurarPaginaPorUsuario();
             CrearPagina(SeccionReporte.VentasDetalladas, "Ventas detalladas", dgvDetalleVentas);
             CrearPagina(SeccionReporte.StockBajo, "Stock bajo", dgvStockBajo);
-            Controls.Add(tabContenido);
-            btnExportar.Text = "Exportar CSV";
+            pnlAreaContenido.Controls.Add(tabContenido);
+            btnExportar.Text = "Exportar Excel";
             btnExportar.BackColor = Color.FromArgb(190, 137, 45);
             btnExportar.ForeColor = Color.White;
             btnExportar.FlatStyle = FlatStyle.Flat;
@@ -178,10 +185,12 @@ namespace Capa_Vistas
         // Elige una sección autorizada si la predeterminada no está disponible para la sesión.
         private SeccionReporte PrimeraSeccionDisponible()
         {
-            if (btnGeneral.Visible) return SeccionReporte.General;
-            if (btnPorUsuario.Visible) return SeccionReporte.PorUsuario;
-            if (btnVentasDetalladas.Visible) return SeccionReporte.VentasDetalladas;
-            return SeccionReporte.StockBajo;
+            if (reporteLogica.PuedeVerVentas() || reporteLogica.PuedeVerRecaudacion() ||
+                reporteLogica.PuedeVerProductos() || reporteLogica.PuedeVerStock())
+                return SeccionReporte.General;
+            if (reporteLogica.PuedeVerRendimientoVendedores()) return SeccionReporte.PorUsuario;
+            if (reporteLogica.PuedeVerDetalleVentas()) return SeccionReporte.VentasDetalladas;
+            return SeccionReporte.General;
         }
 
         // Carga sucursales activas solo para el alcance global y evita IDs fijos en el selector.
@@ -195,14 +204,17 @@ namespace Capa_Vistas
             cmbSucursal.DataSource = opciones;
             cmbSucursal.DisplayMember = nameof(OpcionSucursal.Nombre);
             cmbSucursal.ValueMember = nameof(OpcionSucursal.IdSucursal);
+            if (cmbSucursal.Items.Count > 0) cmbSucursal.SelectedIndex = 0;
         }
 
-        // Alterna el contenido sin abandonar FormReportesGeneral ni duplicar entradas en FormPrincipal.
+        // Cambia la sección en el mismo formulario y reinicia el scroll para mantener visible la cabecera fija.
         private void CambiarSeccion(SeccionReporte seccion)
         {
+            pnlAreaContenido.AutoScrollPosition = Point.Empty;
             seccionActual = seccion;
             ConfigurarVistaSeccion();
             CargarSeccionActual();
+            pnlAreaContenido.AutoScrollPosition = Point.Empty;
         }
 
         // Ajusta filtros y elementos visibles para que cada vista muestre únicamente sus datos pertinentes.
@@ -243,7 +255,11 @@ namespace Capa_Vistas
         }
 
         // Aplica el color activo sin cambiar los permisos que determinan si la pestaña existe.
-        private static void AplicarEstiloPestana(Button boton, bool activa) { boton.BackColor = activa ? Color.FromArgb(190, 137, 45) : Color.FromArgb(45, 49, 54); boton.ForeColor = Color.White; }
+        private static void AplicarEstiloPestana(Button boton, bool activa)
+        {
+            boton.BackColor = activa ? Color.FromArgb(190, 137, 45) : Color.FromArgb(235, 237, 240);
+            boton.ForeColor = activa ? Color.White : Color.FromArgb(55, 59, 64);
+        }
 
         // Carga usuarios autorizados por alcance para los filtros que consultan datos por persona.
         private void CargarVendedores()
@@ -275,17 +291,27 @@ namespace Capa_Vistas
         // Carga tarjetas, gráfico y ranking comercial sin duplicar detalle ni stock bajo completo.
         private void CargarGeneral(int? sucursal)
         {
+            stockBajoActual = 0;
+            unidadesActuales = 0;
             CargarResumenYGrafico(sucursal, null);
             if (reporteLogica.PuedeVerProductos()) CargarProductos(sucursal, null);
-            if (reporteLogica.PuedeVerStock()) lblStockBajoValor.Text = reporteLogica.ObtenerStock(sucursal).Count.ToString(CultureInfo.CurrentCulture);
+            if (reporteLogica.PuedeVerStock())
+            {
+                stockBajoActual = reporteLogica.ObtenerStock(sucursal).Count;
+                lblStockBajoValor.Text = stockBajoActual.ToString(CultureInfo.CurrentCulture);
+            }
             tabContenido.TabPages.Clear();
         }
 
         // Reutiliza las consultas por usuario para mostrar solo ventas realmente registradas y su historial resumido.
         private void CargarPorUsuario(int? sucursal, int? usuario)
         {
+            usuarioReporteActual = cmbVendedor.Visible && cmbVendedor.SelectedItem is OpcionUsuario opcion
+                ? opcion.Nombre
+                : SesionActual.NombreUsuario;
             if (reporteLogica.ObtenerAlcanceReportes() != AlcanceReportes.Propio && !usuario.HasValue)
             {
+                usuarioReporteActual = string.Empty;
                 dgvUsuarioVentas.Rows.Clear();
                 dgvActividadUsuario.Rows.Clear();
                 if (pnlActividadUsuario != null) pnlActividadUsuario.Visible = false;
@@ -307,7 +333,7 @@ namespace Capa_Vistas
             dgvUsuarioVentas.Rows.Clear();
             if (reporteLogica.PuedeVerDetalleVentas())
             {
-                foreach (var venta in reporteLogica.ObtenerDetalleVentas(dtpDesde.Value, dtpHasta.Value, sucursal, usuario)) dgvUsuarioVentas.Rows.Add(venta.IdVenta, venta.Fecha.ToString("dd/MM/yyyy HH:mm"), venta.Cliente, venta.Sucursal, venta.Subtotal, venta.Descuento, venta.Total, "Ver detalle");
+                foreach (var venta in reporteLogica.ObtenerDetalleVentas(dtpDesde.Value, dtpHasta.Value, sucursal, usuario)) dgvUsuarioVentas.Rows.Add(venta.IdVenta, venta.Fecha, venta.Cliente, venta.Sucursal, venta.Subtotal, venta.Descuento, venta.Total, "Ver detalle");
                 MostrarPagina(SeccionReporte.PorUsuario, dgvUsuarioVentas.Rows.Count, "El usuario seleccionado no registró ventas en el período.");
             }
             else MostrarPagina(SeccionReporte.PorUsuario, 0, "No tiene permiso para consultar el historial detallado de ventas.");
@@ -328,7 +354,7 @@ namespace Capa_Vistas
             foreach (AuditoriaReporteModelo evento in actividad)
             {
                 dgvActividadUsuario.Rows.Add(
-                    evento.Fecha.ToString("dd/MM/yyyy HH:mm"),
+                    evento.Fecha,
                     evento.Accion,
                     evento.Entidad,
                     evento.Detalle,
@@ -349,7 +375,7 @@ namespace Capa_Vistas
         private void CargarVentasDetalladas(int? sucursal, int? usuario)
         {
             dgvDetalleVentas.Rows.Clear();
-            foreach (var venta in reporteLogica.ObtenerDetalleVentas(dtpDesde.Value, dtpHasta.Value, sucursal, usuario)) dgvDetalleVentas.Rows.Add(venta.IdVenta, venta.Fecha.ToString("dd/MM/yyyy HH:mm"), venta.Cliente, venta.Vendedor, venta.Sucursal, venta.Subtotal, venta.Descuento, venta.Total, venta.MetodosPago, "Ver detalle");
+            foreach (var venta in reporteLogica.ObtenerDetalleVentas(dtpDesde.Value, dtpHasta.Value, sucursal, usuario)) dgvDetalleVentas.Rows.Add(venta.IdVenta, venta.Fecha, venta.Cliente, venta.Vendedor, venta.Sucursal, venta.Subtotal, venta.Descuento, venta.Total, venta.MetodosPago, "Ver detalle");
             MostrarPagina(SeccionReporte.VentasDetalladas, dgvDetalleVentas.Rows.Count, "No se registraron ventas en el período seleccionado.");
         }
 
@@ -368,9 +394,17 @@ namespace Capa_Vistas
         private void CargarResumenYGrafico(int? sucursal, int? usuario)
         {
             bool ventas = reporteLogica.PuedeVerVentas(), recaudacion = reporteLogica.PuedeVerRecaudacion();
+            ventasActuales = 0;
+            subtotalActual = 0;
+            descuentosActuales = 0;
+            recaudacionActual = 0;
             if (ventas || recaudacion)
             {
                 var resumen = reporteLogica.ObtenerResumen(dtpDesde.Value, dtpHasta.Value, sucursal, usuario);
+                ventasActuales = resumen.Ventas;
+                subtotalActual = resumen.Subtotal;
+                descuentosActuales = resumen.Descuentos;
+                recaudacionActual = resumen.Recaudacion;
                 lblVentasValor.Text = ventas ? resumen.Ventas.ToString(CultureInfo.CurrentCulture) : "—";
                 lblIngresosValor.Text = recaudacion ? resumen.Recaudacion.ToString("C2", CultureInfo.CurrentCulture) : "—";
             }
@@ -386,7 +420,14 @@ namespace Capa_Vistas
         {
             var productos = reporteLogica.ObtenerProductos(dtpDesde.Value, dtpHasta.Value, sucursal, usuario);
             dgvProductosVendidos.Rows.Clear();
-            foreach (var producto in productos) dgvProductosVendidos.Rows.Add(producto.Producto, producto.Categoria, producto.Marca, producto.Unidades, producto.Importe);
+            decimal importeTotal = productos.Sum(producto => producto.Importe);
+            foreach (var producto in productos)
+            {
+                decimal precioPromedio = producto.Unidades > 0 ? producto.Importe / producto.Unidades : 0m;
+                decimal participacion = importeTotal > 0m ? producto.Importe / importeTotal : 0m;
+                dgvProductosVendidos.Rows.Add(producto.Producto, producto.Categoria, producto.Marca, producto.Unidades, precioPromedio, producto.Importe, participacion);
+            }
+            unidadesActuales = productos.Sum(producto => producto.Unidades);
             lblProductosValor.Text = productos.Sum(producto => producto.Unidades).ToString(CultureInfo.CurrentCulture);
             lblProductosVendidosDescripcion.Text = productos.Count == 0 ? "No se registraron productos vendidos en el período seleccionado." : "Ranking correspondiente al período seleccionado.";
         }
@@ -434,16 +475,169 @@ namespace Capa_Vistas
             }
         }
 
-        // Exporta la grilla correspondiente a la sección activa con el permiso ya validado por Lógica.
+        // Exporta la información visible de la sección activa a un libro XLSX con valores tipados.
         private void BtnExportar_Click(object? sender, EventArgs e)
         {
-            DataGridView grilla = seccionActual == SeccionReporte.General ? dgvProductosVendidos : seccionActual == SeccionReporte.PorUsuario ? dgvUsuarioVentas : seccionActual == SeccionReporte.VentasDetalladas ? dgvDetalleVentas : dgvStockBajo;
-            if (grilla.Rows.Count == 0) { MostrarMensaje("Sin datos", "No hay datos para exportar."); return; }
-            using SaveFileDialog dialogo = new() { Filter = "CSV (*.csv)|*.csv", FileName = "reporte.csv" };
+            if (!reporteLogica.PuedeExportar())
+            {
+                MostrarMensaje("Sin permiso", "No tiene permiso para exportar reportes.");
+                return;
+            }
+
+            List<ExcelHojaExportacion> hojas = PrepararHojasExportacion();
+            if (hojas.Count == 0)
+            {
+                MostrarMensaje("Sin datos", "No hay datos para exportar.");
+                return;
+            }
+
+            string nombreArchivo = ObtenerNombreArchivoExportacion();
+            using SaveFileDialog dialogo = new()
+            {
+                Filter = "Archivo Excel (*.xlsx)|*.xlsx",
+                DefaultExt = "xlsx",
+                AddExtension = true,
+                FileName = nombreArchivo
+            };
             if (dialogo.ShowDialog(formPrincipal) != DialogResult.OK) return;
-            using StreamWriter escritor = new(dialogo.FileName, false, System.Text.Encoding.UTF8);
-            escritor.WriteLine(string.Join(";", grilla.Columns.Cast<DataGridViewColumn>().Where(c => c is not DataGridViewButtonColumn).Select(c => c.HeaderText)));
-            foreach (DataGridViewRow fila in grilla.Rows) escritor.WriteLine(string.Join(";", fila.Cells.Cast<DataGridViewCell>().Where(c => grilla.Columns[c.ColumnIndex] is not DataGridViewButtonColumn).Select(c => '"' + (c.Value?.ToString() ?? string.Empty).Replace("\"", "\"\"") + '"')));
+
+            try
+            {
+                ExcelExportHelper.Exportar(dialogo.FileName, hojas);
+                MostrarMensaje("Exportación completa", "El reporte se exportó correctamente.");
+            }
+            catch
+            {
+                MostrarMensaje("Error al exportar", "No se pudo generar el archivo Excel. Verificá que la ubicación esté disponible y que el archivo no esté abierto.");
+            }
+        }
+
+        // Construye hojas únicamente con los datos y secciones autorizados que están cargados actualmente.
+        private List<ExcelHojaExportacion> PrepararHojasExportacion()
+        {
+            List<ExcelHojaExportacion> hojas = new();
+            if (seccionActual == SeccionReporte.General)
+            {
+                if (dgvProductosVendidos.Rows.Count == 0 && stockBajoActual == 0 && ventasActuales == 0 && recaudacionActual == 0 && unidadesActuales == 0 && !dias.Any(d => d.Ventas > 0 || d.Recaudacion > 0)) return hojas;
+                hojas.Add(CrearHojaResumen(false));
+                if (dgvProductosVendidos.Rows.Count > 0) hojas.Add(CrearHojaGrilla("Productos más vendidos", dgvProductosVendidos));
+                if (dias.Any(d => d.Ventas > 0 || d.Recaudacion > 0))
+                    hojas.Add(new ExcelHojaExportacion
+                    {
+                        Nombre = "Ventas por día",
+                        Encabezados = new[] { "Fecha", "Cantidad de ventas", "Recaudación" },
+                        Filas = dias.Select(d => new object?[] { d.Fecha, d.Ventas, d.Recaudacion }).ToList(),
+                        FormatosColumnas = new Dictionary<int, string> { [0] = "dd/mm/yyyy", [2] = "$#,##0.00" }
+                    });
+            }
+            else if (seccionActual == SeccionReporte.PorUsuario)
+            {
+                if (string.IsNullOrWhiteSpace(usuarioReporteActual) ||
+                    (dgvUsuarioVentas.Rows.Count == 0 && dgvActividadUsuario.Rows.Count == 0 && dgvProductosVendidos.Rows.Count == 0 && ventasActuales == 0 && recaudacionActual == 0 && unidadesActuales == 0 && !dias.Any(d => d.Ventas > 0 || d.Recaudacion > 0))) return hojas;
+                hojas.Add(CrearHojaResumen(true));
+                if (dgvUsuarioVentas.Rows.Count > 0) hojas.Add(CrearHojaGrilla("Ventas", dgvUsuarioVentas));
+                if (dgvActividadUsuario.Rows.Count > 0) hojas.Add(CrearHojaGrilla("Actividad", dgvActividadUsuario));
+                if (dgvProductosVendidos.Rows.Count > 0) hojas.Add(CrearHojaGrilla("Productos", dgvProductosVendidos));
+            }
+            else if (seccionActual == SeccionReporte.VentasDetalladas && dgvDetalleVentas.Rows.Count > 0)
+            {
+                hojas.Add(CrearHojaGrilla("Ventas", dgvDetalleVentas));
+            }
+            else if (seccionActual == SeccionReporte.StockBajo && dgvStockBajo.Rows.Count > 0)
+            {
+                hojas.Add(CrearHojaGrilla("Stock bajo", dgvStockBajo));
+            }
+            return hojas;
+        }
+
+        // Prepara el resumen del período sin exponer métricas para las que no existe permiso.
+        private ExcelHojaExportacion CrearHojaResumen(bool porUsuario)
+        {
+            List<object?[]> filas = new()
+            {
+                new object?[] { porUsuario ? "Usuario" : "Reporte", porUsuario ? usuarioReporteActual : "General" },
+                new object?[] { "Período", $"{dtpDesde.Value:dd/MM/yyyy} - {dtpHasta.Value:dd/MM/yyyy}" },
+                new object?[] { "Sucursal / alcance", ObtenerAlcanceExportacion() }
+            };
+            if (reporteLogica.PuedeVerVentas()) filas.Add(new object?[] { "Cantidad de ventas", ventasActuales });
+            if (reporteLogica.PuedeVerRecaudacion())
+            {
+                filas.Add(new object?[] { "Subtotal", subtotalActual });
+                filas.Add(new object?[] { "Descuentos", descuentosActuales });
+                filas.Add(new object?[] { "Ingresos", recaudacionActual });
+            }
+            if (reporteLogica.PuedeVerProductos()) filas.Add(new object?[] { "Unidades vendidas", unidadesActuales });
+            if (!porUsuario && reporteLogica.PuedeVerStock()) filas.Add(new object?[] { "Productos con stock bajo", stockBajoActual });
+            Dictionary<(int Fila, int Columna), string> formatos = new();
+            for (int i = 0; i < filas.Count; i++)
+                if (filas[i][0] is string indicador && indicador is "Subtotal" or "Descuentos" or "Ingresos")
+                    formatos[(i, 1)] = "$#,##0.00";
+
+            return new ExcelHojaExportacion
+            {
+                Nombre = "Resumen",
+                Encabezados = new[] { "Indicador", "Valor" },
+                Filas = filas,
+                CrearTabla = false,
+                FormatosCeldas = formatos
+            };
+        }
+
+        // Convierte una grilla visible a una hoja tabular omitiendo botones y columnas técnicas ocultas.
+        private static ExcelHojaExportacion CrearHojaGrilla(string nombre, DataGridView grilla)
+        {
+            List<DataGridViewColumn> columnas = grilla.Columns.Cast<DataGridViewColumn>()
+                .Where(c => c.Visible && c is not DataGridViewButtonColumn && c.Name is not "IdProducto" and not "IdSucursal")
+                .ToList();
+            if (nombre == "Stock bajo")
+                columnas = columnas.OrderBy(c => c.Name == "Producto" ? 0 : c.Name == "Código" ? 1 : c.Index + 2).ToList();
+
+            string[] encabezados = columnas.Select(c => c.Name == "N°" ? "Venta" : c.HeaderText).ToArray();
+            List<object?[]> filas = grilla.Rows.Cast<DataGridViewRow>()
+                .Where(f => !f.IsNewRow)
+                .Select(f => columnas.Select(c => f.Cells[c.Index].Value).ToArray())
+                .ToList();
+            Dictionary<int, string> formatos = new();
+            for (int i = 0; i < columnas.Count; i++)
+            {
+                if (columnas[i].Name == "Fecha") formatos[i] = "dd/mm/yyyy hh:mm";
+                else if (columnas[i].Name is "Subtotal" or "Descuento" or "Total" or "Importe" or "Precio promedio") formatos[i] = "$#,##0.00";
+                else if (columnas[i].Name == "Participación") formatos[i] = "0.00%";
+                else if (columnas[i].Name is "N°" or "Stock" or "Stock mínimo" or "Diferencia" or "Unidades") formatos[i] = "#,##0";
+            }
+
+            return new ExcelHojaExportacion { Nombre = nombre, Encabezados = encabezados, Filas = filas, FormatosColumnas = formatos };
+        }
+
+        // Genera un nombre descriptivo y seguro de archivo según la sección actualmente abierta.
+        private string ObtenerNombreArchivoExportacion()
+        {
+            string fecha = DateTime.Today.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
+            string baseNombre = seccionActual switch
+            {
+                SeccionReporte.General => $"Reporte_General_{fecha}",
+                SeccionReporte.PorUsuario => $"Reporte_Usuario_{LimpiarNombreArchivo(usuarioReporteActual)}_{fecha}",
+                SeccionReporte.VentasDetalladas => $"Ventas_Detalladas_{fecha}",
+                _ => $"Stock_Bajo_{fecha}"
+            };
+            return baseNombre + ".xlsx";
+        }
+
+        // Sustituye caracteres no válidos para que el nombre del usuario pueda formar parte del archivo.
+        private static string LimpiarNombreArchivo(string valor)
+        {
+            char[] invalidos = Path.GetInvalidFileNameChars();
+            string resultado = new string(valor.Select(c => invalidos.Contains(c) ? '_' : c).ToArray()).Trim();
+            return string.IsNullOrWhiteSpace(resultado) ? "Usuario" : resultado;
+        }
+
+        // Describe la sucursal seleccionada o el alcance efectivo de la sesión para incluirlo en el resumen.
+        private string ObtenerAlcanceExportacion()
+        {
+            if (cmbSucursal.Visible && cmbSucursal.SelectedItem is OpcionSucursal opcion) return opcion.Nombre;
+            if (!string.IsNullOrWhiteSpace(SesionActual.SucursalOperativa)) return SesionActual.SucursalOperativa;
+            if (!string.IsNullOrWhiteSpace(SesionActual.Sucursal)) return SesionActual.Sucursal;
+            return reporteLogica.ObtenerAlcanceReportes() == AlcanceReportes.Propio ? "Usuario actual" : "Sucursal autorizada";
         }
 
         // Restablece los filtros disponibles de la sección sin alterar el alcance resuelto en sesión.
@@ -455,32 +649,80 @@ namespace Capa_Vistas
             CargarSeccionActual();
         }
 
-        // Distribuye cabecera, pestañas, filtros y resultados para evitar desbordes dentro de pnlContenido.
+        // Mantiene fija la cabecera y distribuye el área scrolleable independientemente debajo de la navegación.
         private void AjustarLayout()
         {
-            int margen = 32, ancho = Math.Max(340, ClientSize.Width - margen * 2), y = 18;
-            pnlCabecera.SetBounds(margen, y, ancho, 82); y += 92;
-            pnlNavegacion.SetBounds(margen, y, ancho, 46); AjustarBotonesNavegacion(); y += 58;
-            AjustarFiltros(ancho, margen, ref y);
+            int margen = 32, ancho = Math.Max(340, ClientSize.Width - margen * 2), y = 20;
+            pnlCabecera.SetBounds(margen, y, ancho, 100);
+            y += 100;
+            pnlNavegacion.SetBounds(margen, y, ancho, 43);
+            pnlNavegacion.Height = AjustarBotonesNavegacion(ancho);
+            y += pnlNavegacion.Height + 8;
+            pnlAreaContenido.SetBounds(margen, y, ancho, Math.Max(140, ClientSize.Height - y - 20));
+
+            int anchoContenido = Math.Max(300, pnlAreaContenido.ClientSize.Width);
+            int yContenido = 0;
+            AjustarFiltros(anchoContenido, 0, ref yContenido);
             List<Panel> tarjetas = new[] { pnlTarjetaVentas, pnlTarjetaIngresos, pnlTarjetaProductos, pnlTarjetaStock }.Where(t => t.Visible).ToList();
             if (tarjetas.Count > 0)
             {
-                int columnas = ancho >= 1040 ? 4 : ancho >= 650 ? 2 : 1, separacion = 16, anchoTarjeta = (ancho - separacion * (columnas - 1)) / columnas;
-                for (int i = 0; i < tarjetas.Count; i++) tarjetas[i].SetBounds(margen + (i % columnas) * (anchoTarjeta + separacion), y + (i / columnas) * 126, anchoTarjeta, 110);
-                y += ((tarjetas.Count + columnas - 1) / columnas) * 126 + 10;
+                int columnas = anchoContenido >= 1040 ? 4 : anchoContenido >= 650 ? 2 : 1, separacion = 16, anchoTarjeta = (anchoContenido - separacion * (columnas - 1)) / columnas;
+                for (int i = 0; i < tarjetas.Count; i++) tarjetas[i].SetBounds((i % columnas) * (anchoTarjeta + separacion), yContenido + (i / columnas) * 126, anchoTarjeta, 110);
+                yContenido += ((tarjetas.Count + columnas - 1) / columnas) * 126 + 10;
             }
-            if (pnlGrafico.Visible) { pnlGrafico.SetBounds(margen, y, ancho, 230); y += 246; }
-            if (pnlProductosVendidos.Visible) { pnlProductosVendidos.SetBounds(margen, y, ancho, 230); y += 246; }
-            if (tabContenido.Visible) { tabContenido.SetBounds(margen, y, ancho, Math.Max(260, ClientSize.Height - y - 32)); y += tabContenido.Height + 16; }
-            AutoScrollMinSize = new Size(0, y + 24);
+            if (pnlGrafico.Visible) { pnlGrafico.SetBounds(0, yContenido, anchoContenido, 230); yContenido += 246; }
+            if (pnlProductosVendidos.Visible)
+            {
+                pnlProductosVendidos.SetBounds(0, yContenido, anchoContenido, 360);
+                AjustarEncabezadoProductosVendidos();
+                yContenido += 376;
+            }
+            if (tabContenido.Visible)
+            {
+                tabContenido.SetBounds(0, yContenido, anchoContenido, Math.Max(260, pnlAreaContenido.ClientSize.Height - yContenido - 16));
+                yContenido += tabContenido.Height + 16;
+            }
+            pnlAreaContenido.AutoScrollMinSize = new Size(0, yContenido + 24);
+        }
+
+        // Separa título, descripción y grilla para que el encabezado no se solape al cambiar de sección o tamaño.
+        private void AjustarEncabezadoProductosVendidos()
+        {
+            int ancho = Math.Max(120, pnlProductosVendidos.ClientSize.Width - 36);
+            lblProductosVendidosTitulo.AutoSize = false;
+            lblProductosVendidosTitulo.SetBounds(18, 8, ancho, 26);
+            lblProductosVendidosDescripcion.AutoSize = false;
+            lblProductosVendidosDescripcion.AutoEllipsis = false;
+            lblProductosVendidosDescripcion.SetBounds(18, 34, ancho, 34);
+            dgvProductosVendidos.SetBounds(0, 72, pnlProductosVendidos.ClientSize.Width, Math.Max(180, pnlProductosVendidos.ClientSize.Height - 73));
+            dgvProductosVendidos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
 
         // Distribuye pestañas visibles en todo el ancho sin dejar espacios de una sección sin permiso.
-        private void AjustarBotonesNavegacion()
+        private int AjustarBotonesNavegacion(int anchoDisponible)
         {
-            List<Button> botones = new[] { btnGeneral, btnPorUsuario, btnVentasDetalladas, btnStockBajo }.Where(b => b.Visible).ToList();
-            int ancho = Math.Max(120, (pnlNavegacion.ClientSize.Width - 16 - Math.Max(0, botones.Count - 1) * 6) / Math.Max(1, botones.Count));
-            for (int i = 0; i < botones.Count; i++) botones[i].SetBounds(8 + i * (ancho + 6), 5, ancho, 36);
+            List<(Button Boton, int Ancho)> botones = new();
+            if (reporteLogica.PuedeVerVentas() || reporteLogica.PuedeVerRecaudacion() || reporteLogica.PuedeVerProductos() || reporteLogica.PuedeVerStock()) botones.Add((btnGeneral, 120));
+            if (reporteLogica.PuedeVerRendimientoVendedores()) botones.Add((btnPorUsuario, 120));
+            if (reporteLogica.PuedeVerDetalleVentas()) botones.Add((btnVentasDetalladas, 170));
+            if (reporteLogica.PuedeVerStock()) botones.Add((btnStockBajo, 110));
+
+            int fila = 0;
+            int x = 0;
+            foreach ((Button boton, int ancho) in botones)
+            {
+                if (x > 0 && x + ancho > anchoDisponible)
+                {
+                    fila++;
+                    x = 0;
+                }
+
+                boton.SetBounds(x, fila * 43 + 2, ancho, 39);
+                boton.TextAlign = ContentAlignment.MiddleCenter;
+                x += ancho + 6;
+            }
+
+            return Math.Max(1, fila + 1) * 43;
         }
 
         // Reacomoda filtros y acciones según los controles autorizados de la sección activa.
@@ -511,7 +753,14 @@ namespace Capa_Vistas
                 DataGridViewColumn columna = nombre is "Ver detalle" ? new DataGridViewButtonColumn { Name = nombre, HeaderText = "Acción", Text = nombre, UseColumnTextForButtonValue = true } : new DataGridViewTextBoxColumn { Name = nombre, HeaderText = nombre };
                 int indice = grilla.Columns.Add(columna);
                 if (nombre is "N°" or "Stock" or "Stock mínimo" or "Diferencia" or "Unidades") grilla.Columns[indice].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight;
-                if (nombre is "Subtotal" or "Descuento" or "Total" or "Importe") { grilla.Columns[indice].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight; grilla.Columns[indice].DefaultCellStyle.Format = "C2"; }
+                if (nombre is "Subtotal" or "Descuento" or "Total" or "Importe" or "Precio promedio") { grilla.Columns[indice].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight; grilla.Columns[indice].DefaultCellStyle.Format = "C2"; }
+                if (nombre == "Participación") { grilla.Columns[indice].DefaultCellStyle.Alignment = DataGridViewContentAlignment.MiddleRight; grilla.Columns[indice].DefaultCellStyle.Format = "P2"; }
+                if (nombre == "Fecha") grilla.Columns[indice].DefaultCellStyle.Format = "dd/MM/yyyy HH:mm";
+                if (nombre == "Producto") grilla.Columns[indice].FillWeight = 30;
+                else if (nombre is "Categoría" or "Marca") grilla.Columns[indice].FillWeight = 15;
+                else if (nombre == "Unidades") grilla.Columns[indice].FillWeight = 10;
+                else if (nombre == "Precio promedio" || nombre == "Importe") grilla.Columns[indice].FillWeight = 15;
+                else if (nombre == "Participación") grilla.Columns[indice].FillWeight = 14;
             }
             AplicarEstiloGrilla(grilla);
         }

@@ -11,6 +11,11 @@ namespace Capa_Vistas
         private List<DashboardSerieModelo> serieSemanal = new();
         private List<DashboardProductoModelo> productosMasVendidos = new();
         private bool puedePublicarAvisos;
+        private bool puedeVerVentas;
+        private bool puedeVerProductos;
+        private bool puedeVerClientes;
+        private bool puedeRealizarVentas;
+        private bool puedeVerAvisos;
 
         // Inicializa la vista con el principal como dueño de la navegación y de los mensajes.
         public FormInicio(FormPrincipal formPrincipal)
@@ -68,40 +73,46 @@ namespace Capa_Vistas
         {
             lblBienvenida.Text = $"Bienvenido, {SesionActual.Nombre}";
             lblPerfilSucursal.Text = ObtenerDescripcionSesion();
-            btnNuevaVenta.Visible = SesionActual.TienePermiso("VENTAS_REALIZAR");
-            btnProductos.Visible = SesionActual.TienePermiso("PRODUCTOS_VER");
-            btnClientes.Visible = SesionActual.TienePermiso("CLIENTES_VER");
-            AjustarAccesosRapidos();
+            puedeVerVentas = dashboardLogica.PuedeVerVentas();
+            puedeVerProductos = dashboardLogica.PuedeVerProductos();
+            puedeVerClientes = SesionActual.TienePermiso("CLIENTES_VER");
+            puedeRealizarVentas = SesionActual.TienePermiso("VENTAS_REALIZAR");
+            puedeVerAvisos = SesionActual.TienePermiso("AVISOS_VER");
+            btnNuevaVenta.Visible = puedeRealizarVentas;
+            btnProductos.Visible = puedeVerProductos;
+            btnClientes.Visible = puedeVerClientes;
+            AplicarPermisosDashboard();
             CargarDashboard();
         }
 
-        // Reacomoda únicamente los accesos autorizados para no dejar huecos al ocultar acciones.
-        private void AjustarAccesosRapidos()
+        // Ajusta la visibilidad de métricas y gráficos al permiso de consulta de cada módulo.
+        private void AplicarPermisosDashboard()
         {
-            int x = 18;
-            foreach (Button boton in new[] { btnNuevaVenta, btnProductos, btnClientes })
-            {
-                if (!boton.Visible) continue;
-                boton.Location = new Point(x, boton.Location.Y);
-                x += boton.Width + 17;
-            }
+            pnlTarjetaVentas.Visible = puedeVerVentas;
+            pnlTarjetaIngresos.Visible = puedeVerVentas;
+            pnlTarjetaStock.Visible = puedeVerProductos;
+            pnlTarjetaProductos.Visible = puedeVerProductos;
+            pnlGraficoVentas.Visible = puedeVerVentas;
+            pnlGraficoIngresos.Visible = puedeVerVentas;
+            pnlGraficoProductos.Visible = puedeVerVentas && puedeVerProductos;
+            pnlActividad.Visible = puedeVerVentas;
+            pnlAvisos.Visible = puedePublicarAvisos || puedeVerAvisos;
         }
 
-        // Consulta la fachada lógica y conserva tarjetas sin datos cuando la sesión no está autorizada.
+        // Consulta la fachada lógica y proyecta únicamente métricas autorizadas para la sesión.
         private void CargarDashboard()
         {
             try
             {
                 DashboardResumenModelo resumen = dashboardLogica.ObtenerResumen();
-                bool puedeVentas = dashboardLogica.PuedeVerVentas();
-                bool puedeProductos = dashboardLogica.PuedeVerProductos();
-                lblVentasHoyValor.Text = puedeVentas ? resumen.VentasHoy.ToString() : "—";
-                lblIngresosHoyValor.Text = puedeVentas ? resumen.IngresosHoy.ToString("C2", CultureInfo.CurrentCulture) : "—";
-                lblStockBajoValor.Text = puedeProductos ? resumen.StockBajo.ToString() : "—";
-                lblProductosValor.Text = puedeProductos ? resumen.ProductosActivos.ToString() : "—";
+                lblVentasHoyValor.Text = puedeVerVentas ? resumen.VentasHoy.ToString() : "—";
+                lblIngresosHoyValor.Text = puedeVerVentas ? resumen.IngresosHoy.ToString("C2", CultureInfo.CurrentCulture) : "—";
+                lblStockBajoValor.Text = puedeVerProductos ? resumen.StockBajo.ToString() : "—";
+                lblProductosValor.Text = puedeVerProductos ? resumen.ProductosActivos.ToString() : "—";
                 serieSemanal = dashboardLogica.ObtenerSerieSemanal();
                 productosMasVendidos = dashboardLogica.ObtenerProductosMasVendidos();
                 CargarActividad(); CargarAvisos(); ConfigurarAlcanceAviso();
+                AplicarPermisosDashboard();
                 pnlGraficoVentas.Invalidate(); pnlGraficoIngresos.Invalidate(); pnlGraficoProductos.Invalidate();
             }
             catch (Exception)
@@ -179,29 +190,109 @@ namespace Capa_Vistas
             return $"{perfil} · {alcance}";
         }
 
-        // Ajusta tarjetas, gráficos y listas con scroll cuando la altura disponible no alcanza.
+        // Redistribuye solo los bloques autorizados y adapta accesos al espacio disponible.
         private void AjustarLayoutResponsive()
         {
-            int margen = 24, ancho = Math.Max(320, pnlPrincipal.ClientSize.Width - margen * 2);
-            int columnas = ancho >= 1000 ? 4 : ancho >= 620 ? 2 : 1;
-            int separacion = 16, anchoTarjeta = (ancho - separacion * (columnas - 1)) / columnas;
-            Panel[] tarjetas = { pnlTarjetaVentas, pnlTarjetaIngresos, pnlTarjetaStock, pnlTarjetaProductos };
+            int margen = 32, ancho = Math.Max(320, pnlPrincipal.ClientSize.Width - margen * 2);
+            int separacion = 16;
             pnlPrincipal.AutoScroll = true;
-            pnlEncabezado.SetBounds(margen, 18, ancho, 82);
-            for (int i = 0; i < tarjetas.Length; i++) tarjetas[i].SetBounds(margen + (i % columnas) * (anchoTarjeta + separacion), 128 + (i / columnas) * 126, anchoTarjeta, 110);
-            int y = 128 + ((tarjetas.Length + columnas - 1) / columnas) * 126;
-            pnlAccesos.SetBounds(margen, y, ancho, 125); y += 145;
-            int columnasGraficos = ancho >= 920 ? 3 : 1;
-            int anchoGrafico = (ancho - separacion * (columnasGraficos - 1)) / columnasGraficos;
-            pnlGraficos.SetBounds(margen, y, ancho, columnasGraficos == 3 ? 185 : 555);
-            Panel[] graficos = { pnlGraficoVentas, pnlGraficoIngresos, pnlGraficoProductos };
-            for (int i = 0; i < graficos.Length; i++) graficos[i].SetBounds((i % columnasGraficos) * (anchoGrafico + separacion), (i / columnasGraficos) * 185, anchoGrafico, 170);
-            y += pnlGraficos.Height + 20;
-            pnlActividad.SetBounds(margen, y, ancho, 270); y += 290;
+            int altoEncabezado = ancho >= 700 ? 100 : 122;
+            pnlEncabezado.SetBounds(margen, 20, ancho, altoEncabezado);
+            lblBienvenida.AutoSize = false;
+            lblBienvenida.AutoEllipsis = true;
+            lblBienvenida.SetBounds(0, 2, ancho >= 700 ? Math.Max(260, ancho - 360) : ancho - 4, 50);
+            lblSubtitulo.AutoSize = false;
+            lblSubtitulo.SetBounds(2, 54, ancho - 4, 22);
+            lblPerfilSucursal.AutoSize = false;
+            lblPerfilSucursal.AutoEllipsis = true;
+            lblPerfilSucursal.SetBounds(ancho >= 700 ? ancho - 340 : 2, ancho >= 700 ? 26 : 78,
+                ancho >= 700 ? 330 : ancho - 4, 22);
+            pnlLineaDorada.SetBounds(2, altoEncabezado == 100 ? 84 : 104, 92, 3);
+            List<Panel> tarjetasVisibles = new();
+            if (puedeVerVentas) tarjetasVisibles.AddRange(new[] { pnlTarjetaVentas, pnlTarjetaIngresos });
+            if (puedeVerProductos) tarjetasVisibles.AddRange(new[] { pnlTarjetaStock, pnlTarjetaProductos });
+            int maxColumnas = ancho >= 1000 ? 4 : ancho >= 620 ? 2 : 1;
+            int columnas = Math.Max(1, Math.Min(maxColumnas, tarjetasVisibles.Count));
+            int anchoTarjeta = (ancho - separacion * (columnas - 1)) / columnas;
+            int inicioContenido = pnlEncabezado.Bottom;
+            for (int i = 0; i < tarjetasVisibles.Count; i++)
+                tarjetasVisibles[i].SetBounds(margen + (i % columnas) * (anchoTarjeta + separacion), inicioContenido + (i / columnas) * 126, anchoTarjeta, 110);
+
+            int filasTarjetas = (tarjetasVisibles.Count + columnas - 1) / columnas;
+            int y = inicioContenido + filasTarjetas * 126;
+            bool hayAccesos = puedeRealizarVentas || puedeVerProductos || puedeVerClientes;
+            pnlAccesos.Visible = hayAccesos;
+            if (hayAccesos)
+            {
+                pnlAccesos.SetBounds(margen, y, ancho, 90);
+                int altoAccesos = AjustarAccesosRapidos(ancho);
+                pnlAccesos.Height = altoAccesos;
+                y += altoAccesos + 20;
+            }
+
+            List<Panel> graficosVisibles = new();
+            if (puedeVerVentas) graficosVisibles.AddRange(new[] { pnlGraficoVentas, pnlGraficoIngresos });
+            if (puedeVerVentas && puedeVerProductos) graficosVisibles.Add(pnlGraficoProductos);
+            pnlGraficos.Visible = graficosVisibles.Count > 0;
+            if (pnlGraficos.Visible)
+            {
+                int columnasGraficos = ancho >= 920 ? Math.Min(3, graficosVisibles.Count) : 1;
+                int anchoGrafico = (ancho - separacion * (columnasGraficos - 1)) / columnasGraficos;
+                int filasGraficos = (graficosVisibles.Count + columnasGraficos - 1) / columnasGraficos;
+                pnlGraficos.SetBounds(margen, y, ancho, filasGraficos * 185);
+                for (int i = 0; i < graficosVisibles.Count; i++)
+                    graficosVisibles[i].SetBounds((i % columnasGraficos) * (anchoGrafico + separacion), (i / columnasGraficos) * 185, anchoGrafico, 170);
+                y += pnlGraficos.Height + 20;
+            }
+
+            if (puedeVerVentas)
+            {
+                pnlActividad.SetBounds(margen, y, ancho, 270);
+                y += 290;
+            }
+
+            if (!puedePublicarAvisos && !puedeVerAvisos)
+            {
+                pnlPrincipal.AutoScrollMinSize = new Size(0, y + 25);
+                return;
+            }
             int altoAvisos = puedePublicarAvisos ? 465 : 330;
             pnlAvisos.SetBounds(margen, y, ancho, altoAvisos);
             AjustarLayoutAvisos();
             pnlPrincipal.AutoScrollMinSize = new Size(0, y + altoAvisos + 25);
+        }
+
+        // Distribuye los accesos autorizados en columnas responsivas y adapta el subtítulo.
+        private int AjustarAccesosRapidos(int ancho)
+        {
+            int margen = 18;
+            bool encabezadoEnUnaFila = ancho >= 560;
+            lblAccesosTitulo.AutoSize = false;
+            lblAccesosTitulo.SetBounds(margen, 11, encabezadoEnUnaFila ? 155 : ancho - margen * 2, 24);
+            lblAccesosDescripcion.AutoSize = false;
+            lblAccesosDescripcion.AutoEllipsis = true;
+            lblAccesosDescripcion.SetBounds(encabezadoEnUnaFila ? 180 : margen, encabezadoEnUnaFila ? 15 : 36,
+                Math.Max(40, ancho - (encabezadoEnUnaFila ? 198 : margen * 2)), 20);
+
+            List<Button> botones = new();
+            if (puedeRealizarVentas) botones.Add(btnNuevaVenta);
+            if (puedeVerProductos) botones.Add(btnProductos);
+            if (puedeVerClientes) botones.Add(btnClientes);
+            int columnas = ancho >= 900 ? Math.Min(3, botones.Count) : ancho >= 560 ? Math.Min(2, botones.Count) : 1;
+            if (columnas == 0) return encabezadoEnUnaFila ? 54 : 70;
+
+            int espacio = ancho - margen * 2;
+            int separacion = 12;
+            int anchoBoton = (espacio - separacion * (columnas - 1)) / columnas;
+            int yBotones = encabezadoEnUnaFila ? 51 : 65;
+            for (int i = 0; i < botones.Count; i++)
+            {
+                int columna = i % columnas;
+                int fila = i / columnas;
+                botones[i].SetBounds(margen + columna * (anchoBoton + separacion), yBotones + fila * 50, anchoBoton, 42);
+            }
+            int filas = (botones.Count + columnas - 1) / columnas;
+            return yBotones + filas * 50 + 8;
         }
 
         // Reorganiza publicación y avisos recibidos para aprovechar el ancho sin ocultar información relevante.
