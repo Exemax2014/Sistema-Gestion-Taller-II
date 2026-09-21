@@ -2,7 +2,7 @@ using Capa_Logica;
 
 namespace Capa_Vistas
 {
-    // Permite generar una copia .bak en una carpeta elegida por el usuario, sin exponer configuración sensible.
+    // Muestra el destino configurado por SQL Server y permite iniciar una copia en ese servidor.
     public partial class FormBackup : Form
     {
         private readonly FormPrincipal formPrincipal;
@@ -14,26 +14,27 @@ namespace Capa_Vistas
             InitializeComponent();
             this.formPrincipal = formPrincipal;
 
-            btnExaminar.Click += BtnExaminar_Click;
             btnGenerarBackup.Click += BtnGenerarBackup_Click;
             Resize += (_, _) => AjustarLayout();
             Load += FormBackup_Load;
             AjustarLayout();
         }
 
-        // Revalida el permiso también desde el formulario y obtiene el catálogo de la conexión configurada.
+        // Revalida autorización y carga los datos de destino publicados por la instancia conectada.
         private void FormBackup_Load(object? sender, EventArgs e)
         {
             if (!backupLogica.PuedeRealizarBackup())
             {
-                btnExaminar.Enabled = btnGenerarBackup.Enabled = false;
+                btnGenerarBackup.Enabled = false;
                 MostrarMensaje("Sin permiso", "No tenés permisos para realizar copias de seguridad.");
                 return;
             }
 
             try
             {
-                txtBaseDatos.Text = backupLogica.ObtenerNombreBaseDatos();
+                BackupDestino destino = backupLogica.ObtenerDestino();
+                txtBaseDatos.Text = destino.NombreBaseDatos;
+                txtUbicacionCopia.Text = destino.DirectorioServidor;
             }
             catch (Exception ex)
             {
@@ -42,24 +43,7 @@ namespace Capa_Vistas
             }
         }
 
-        // Presenta el selector de carpetas sin aceptar una ruta escrita manualmente.
-        private void BtnExaminar_Click(object? sender, EventArgs e)
-        {
-            using FolderBrowserDialog selector = new()
-            {
-                Description = "Seleccioná la carpeta donde SQL Server guardará el archivo de copia.",
-                UseDescriptionForTitle = true,
-                ShowNewFolderButton = true
-            };
-
-            if (Directory.Exists(txtCarpetaDestino.Text))
-                selector.SelectedPath = txtCarpetaDestino.Text;
-
-            if (selector.ShowDialog(formPrincipal) == DialogResult.OK)
-                txtCarpetaDestino.Text = selector.SelectedPath;
-        }
-
-        // Evita ejecuciones simultáneas y mantiene la pantalla utilizable durante la operación de SQL Server.
+        // Impide ejecuciones simultáneas y presenta el archivo generado en el servidor SQL.
         private async void BtnGenerarBackup_Click(object? sender, EventArgs e)
         {
             if (ejecutandoBackup)
@@ -71,19 +55,15 @@ namespace Capa_Vistas
                 return;
             }
 
-            if (string.IsNullOrWhiteSpace(txtCarpetaDestino.Text))
-            {
-                MostrarMensaje("Carpeta requerida", "Seleccioná una carpeta de destino antes de generar el Back Up.");
-                return;
-            }
-
             ejecutandoBackup = true;
             btnGenerarBackup.Enabled = false;
-            btnExaminar.Enabled = false;
             try
             {
-                string nombreArchivo = await Task.Run(() => backupLogica.GenerarBackup(txtCarpetaDestino.Text));
-                MostrarMensaje("Back Up generado", $"Copia de seguridad generada correctamente.\n\n{nombreArchivo}");
+                BackupResultado resultado = await Task.Run(backupLogica.GenerarBackup);
+                txtUbicacionCopia.Text = resultado.DirectorioServidor;
+                MostrarMensaje(
+                    "Back Up generado",
+                    $"Copia de seguridad generada correctamente.\n\nArchivo: {resultado.NombreArchivo}\n\nUbicación: {resultado.DirectorioServidor}");
             }
             catch (Exception ex)
             {
@@ -93,11 +73,10 @@ namespace Capa_Vistas
             {
                 ejecutandoBackup = false;
                 btnGenerarBackup.Enabled = backupLogica.PuedeRealizarBackup();
-                btnExaminar.Enabled = backupLogica.PuedeRealizarBackup();
             }
         }
 
-        // Centra la tarjeta y reacomoda el selector en una segunda fila cuando el ancho es reducido.
+        // Conserva márgenes proporcionales y reubica la acción principal en anchos reducidos.
         private void AjustarLayout()
         {
             const int margenLateral = 32;
@@ -106,30 +85,29 @@ namespace Capa_Vistas
 
             int anchoTarjeta = Math.Min(980, ancho);
             int xTarjeta = (ClientSize.Width - anchoTarjeta) / 2;
-            int altoTarjeta = anchoTarjeta >= 620 ? 270 : 310;
+            bool anchoGrande = anchoTarjeta >= 620;
+            int altoTarjeta = anchoGrande ? 292 : 322;
             pnlTarjeta.SetBounds(xTarjeta, 145, anchoTarjeta, altoTarjeta);
 
             int interior = Math.Max(240, anchoTarjeta - 48);
             lblBaseDatos.SetBounds(24, 24, interior, 20);
             txtBaseDatos.SetBounds(24, 48, interior, 28);
-            lblCarpetaDestino.SetBounds(24, 99, interior, 20);
+            lblUbicacionCopia.SetBounds(24, 99, interior, 20);
+            txtUbicacionCopia.SetBounds(24, 123, interior, 28);
 
-            if (anchoTarjeta >= 620)
+            if (anchoGrande)
             {
-                int anchoRuta = Math.Max(180, interior - 142);
-                txtCarpetaDestino.SetBounds(24, 123, anchoRuta, 28);
-                btnExaminar.SetBounds(24 + anchoRuta + 12, 118, 130, 38);
-                btnGenerarBackup.SetBounds(anchoTarjeta - 194, 202, 170, 40);
+                lblAvisoServidor.SetBounds(24, 166, interior - 190, 42);
+                btnGenerarBackup.SetBounds(anchoTarjeta - 194, 164, 170, 40);
             }
             else
             {
-                txtCarpetaDestino.SetBounds(24, 123, interior, 28);
-                btnExaminar.SetBounds(24, 162, 130, 38);
+                lblAvisoServidor.SetBounds(24, 163, interior, 40);
                 btnGenerarBackup.SetBounds(anchoTarjeta - 194, altoTarjeta - 58, 170, 40);
             }
         }
 
-        // Centraliza todos los avisos respecto de la ventana principal.
+        // Centra los avisos respecto de la ventana principal y no del formulario embebido.
         private void MostrarMensaje(string titulo, string texto)
         {
             using FormMensaje mensaje = new(titulo, texto);

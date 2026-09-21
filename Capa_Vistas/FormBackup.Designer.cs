@@ -12,9 +12,9 @@ namespace Capa_Vistas
         private Panel pnlTarjeta;
         private Label lblBaseDatos;
         private TextBox txtBaseDatos;
-        private Label lblCarpetaDestino;
-        private TextBox txtCarpetaDestino;
-        private Button btnExaminar;
+        private Label lblUbicacionCopia;
+        private TextBox txtUbicacionCopia;
+        private Label lblAvisoServidor;
         private Button btnGenerarBackup;
 
         protected override void Dispose(bool disposing)
@@ -33,9 +33,9 @@ namespace Capa_Vistas
             pnlTarjeta = new Panel();
             lblBaseDatos = new Label();
             txtBaseDatos = new TextBox();
-            lblCarpetaDestino = new Label();
-            txtCarpetaDestino = new TextBox();
-            btnExaminar = new Button();
+            lblUbicacionCopia = new Label();
+            txtUbicacionCopia = new TextBox();
+            lblAvisoServidor = new Label();
             btnGenerarBackup = new Button();
             pnlCabecera.SuspendLayout();
             pnlTarjeta.SuspendLayout();
@@ -88,9 +88,9 @@ namespace Capa_Vistas
             pnlTarjeta.BorderStyle = BorderStyle.FixedSingle;
             pnlTarjeta.Controls.Add(lblBaseDatos);
             pnlTarjeta.Controls.Add(txtBaseDatos);
-            pnlTarjeta.Controls.Add(lblCarpetaDestino);
-            pnlTarjeta.Controls.Add(txtCarpetaDestino);
-            pnlTarjeta.Controls.Add(btnExaminar);
+            pnlTarjeta.Controls.Add(lblUbicacionCopia);
+            pnlTarjeta.Controls.Add(txtUbicacionCopia);
+            pnlTarjeta.Controls.Add(lblAvisoServidor);
             pnlTarjeta.Controls.Add(btnGenerarBackup);
             pnlTarjeta.Location = new Point(32, 145);
             pnlTarjeta.Name = "pnlTarjeta";
@@ -117,39 +117,35 @@ namespace Capa_Vistas
             txtBaseDatos.Size = new Size(700, 27);
             txtBaseDatos.TabIndex = 1;
             //
-            // lblCarpetaDestino
+            // lblUbicacionCopia
             //
-            lblCarpetaDestino.AutoSize = true;
-            lblCarpetaDestino.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
-            lblCarpetaDestino.ForeColor = Color.FromArgb(55, 59, 64);
-            lblCarpetaDestino.Location = new Point(24, 99);
-            lblCarpetaDestino.Name = "lblCarpetaDestino";
-            lblCarpetaDestino.Size = new Size(116, 20);
-            lblCarpetaDestino.TabIndex = 2;
-            lblCarpetaDestino.Text = "Carpeta destino";
+            lblUbicacionCopia.AutoSize = true;
+            lblUbicacionCopia.Font = new Font("Segoe UI", 9F, FontStyle.Bold);
+            lblUbicacionCopia.ForeColor = Color.FromArgb(55, 59, 64);
+            lblUbicacionCopia.Location = new Point(24, 99);
+            lblUbicacionCopia.Name = "lblUbicacionCopia";
+            lblUbicacionCopia.Size = new Size(145, 20);
+            lblUbicacionCopia.TabIndex = 2;
+            lblUbicacionCopia.Text = "Ubicación de la copia";
             //
-            // txtCarpetaDestino
+            // txtUbicacionCopia
             //
-            txtCarpetaDestino.BackColor = Color.FromArgb(246, 247, 248);
-            txtCarpetaDestino.Location = new Point(24, 123);
-            txtCarpetaDestino.Name = "txtCarpetaDestino";
-            txtCarpetaDestino.ReadOnly = true;
-            txtCarpetaDestino.Size = new Size(700, 27);
-            txtCarpetaDestino.TabIndex = 3;
+            txtUbicacionCopia.BackColor = Color.FromArgb(246, 247, 248);
+            txtUbicacionCopia.Location = new Point(24, 123);
+            txtUbicacionCopia.Name = "txtUbicacionCopia";
+            txtUbicacionCopia.ReadOnly = true;
+            txtUbicacionCopia.Size = new Size(700, 27);
+            txtUbicacionCopia.TabIndex = 3;
             //
-            // btnExaminar
+            // lblAvisoServidor
             //
-            btnExaminar.BackColor = Color.White;
-            btnExaminar.Cursor = Cursors.Hand;
-            btnExaminar.FlatAppearance.BorderColor = Color.FromArgb(190, 137, 45);
-            btnExaminar.FlatStyle = FlatStyle.Flat;
-            btnExaminar.ForeColor = Color.FromArgb(55, 59, 64);
-            btnExaminar.Location = new Point(738, 118);
-            btnExaminar.Name = "btnExaminar";
-            btnExaminar.Size = new Size(130, 38);
-            btnExaminar.TabIndex = 4;
-            btnExaminar.Text = "Examinar";
-            btnExaminar.UseVisualStyleBackColor = false;
+            lblAvisoServidor.Font = new Font("Segoe UI", 8.5F);
+            lblAvisoServidor.ForeColor = Color.FromArgb(105, 110, 116);
+            lblAvisoServidor.Location = new Point(24, 166);
+            lblAvisoServidor.Name = "lblAvisoServidor";
+            lblAvisoServidor.Size = new Size(500, 42);
+            lblAvisoServidor.TabIndex = 4;
+            lblAvisoServidor.Text = "La copia se guarda en el servidor donde se ejecuta SQL Server.";
             //
             // btnGenerarBackup
             //
