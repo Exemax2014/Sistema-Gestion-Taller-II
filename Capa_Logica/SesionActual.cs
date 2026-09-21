@@ -131,17 +131,12 @@
             // ====================================================
             // INICIALIZAR SUCURSAL OPERATIVA
             //
-            // Gerente/Vendedor:
-            //     Trabajan automáticamente sobre su sucursal.
-            //
-            // Administrador:
-            //     Como no tiene una sucursal fija, comienza
-            //     consultando "Todas las sucursales".
+            // Alcance global comienza en todas; alcance fijo usa su sucursal asignada.
             // ====================================================
 
-            IdSucursalOperativa = idSucursal;
+            IdSucursalOperativa = AlcanceGlobal ? null : idSucursal;
 
-            SucursalOperativa = idSucursal.HasValue
+            SucursalOperativa = IdSucursalOperativa.HasValue
                 ? sucursal
                 : "Todas las sucursales";
 
@@ -170,12 +165,8 @@
         //
         // Reglas:
         //
-        // Administrador:
-        //     Puede seleccionar cualquier sucursal.
-        //     También puede seleccionar NULL para consultar todas.
-        //
-        // Gerente/Vendedor:
-        //     Solo pueden trabajar sobre su sucursal asignada.
+        // Alcance global puede seleccionar cualquier sucursal o NULL (todas);
+        // alcance fijo solo puede conservar la sucursal asignada.
         //
         // Devuelve:
         // true  -> cambio permitido.
@@ -187,21 +178,12 @@
             string nombreSucursal)
         {
             // ----------------------------------------------------
-            // Usuario con sucursal fija.
-            // Gerente o Vendedor.
+            // Un usuario sin alcance global queda limitado a su sucursal asignada.
             // ----------------------------------------------------
 
-            if (IdSucursal.HasValue)
+            if (!AlcanceGlobal)
             {
-                // No puede seleccionar "Todas las sucursales".
-                if (!idSucursal.HasValue)
-                {
-                    return false;
-                }
-
-                // No puede seleccionar una sucursal diferente
-                // de la que tiene asignada.
-                if (idSucursal.Value != IdSucursal.Value)
+                if (!IdSucursal.HasValue || !idSucursal.HasValue || idSucursal.Value != IdSucursal.Value)
                 {
                     return false;
                 }
@@ -209,13 +191,7 @@
 
 
             // ----------------------------------------------------
-            // Administrador:
-            //
-            // IdSucursal = NULL.
-            //
-            // Puede utilizar:
-            // NULL -> Todas las sucursales.
-            // ID   -> Una sucursal específica.
+            // Alcance global permite NULL (todas) o una sucursal operativa específica.
             // ----------------------------------------------------
 
             IdSucursalOperativa = idSucursal;

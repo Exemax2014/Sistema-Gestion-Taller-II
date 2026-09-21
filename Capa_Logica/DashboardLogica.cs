@@ -65,7 +65,7 @@ namespace Capa_Logica
         // Devuelve las opciones de alcance solo cuando el usuario publicador no tiene una sucursal fija.
         public List<SucursalAvisoModelo> ObtenerSucursalesParaAviso()
         {
-            if (!PuedePublicarAvisos() || SesionActual.IdSucursal.HasValue) return new List<SucursalAvisoModelo>();
+            if (!PuedePublicarAvisos() || !SesionActual.AlcanceGlobal) return new List<SucursalAvisoModelo>();
             return dashboardDatos.ListarSucursalesAviso().Select(x => new SucursalAvisoModelo { IdSucursal = x.IdSucursal, Nombre = x.Nombre }).ToList();
         }
 
@@ -79,10 +79,21 @@ namespace Capa_Logica
             if (!SesionActual.TienePermiso("AVISOS_PUBLICAR")) throw new InvalidOperationException("No tiene permiso para publicar avisos.");
             if (string.IsNullOrWhiteSpace(titulo) || string.IsNullOrWhiteSpace(mensaje)) throw new InvalidOperationException("Debe completar el título y el mensaje del aviso.");
             if (titulo.Length > 100 || mensaje.Length > 500) throw new InvalidOperationException("El aviso supera la longitud permitida.");
-            if (SesionActual.IdSucursal.HasValue && idSucursal.HasValue && idSucursal != SesionActual.IdSucursal) throw new InvalidOperationException("Solo puede publicar avisos para su sucursal asignada.");
-            if (!SesionActual.IdSucursal.HasValue && idSucursal.HasValue && !dashboardDatos.ListarSucursalesAviso().Any(sucursal => sucursal.IdSucursal == idSucursal))
-                throw new InvalidOperationException("La sucursal seleccionada no está disponible para publicar el aviso.");
-            int? alcance = SesionActual.IdSucursal ?? idSucursal;
+            int? alcance;
+            if (!SesionActual.AlcanceGlobal)
+            {
+                if (!SesionActual.IdSucursal.HasValue || SesionActual.IdSucursal.Value <= 0)
+                    throw new InvalidOperationException("El usuario no tiene una sucursal fija válida para publicar el aviso.");
+                if (idSucursal.HasValue && idSucursal.Value != SesionActual.IdSucursal.Value)
+                    throw new InvalidOperationException("Solo puede publicar avisos para su sucursal asignada.");
+                alcance = SesionActual.IdSucursal;
+            }
+            else
+            {
+                if (idSucursal.HasValue && !dashboardDatos.ListarSucursalesAviso().Any(sucursal => sucursal.IdSucursal == idSucursal))
+                    throw new InvalidOperationException("La sucursal seleccionada no está disponible para publicar el aviso.");
+                alcance = idSucursal;
+            }
             dashboardDatos.PublicarAviso(SesionActual.IdUsuario, alcance, titulo, mensaje);
         }
     }

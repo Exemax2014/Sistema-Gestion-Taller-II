@@ -65,15 +65,18 @@ namespace Capa_Logica
         // Informa si la sesión puede realizar bajas o reactivaciones de sucursales.
         public bool PuedeEliminarSucursal() => SesionActual.TienePermiso("SUCURSALES_BAJA");
 
-        // Devuelve las sucursales activas que puede seleccionar el usuario autenticado.
+        // Devuelve todas las activas al alcance global y limita el alcance fijo a su sucursal.
         public List<SucursalInfo> ObtenerSucursalesDisponibles()
         {
             List<SucursalInfo> sucursales = sucursalDatos.ObtenerActivas();
 
-            if (!SesionActual.IdSucursal.HasValue)
+            if (SesionActual.AlcanceGlobal)
             {
                 return sucursales;
             }
+
+            if (!SesionActual.IdSucursal.HasValue)
+                return new List<SucursalInfo>();
 
             return sucursales
                 .Where(s => s.IdSucursal == SesionActual.IdSucursal.Value)
@@ -289,7 +292,7 @@ namespace Capa_Logica
         // Informa si la sesión puede seleccionar el contexto global de sucursales.
         public bool PuedeConsultarTodasLasSucursales()
         {
-            return !SesionActual.IdSucursal.HasValue;
+            return SesionActual.AlcanceGlobal;
         }
 
         // Normaliza espacios repetidos para que Vistas, Lógica y SQL comparen el mismo valor.

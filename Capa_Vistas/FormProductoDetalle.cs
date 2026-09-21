@@ -26,6 +26,8 @@ namespace Capa_Vistas
 
         private readonly FormPrincipal formPrincipal;
 
+        private readonly bool soloGestionStock;
+
 
         private int? idProducto;
 
@@ -43,10 +45,14 @@ namespace Capa_Vistas
 
 
         private int? idSucursalEditandoStock;
+        private int? idSucursalGestionStock;
 
 
         private bool EsAlta =>
             !idProducto.HasValue;
+
+        // Identifica el único destino de Productos permitido desde Stock bajo sin abrir el contenedor.
+        public bool EsGestionStockDesdeReporte => soloGestionStock;
 
 
         // ========================================================
@@ -56,6 +62,17 @@ namespace Capa_Vistas
         public FormProductoDetalle(
             FormPrincipal formPrincipal,
             int? idProducto = null)
+            : this(formPrincipal, idProducto, false, null)
+        {
+        }
+
+        // Abre únicamente la gestión de inventario autorizada, sin exponer la navegación general de Productos.
+        public FormProductoDetalle(
+            FormPrincipal formPrincipal,
+            int? idProducto,
+            bool soloGestionStock,
+            string? nombreProducto,
+            int? idSucursalGestionStock = null)
         {
             InitializeComponent();
 
@@ -66,6 +83,9 @@ namespace Capa_Vistas
 
             this.idProducto =
                 idProducto;
+
+            this.soloGestionStock = soloGestionStock;
+            this.idSucursalGestionStock = idSucursalGestionStock;
 
 
             pnlEditarStock.Visible =
@@ -78,14 +98,24 @@ namespace Capa_Vistas
 
             ConfigurarValidacionesVisuales();
 
-            CargarCombos();
+            if (!soloGestionStock)
+            {
+                CargarCombos();
+            }
 
             ConfigurarModo();
 
 
             if (idProducto.HasValue)
             {
-                CargarProducto();
+                if (soloGestionStock)
+                {
+                    ConfigurarVistaGestionStock(nombreProducto);
+                }
+                else
+                {
+                    CargarProducto();
+                }
 
                 CargarStock();
             }
@@ -103,7 +133,26 @@ namespace Capa_Vistas
                 false;
 
 
-            ActualizarPrecioVenta();
+            if (!soloGestionStock)
+            {
+                ActualizarPrecioVenta();
+            }
+        }
+
+        // Reduce el detalle al inventario del producto solicitado y conserva el regreso al módulo de origen.
+        private void ConfigurarVistaGestionStock(string? nombreProducto)
+        {
+            pnlDatos.Visible = false;
+            pnlAcciones.Visible = false;
+            pnlStock.Visible = true;
+            pnlStock.SetBounds(32, 110, ClientSize.Width - 64, ClientSize.Height - 180);
+            lblTitulo.Text = "Gestionar stock";
+            lblSubtitulo.Text = string.IsNullOrWhiteSpace(nombreProducto)
+                ? "Modificá el inventario dentro de tu alcance autorizado."
+                : nombreProducto.Trim();
+            lblStockTitulo.Text = "Stock por sucursal";
+            lblStockDescripcion.Text = "Solo se habilitan las sucursales autorizadas para modificar stock.";
+            btnVolver.Text = "← Reportes";
         }
 
 
@@ -637,6 +686,13 @@ namespace Capa_Vistas
                 inventarioLogica.ObtenerStockProducto(
                     idProducto.Value
                 );
+
+            if (soloGestionStock && idSucursalGestionStock.HasValue)
+            {
+                stocks = stocks
+                    .Where(stock => stock.IdSucursal == idSucursalGestionStock.Value)
+                    .ToList();
+            }
 
 
             dgvStockSucursales.DataSource =
@@ -1226,6 +1282,15 @@ namespace Capa_Vistas
 
         private void VolverListado()
         {
+            if (soloGestionStock)
+            {
+                formPrincipal.AbrirFormularioEnPanel(
+                    new FormReportesGeneral(formPrincipal),
+                    formPrincipal.BotonReportes
+                );
+                return;
+            }
+
             formPrincipal.AbrirFormularioEnPanel(
                 new FormProductos(
                     formPrincipal

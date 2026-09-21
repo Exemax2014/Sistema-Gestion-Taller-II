@@ -29,6 +29,7 @@ namespace Capa_Vistas
         private int stockBajoActual;
         private string usuarioReporteActual = string.Empty;
         private SeccionReporte seccionActual = SeccionReporte.General;
+        private bool seccionInicializada;
 
         // Mantiene la navegación embebida y los mensajes centrados en el formulario principal.
         public FormReportesGeneral(FormPrincipal formPrincipal)
@@ -66,7 +67,8 @@ namespace Capa_Vistas
             ConfigurarPaginaPorUsuario();
             CrearPagina(SeccionReporte.VentasDetalladas, "Ventas detalladas", dgvDetalleVentas);
             CrearPagina(SeccionReporte.StockBajo, "Stock bajo", dgvStockBajo);
-            pnlAreaContenido.Controls.Add(tabContenido);
+            foreach (TabPage pagina in paginas.Values)
+                tabContenido.TabPages.Add(pagina);
             btnExportar.Text = "Exportar Excel";
             btnExportar.BackColor = Color.FromArgb(190, 137, 45);
             btnExportar.ForeColor = Color.White;
@@ -166,7 +168,7 @@ namespace Capa_Vistas
         {
             dtpDesde.Value = DateTime.Today.AddDays(-30);
             dtpHasta.Value = DateTime.Today;
-            if (!reporteLogica.PuedeVerReportes()) { MostrarMensaje("Sin permiso", "No tiene permiso para acceder a Reportes."); return; }
+            if (!reporteLogica.PuedeAbrirReportes()) { MostrarMensaje("Sin permiso", "No tiene permiso para acceder a Reportes."); return; }
             if (reporteLogica.ObtenerAlcanceReportes() == AlcanceReportes.Ninguno) { MostrarMensaje("Sin alcance", reporteLogica.ObtenerMensajeSinAlcance()); return; }
             CargarSucursales();
             ConfigurarNavegacion();
@@ -176,7 +178,7 @@ namespace Capa_Vistas
         // Muestra solo pestañas que la sesión puede consultar mediante permisos REPORTES_*.
         private void ConfigurarNavegacion()
         {
-            btnGeneral.Visible = reporteLogica.PuedeVerVentas() || reporteLogica.PuedeVerRecaudacion() || reporteLogica.PuedeVerProductos() || reporteLogica.PuedeVerStock();
+            btnGeneral.Visible = reporteLogica.PuedeVerVentas() || reporteLogica.PuedeVerRecaudacion() || reporteLogica.PuedeVerProductos();
             btnPorUsuario.Visible = reporteLogica.PuedeVerRendimientoVendedores();
             btnVentasDetalladas.Visible = reporteLogica.PuedeVerDetalleVentas();
             btnStockBajo.Visible = reporteLogica.PuedeVerStock();
@@ -185,19 +187,26 @@ namespace Capa_Vistas
         // Elige una sección autorizada si la predeterminada no está disponible para la sesión.
         private SeccionReporte PrimeraSeccionDisponible()
         {
-            if (reporteLogica.PuedeVerVentas() || reporteLogica.PuedeVerRecaudacion() ||
-                reporteLogica.PuedeVerProductos() || reporteLogica.PuedeVerStock())
-                return SeccionReporte.General;
-            if (reporteLogica.PuedeVerRendimientoVendedores()) return SeccionReporte.PorUsuario;
-            if (reporteLogica.PuedeVerDetalleVentas()) return SeccionReporte.VentasDetalladas;
-            return SeccionReporte.General;
+            List<SeccionReporte> seccionesDisponibles = new();
+            if (btnGeneral.Visible) seccionesDisponibles.Add(SeccionReporte.General);
+            if (btnPorUsuario.Visible) seccionesDisponibles.Add(SeccionReporte.PorUsuario);
+            if (btnVentasDetalladas.Visible) seccionesDisponibles.Add(SeccionReporte.VentasDetalladas);
+            if (btnStockBajo.Visible) seccionesDisponibles.Add(SeccionReporte.StockBajo);
+
+            if (seccionesDisponibles.Count == 1) return seccionesDisponibles[0];
+            return btnGeneral.Visible ? SeccionReporte.General : seccionesDisponibles[0];
         }
 
         // Carga sucursales activas solo para el alcance global y evita IDs fijos en el selector.
         private void CargarSucursales()
         {
-            bool global = reporteLogica.ObtenerAlcanceReportes() == AlcanceReportes.Global;
-            lblSucursal.Visible = cmbSucursal.Visible = global;
+            AlcanceReportes alcance = reporteLogica.ObtenerAlcanceReportes();
+            bool global = alcance == AlcanceReportes.Global;
+            bool sucursalFija = alcance == AlcanceReportes.Sucursal;
+            lblSucursal.Visible = global || sucursalFija;
+            cmbSucursal.Visible = global;
+            lblSucursalFija.Visible = sucursalFija;
+            lblSucursalFija.Text = $"Sucursal: {SesionActual.Sucursal}";
             if (!global) return;
             List<OpcionSucursal> opciones = sucursalLogica.ObtenerSucursalesDisponibles().Select(s => new OpcionSucursal { IdSucursal = s.IdSucursal, Nombre = s.Nombre }).ToList();
             opciones.Insert(0, new OpcionSucursal { IdSucursal = null, Nombre = "Todas las sucursales" });
@@ -207,14 +216,48 @@ namespace Capa_Vistas
             if (cmbSucursal.Items.Count > 0) cmbSucursal.SelectedIndex = 0;
         }
 
-        // Cambia la sección en el mismo formulario y reinicia el scroll para mantener visible la cabecera fija.
+        // Cambia la sección solo cuando varía, conservando las páginas alojadas y reiniciando su scroll.
         private void CambiarSeccion(SeccionReporte seccion)
         {
-            pnlAreaContenido.AutoScrollPosition = Point.Empty;
+            if (seccionInicializada && seccionActual == seccion) return;
+
             seccionActual = seccion;
+            seccionInicializada = true;
+            if (seccion != SeccionReporte.General)
+                tabContenido.SelectedTab = paginas[seccion];
+            MontarControlesEnVista(ObtenerVista(seccion));
             ConfigurarVistaSeccion();
+            AjustarLayout();
+            Panel vistaActiva = ObtenerVista(seccion);
+            vistaActiva.AutoScrollPosition = Point.Empty;
             CargarSeccionActual();
-            pnlAreaContenido.AutoScrollPosition = Point.Empty;
+            vistaActiva.PerformLayout();
+        }
+
+        // Resuelve el panel raíz de una sección para que las cuatro vistas compartan la misma región.
+        private Panel ObtenerVista(SeccionReporte seccion) => seccion switch
+        {
+            SeccionReporte.General => pnlVistaGeneral,
+            SeccionReporte.PorUsuario => pnlVistaUsuario,
+            SeccionReporte.VentasDetalladas => pnlVistaVentas,
+            _ => pnlVistaStock
+        };
+
+        // Reutiliza los controles existentes dentro de una sola vista activa, sin recrearlos al navegar.
+        private void MontarControlesEnVista(Panel vistaActiva)
+        {
+            foreach (Panel vista in new[] { pnlVistaGeneral, pnlVistaUsuario, pnlVistaVentas, pnlVistaStock })
+                vista.Visible = ReferenceEquals(vista, vistaActiva);
+
+            Control[] controlesCompartidos =
+            {
+                pnlFiltros, pnlTarjetaVentas, pnlTarjetaIngresos, pnlTarjetaProductos,
+                pnlTarjetaStock, pnlGrafico, pnlProductosVendidos, tabContenido
+            };
+            foreach (Control control in controlesCompartidos)
+                if (!ReferenceEquals(control.Parent, vistaActiva)) vistaActiva.Controls.Add(control);
+
+            vistaActiva.BringToFront();
         }
 
         // Ajusta filtros y elementos visibles para que cada vista muestre únicamente sus datos pertinentes.
@@ -300,7 +343,6 @@ namespace Capa_Vistas
                 stockBajoActual = reporteLogica.ObtenerStock(sucursal).Count;
                 lblStockBajoValor.Text = stockBajoActual.ToString(CultureInfo.CurrentCulture);
             }
-            tabContenido.TabPages.Clear();
         }
 
         // Reutiliza las consultas por usuario para mostrar solo ventas realmente registradas y su historial resumido.
@@ -432,11 +474,12 @@ namespace Capa_Vistas
             lblProductosVendidosDescripcion.Text = productos.Count == 0 ? "No se registraron productos vendidos en el período seleccionado." : "Ranking correspondiente al período seleccionado.";
         }
 
-        // Activa una sola página y muestra un estado claro cuando la consulta autorizada no devuelve filas.
+        // Selecciona una página ya alojada y muestra un estado claro cuando no hay filas.
         private void MostrarPagina(SeccionReporte seccion, int cantidad, string mensajeVacio)
         {
-            tabContenido.TabPages.Clear();
-            tabContenido.TabPages.Add(paginas[seccion]);
+            TabPage pagina = paginas[seccion];
+            if (tabContenido.SelectedTab != pagina)
+                tabContenido.SelectedTab = pagina;
             Label estado = estadosVacios[seccion];
             estado.Text = mensajeVacio;
             estado.Visible = cantidad == 0;
@@ -454,7 +497,13 @@ namespace Capa_Vistas
         {
             if (e.RowIndex < 0 || e.ColumnIndex < 0 || dgvStockBajo.Columns[e.ColumnIndex].Name != "Gestionar") return;
             int idProducto = Convert.ToInt32(dgvStockBajo.Rows[e.RowIndex].Cells[7].Value), idSucursal = Convert.ToInt32(dgvStockBajo.Rows[e.RowIndex].Cells[8].Value);
-            if (reporteLogica.PuedeGestionarStockSucursal(idSucursal)) formPrincipal.AbrirFormularioEnPanel(new FormProductoDetalle(formPrincipal, idProducto), formPrincipal.BotonProductos);
+            if (reporteLogica.PuedeGestionarStockSucursal(idSucursal))
+            {
+                string nombreProducto = Convert.ToString(dgvStockBajo.Rows[e.RowIndex].Cells[1].Value) ?? string.Empty;
+                formPrincipal.AbrirFormularioEnPanel(
+                    new FormProductoDetalle(formPrincipal, idProducto, true, nombreProducto, idSucursal),
+                    formPrincipal.BotonProductos);
+            }
         }
 
         // Dibuja ventas y recaudación reales con series independientes según permisos concedidos.
@@ -661,6 +710,10 @@ namespace Capa_Vistas
             pnlAreaContenido.SetBounds(margen, y, ancho, Math.Max(140, ClientSize.Height - y - 20));
 
             int anchoContenido = Math.Max(300, pnlAreaContenido.ClientSize.Width);
+            int altoContenido = Math.Max(140, pnlAreaContenido.ClientSize.Height);
+            foreach (Panel vista in new[] { pnlVistaGeneral, pnlVistaUsuario, pnlVistaVentas, pnlVistaStock })
+                vista.SetBounds(0, 0, anchoContenido, altoContenido);
+
             int yContenido = 0;
             AjustarFiltros(anchoContenido, 0, ref yContenido);
             List<Panel> tarjetas = new[] { pnlTarjetaVentas, pnlTarjetaIngresos, pnlTarjetaProductos, pnlTarjetaStock }.Where(t => t.Visible).ToList();
@@ -670,19 +723,63 @@ namespace Capa_Vistas
                 for (int i = 0; i < tarjetas.Count; i++) tarjetas[i].SetBounds((i % columnas) * (anchoTarjeta + separacion), yContenido + (i / columnas) * 126, anchoTarjeta, 110);
                 yContenido += ((tarjetas.Count + columnas - 1) / columnas) * 126 + 10;
             }
-            if (pnlGrafico.Visible) { pnlGrafico.SetBounds(0, yContenido, anchoContenido, 230); yContenido += 246; }
-            if (pnlProductosVendidos.Visible)
+
+            if (seccionActual == SeccionReporte.General)
             {
-                pnlProductosVendidos.SetBounds(0, yContenido, anchoContenido, 360);
-                AjustarEncabezadoProductosVendidos();
-                yContenido += 376;
+                if (pnlGrafico.Visible) { pnlGrafico.SetBounds(0, yContenido, anchoContenido, 230); yContenido += 246; }
+                if (pnlProductosVendidos.Visible)
+                {
+                    pnlProductosVendidos.SetBounds(0, yContenido, anchoContenido, 360);
+                    AjustarEncabezadoProductosVendidos();
+                    yContenido += 376;
+                }
+                EstablecerScrollVista(pnlVistaGeneral, yContenido);
             }
-            if (tabContenido.Visible)
+            else if (seccionActual == SeccionReporte.PorUsuario)
             {
-                tabContenido.SetBounds(0, yContenido, anchoContenido, Math.Max(260, pnlAreaContenido.ClientSize.Height - yContenido - 16));
+                const int separacionColumnas = 18;
+                const int altoResumen = 622;
+                if (anchoContenido >= 960)
+                {
+                    int anchoColumna = Math.Max(320, (anchoContenido - separacionColumnas) / 2);
+                    int altoHistorial = Math.Max(altoResumen, altoContenido - yContenido - 16);
+                    tabContenido.SetBounds(anchoColumna + separacionColumnas, yContenido, anchoContenido - anchoColumna - separacionColumnas, altoHistorial);
+                    if (pnlGrafico.Visible) pnlGrafico.SetBounds(0, yContenido, anchoColumna, 230);
+                    if (pnlProductosVendidos.Visible)
+                    {
+                        int yProductos = yContenido + (pnlGrafico.Visible ? 246 : 0);
+                        pnlProductosVendidos.SetBounds(0, yProductos, anchoColumna, 376);
+                        AjustarEncabezadoProductosVendidos();
+                    }
+                    yContenido += Math.Max(altoHistorial, altoResumen) + 16;
+                }
+                else
+                {
+                    int altoHistorial = Math.Max(360, Math.Min(520, altoContenido - yContenido - 16));
+                    tabContenido.SetBounds(0, yContenido, anchoContenido, altoHistorial);
+                    yContenido += altoHistorial + 16;
+                    if (pnlGrafico.Visible) { pnlGrafico.SetBounds(0, yContenido, anchoContenido, 230); yContenido += 246; }
+                    if (pnlProductosVendidos.Visible)
+                    {
+                        pnlProductosVendidos.SetBounds(0, yContenido, anchoContenido, 360);
+                        AjustarEncabezadoProductosVendidos();
+                        yContenido += 376;
+                    }
+                }
+                EstablecerScrollVista(pnlVistaUsuario, yContenido);
+            }
+            else
+            {
+                tabContenido.SetBounds(0, yContenido, anchoContenido, Math.Max(340, altoContenido - yContenido - 12));
                 yContenido += tabContenido.Height + 16;
+                EstablecerScrollVista(seccionActual == SeccionReporte.VentasDetalladas ? pnlVistaVentas : pnlVistaStock, yContenido);
             }
-            pnlAreaContenido.AutoScrollMinSize = new Size(0, yContenido + 24);
+        }
+
+        // Limita el desplazamiento al panel de la sección activa, nunca al host compartido.
+        private static void EstablecerScrollVista(Panel vista, int altoContenido)
+        {
+            vista.AutoScrollMinSize = new Size(0, altoContenido + 24);
         }
 
         // Separa título, descripción y grilla para que el encabezado no se solape al cambiar de sección o tamaño.
@@ -702,7 +799,7 @@ namespace Capa_Vistas
         private int AjustarBotonesNavegacion(int anchoDisponible)
         {
             List<(Button Boton, int Ancho)> botones = new();
-            if (reporteLogica.PuedeVerVentas() || reporteLogica.PuedeVerRecaudacion() || reporteLogica.PuedeVerProductos() || reporteLogica.PuedeVerStock()) botones.Add((btnGeneral, 120));
+            if (reporteLogica.PuedeVerVentas() || reporteLogica.PuedeVerRecaudacion() || reporteLogica.PuedeVerProductos()) botones.Add((btnGeneral, 120));
             if (reporteLogica.PuedeVerRendimientoVendedores()) botones.Add((btnPorUsuario, 120));
             if (reporteLogica.PuedeVerDetalleVentas()) botones.Add((btnVentasDetalladas, 170));
             if (reporteLogica.PuedeVerStock()) botones.Add((btnStockBajo, 110));
@@ -725,19 +822,35 @@ namespace Capa_Vistas
             return Math.Max(1, fila + 1) * 43;
         }
 
-        // Reacomoda filtros y acciones según los controles autorizados de la sección activa.
+        // Reacomoda filtros y acciones sin superponerlos y mantiene un margen interior constante.
         private void AjustarFiltros(int ancho, int margen, ref int y)
         {
             List<(Control Etiqueta, Control Campo)> campos = new();
             if (lblDesde.Visible) campos.Add((lblDesde, dtpDesde));
             if (lblHasta.Visible) campos.Add((lblHasta, dtpHasta));
-            if (lblSucursal.Visible) campos.Add((lblSucursal, cmbSucursal));
+            if (lblSucursal.Visible) campos.Add((lblSucursal, cmbSucursal.Visible ? cmbSucursal : lblSucursalFija));
             if (lblVendedor.Visible) campos.Add((lblVendedor, cmbVendedor));
-            int columnas = ancho >= 980 ? 4 : ancho >= 680 ? 2 : 1, anchoCampo = Math.Min(230, (ancho - 36 - (columnas - 1) * 16) / columnas), filas = (campos.Count + columnas - 1) / columnas, alto = Math.Max(105, 40 + filas * 58 + 14);
+            int columnas = ancho >= 980 ? 4 : ancho >= 680 ? 2 : 1, anchoCampo = Math.Min(230, (ancho - 36 - (columnas - 1) * 16) / columnas), filas = (campos.Count + columnas - 1) / columnas;
+            int finCampos = 40 + filas * 58;
+            bool accionesEnUnaFila = ancho >= 456;
+            int alto = finCampos + (accionesEnUnaFila ? 60 : 102);
             pnlFiltros.SetBounds(margen, y, ancho, alto);
             for (int i = 0; i < campos.Count; i++) { int col = i % columnas, fila = i / columnas, x = 18 + col * (anchoCampo + 16), top = 40 + fila * 58; campos[i].Etiqueta.SetBounds(x, top, anchoCampo, 20); campos[i].Campo.SetBounds(x, top + 22, anchoCampo, 28); }
-            int accionesX = Math.Max(18, ancho - (reporteLogica.PuedeExportar() ? 420 : 270));
-            btnAplicarFiltros.SetBounds(accionesX, alto - 52, 140, 36); btnLimpiarFiltros.SetBounds(accionesX + 150, alto - 52, 120, 36); btnExportar.SetBounds(accionesX + 280, alto - 52, 140, 36);
+            int accionesY = finCampos + 12;
+            if (accionesEnUnaFila)
+            {
+                int anchoAcciones = reporteLogica.PuedeExportar() ? 420 : 270;
+                int accionesX = Math.Max(18, ancho - anchoAcciones - 18);
+                btnAplicarFiltros.SetBounds(accionesX, accionesY, 140, 36);
+                btnLimpiarFiltros.SetBounds(accionesX + 150, accionesY, 120, 36);
+                btnExportar.SetBounds(accionesX + 280, accionesY, 140, 36);
+            }
+            else
+            {
+                btnAplicarFiltros.SetBounds(18, accionesY, 140, 36);
+                btnLimpiarFiltros.SetBounds(168, accionesY, 120, 36);
+                btnExportar.SetBounds(Math.Max(18, ancho - 158), accionesY + 42, 140, 36);
+            }
             y += alto + 14;
         }
 

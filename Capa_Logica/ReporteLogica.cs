@@ -26,6 +26,18 @@ namespace Capa_Logica
             );
         }
 
+        // Exige al menos una sección de reporte utilizable además del permiso de entrada.
+        public bool PuedeAbrirReportes()
+        {
+            return PuedeVerReportes()
+                && (PuedeVerVentas()
+                    || PuedeVerRecaudacion()
+                    || PuedeVerProductos()
+                    || PuedeVerRendimientoVendedores()
+                    || PuedeVerDetalleVentas()
+                    || PuedeVerStock());
+        }
+
         // Indica si el usuario puede consultar indicadores generales de ventas.
         public bool PuedeVerVentas()
         {
@@ -86,7 +98,8 @@ namespace Capa_Logica
         public bool PuedeGestionarStockSucursal(int idSucursal)
         {
             if (idSucursal <= 0 || !SesionActual.TienePermiso("PRODUCTOS_MODIFICAR")) return false;
-            return !SesionActual.IdSucursal.HasValue || SesionActual.IdSucursal == idSucursal;
+            return SesionActual.AlcanceGlobal
+                || (SesionActual.IdSucursal.HasValue && SesionActual.IdSucursal.Value == idSucursal);
         }
 
         // Resuelve el único alcance efectivo a partir de permisos y del alcance global cargado en sesión.

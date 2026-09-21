@@ -182,16 +182,16 @@ namespace Capa_Logica
             }
 
 
-            // Un perfil global no tiene sucursal fija y conserva el acceso
-            // a cualquier sucursal para la que posee la funcionalidad.
-            if (!SesionActual.IdSucursal.HasValue)
+            // El alcance global se determina desde la sesión, no por ausencia de sucursal fija.
+            if (SesionActual.AlcanceGlobal)
             {
                 return true;
             }
 
 
             // Un perfil con alcance fijo solo puede modificar su sucursal asignada.
-            return SesionActual.IdSucursal.Value == idSucursal;
+            return SesionActual.IdSucursal.HasValue
+                && SesionActual.IdSucursal.Value == idSucursal;
         }
     }
 }

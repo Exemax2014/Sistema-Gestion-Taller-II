@@ -153,7 +153,7 @@ namespace Capa_Vistas
         // Configura el alcance publicable según la sucursal fija o el alcance global de la sesión.
         private void ConfigurarAlcanceAviso()
         {
-            bool alcanceGlobal = !SesionActual.IdSucursal.HasValue;
+            bool alcanceGlobal = SesionActual.AlcanceGlobal;
             puedePublicarAvisos = dashboardLogica.PuedePublicarAvisos();
 
             List<SucursalAvisoModelo> opciones = new()

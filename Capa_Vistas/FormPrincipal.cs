@@ -1,6 +1,7 @@
 ﻿using Capa_Logica;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using System.Drawing.Imaging;
 
 namespace Capa_Vistas
 {
@@ -13,8 +14,12 @@ namespace Capa_Vistas
         private Form? formularioActivo;
         private Button? botonActivo;
         private readonly UsuarioLogica usuarioLogicaSucursal = new UsuarioLogica();
+        private readonly ReporteLogica reporteLogica = new();
         private bool cargandoSucursalesOperativas;
         private ToolTip? toolTipSesion;
+        private readonly Dictionary<Button, Image?> imagenesMenuOriginales = new();
+        private readonly Dictionary<Image, Image> imagenesMenuAtenuadas = new();
+        private readonly Dictionary<Button, bool> accesosMenu = new();
 
         private sealed class OpcionSucursalOperativa
         {
@@ -80,12 +85,15 @@ namespace Capa_Vistas
             InitializeComponent();
             components ??= new System.ComponentModel.Container();
             toolTipSesion = new ToolTip(components);
+            foreach (Button boton in ObtenerBotonesMenu())
+                imagenesMenuOriginales[boton] = boton.Image;
 
             ConfigurarEventos();
 
             ConfigurarReloj();
 
             CargarDatosSesion();
+            ConfigurarSelectorSucursalOperativa();
 
             AplicarPermisosMenu();
 
@@ -175,6 +183,9 @@ namespace Capa_Vistas
                 boton.MouseLeave +=
                     BotonMenu_MouseLeave;
             }
+
+            cmbSucursalOperativa.SelectedIndexChanged += CmbSucursalOperativa_SelectedIndexChanged;
+            FormClosed += (_, _) => LiberarImagenesMenuAtenuadas();
         }
 
 
@@ -239,7 +250,7 @@ namespace Capa_Vistas
                 Usuario global:
                 puede elegir una sucursal específica o "Todas".
             */
-            if (SesionActual.IdSucursal.HasValue)
+            if (!SesionActual.AlcanceGlobal)
             {
                 cmbSucursalOperativa.Visible =
                     false;
@@ -282,7 +293,7 @@ namespace Capa_Vistas
                         new OpcionSucursalOperativa
                         {
                             IdSucursal = null,
-                            Nombre = "Todas"
+                            Nombre = "Todas las sucursales"
                         }
                     };
 
@@ -369,7 +380,7 @@ namespace Capa_Vistas
             }
 
 
-            if (SesionActual.IdSucursal.HasValue)
+            if (!SesionActual.AlcanceGlobal)
             {
                 return;
             }
@@ -468,6 +479,50 @@ namespace Capa_Vistas
 
             cargandoSucursalesOperativas =
                 false;
+        }
+
+
+        // Crea una copia atenuada única por icono sin alterar el recurso original compartido.
+        private Image ObtenerImagenMenuAtenuada(Image imagenOriginal)
+        {
+            if (imagenesMenuAtenuadas.TryGetValue(imagenOriginal, out Image? imagenAtenuada))
+                return imagenAtenuada;
+
+            Bitmap copia = new(imagenOriginal.Width, imagenOriginal.Height, PixelFormat.Format32bppArgb);
+            using (Graphics graphics = Graphics.FromImage(copia))
+            using (ImageAttributes atributos = new())
+            {
+                ColorMatrix matriz = new()
+                {
+                    Matrix00 = 1f,
+                    Matrix11 = 1f,
+                    Matrix22 = 1f,
+                    Matrix33 = 0.4f,
+                    Matrix44 = 1f
+                };
+                atributos.SetColorMatrix(matriz);
+                graphics.DrawImage(
+                    imagenOriginal,
+                    new Rectangle(0, 0, copia.Width, copia.Height),
+                    0,
+                    0,
+                    imagenOriginal.Width,
+                    imagenOriginal.Height,
+                    GraphicsUnit.Pixel,
+                    atributos);
+            }
+
+            imagenesMenuAtenuadas.Add(imagenOriginal, copia);
+            return copia;
+        }
+
+
+        // Libera las copias de iconos al cerrar el formulario, sin disponer las imágenes originales.
+        private void LiberarImagenesMenuAtenuadas()
+        {
+            foreach (Image imagen in imagenesMenuAtenuadas.Values)
+                imagen.Dispose();
+            imagenesMenuAtenuadas.Clear();
         }
 
 
@@ -840,7 +895,7 @@ namespace Capa_Vistas
         // PERMISOS
         // =========================================================
 
-        // Habilita cada módulo según sus capacidades de consulta o acción.
+        // Aplica acceso y estilo sin depender del render disabled de Windows.
         private void AplicarPermisosMenu()
         {
             ConfigurarPermisoBoton(
@@ -880,7 +935,7 @@ namespace Capa_Vistas
 
             ConfigurarPermisoBoton(
                 btnReportes,
-                SesionActual.TienePermiso("REPORTES_VER")
+                reporteLogica.PuedeAbrirReportes()
             );
         }
 
@@ -893,8 +948,14 @@ namespace Capa_Vistas
                 true;
 
 
-            boton.Enabled =
-                tienePermiso;
+            accesosMenu[boton] = tienePermiso;
+            boton.Enabled = true;
+            boton.TabStop = tienePermiso;
+
+            if (imagenesMenuOriginales.TryGetValue(boton, out Image? imagenOriginal))
+                boton.Image = tienePermiso || imagenOriginal is null
+                    ? imagenOriginal
+                    : ObtenerImagenMenuAtenuada(imagenOriginal);
 
 
             if (tienePermiso)
@@ -924,17 +985,19 @@ namespace Capa_Vistas
                     );
 
 
-                boton.ForeColor =
-                    Color.FromArgb(
-                        95,
-                        98,
-                        103
-                    );
+                boton.ForeColor = Color.FromArgb(150, 154, 160);
 
 
                 boton.Cursor =
                     Cursors.Default;
             }
+        }
+
+
+        // Consulta el acceso guardado para bloquear también la navegación interna.
+        private bool TieneAccesoMenu(Button boton)
+        {
+            return accesosMenu.TryGetValue(boton, out bool permitido) && permitido;
         }
 
 
@@ -959,7 +1022,7 @@ namespace Capa_Vistas
         private void SeleccionarBoton(
             Button boton)
         {
-            if (!boton.Enabled)
+            if (!TieneAccesoMenu(boton))
             {
                 return;
             }
@@ -973,7 +1036,7 @@ namespace Capa_Vistas
                 Button item
                 in ObtenerBotonesMenu())
             {
-                if (item.Enabled)
+                if (TieneAccesoMenu(item))
                 {
                     item.BackColor =
                         Color.FromArgb(
@@ -1006,9 +1069,9 @@ namespace Capa_Vistas
 
                     item.ForeColor =
                         Color.FromArgb(
-                            95,
-                            98,
-                            103
+                            150,
+                            154,
+                            160
                         );
                 }
             }
@@ -1046,7 +1109,7 @@ namespace Capa_Vistas
             if (
                 sender is Button boton
                 &&
-                boton.Enabled
+                TieneAccesoMenu(boton)
                 &&
                 boton != botonActivo)
             {
@@ -1067,7 +1130,7 @@ namespace Capa_Vistas
             if (
                 sender is Button boton
                 &&
-                boton.Enabled
+                TieneAccesoMenu(boton)
                 &&
                 boton != botonActivo)
             {
@@ -1126,7 +1189,12 @@ namespace Capa_Vistas
             Form formulario,
             Button botonOrigen)
         {
-            if (!botonOrigen.Enabled)
+            bool detalleStockAutorizado = botonOrigen == btnProductos
+                && formulario is FormProductoDetalle detalle
+                && detalle.EsGestionStockDesdeReporte
+                && SesionActual.TienePermiso("PRODUCTOS_MODIFICAR");
+
+            if (!TieneAccesoMenu(botonOrigen) && !detalleStockAutorizado)
             {
                 formulario.Dispose();
 
@@ -1374,7 +1442,7 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
-            if (!SesionActual.TienePermiso("REPORTES_VER"))
+            if (!reporteLogica.PuedeAbrirReportes())
             {
                 return;
             }
