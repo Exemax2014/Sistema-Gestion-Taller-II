@@ -172,7 +172,14 @@ namespace Capa_Vistas
             if (reporteLogica.ObtenerAlcanceReportes() == AlcanceReportes.Ninguno) { MostrarMensaje("Sin alcance", reporteLogica.ObtenerMensajeSinAlcance()); return; }
             CargarSucursales();
             ConfigurarNavegacion();
-            CambiarSeccion(PrimeraSeccionDisponible());
+            SeccionReporte? seccionInicial = PrimeraSeccionDisponible();
+            if (!seccionInicial.HasValue)
+            {
+                MostrarMensaje("Sin acceso", "No tenés permisos para consultar ninguna sección de Reportes.");
+                return;
+            }
+
+            CambiarSeccion(seccionInicial.Value);
         }
 
         // Muestra solo pestañas que la sesión puede consultar mediante permisos REPORTES_*.
@@ -185,16 +192,25 @@ namespace Capa_Vistas
         }
 
         // Elige una sección autorizada si la predeterminada no está disponible para la sesión.
-        private SeccionReporte PrimeraSeccionDisponible()
+        private SeccionReporte? PrimeraSeccionDisponible()
         {
-            List<SeccionReporte> seccionesDisponibles = new();
-            if (btnGeneral.Visible) seccionesDisponibles.Add(SeccionReporte.General);
-            if (btnPorUsuario.Visible) seccionesDisponibles.Add(SeccionReporte.PorUsuario);
-            if (btnVentasDetalladas.Visible) seccionesDisponibles.Add(SeccionReporte.VentasDetalladas);
-            if (btnStockBajo.Visible) seccionesDisponibles.Add(SeccionReporte.StockBajo);
+            if (reporteLogica.PuedeVerVentas()
+                || reporteLogica.PuedeVerRecaudacion()
+                || reporteLogica.PuedeVerProductos())
+            {
+                return SeccionReporte.General;
+            }
 
-            if (seccionesDisponibles.Count == 1) return seccionesDisponibles[0];
-            return btnGeneral.Visible ? SeccionReporte.General : seccionesDisponibles[0];
+            if (reporteLogica.PuedeVerRendimientoVendedores())
+                return SeccionReporte.PorUsuario;
+
+            if (reporteLogica.PuedeVerDetalleVentas())
+                return SeccionReporte.VentasDetalladas;
+
+            if (reporteLogica.PuedeVerStock())
+                return SeccionReporte.StockBajo;
+
+            return null;
         }
 
         // Carga sucursales activas solo para el alcance global y evita IDs fijos en el selector.

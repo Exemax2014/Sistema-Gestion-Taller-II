@@ -1229,12 +1229,13 @@ namespace Capa_Vistas
             Form formulario,
             Button botonOrigen)
         {
+            bool origenEsModulo = accesosMenu.TryGetValue(botonOrigen, out bool tieneAccesoModulo);
             bool detalleStockAutorizado = botonOrigen == btnProductos
                 && formulario is FormProductoDetalle detalle
                 && detalle.EsGestionStockDesdeReporte
                 && SesionActual.TienePermiso("PRODUCTOS_MODIFICAR");
 
-            if (!TieneAccesoMenu(botonOrigen) && !detalleStockAutorizado)
+            if (origenEsModulo && !tieneAccesoModulo && !detalleStockAutorizado)
             {
                 if (formulario is FormBackup)
                 {
