@@ -717,7 +717,7 @@ namespace Capa_Vistas
         // Mantiene fija la cabecera y distribuye el área scrolleable independientemente debajo de la navegación.
         private void AjustarLayout()
         {
-            int margen = 32, ancho = Math.Max(340, ClientSize.Width - margen * 2), y = 20;
+            int margen = 32, ancho = Math.Max(0, ClientSize.Width - margen * 2), y = 20;
             pnlCabecera.SetBounds(margen, y, ancho, 100);
             y += 100;
             pnlNavegacion.SetBounds(margen, y, ancho, 43);
@@ -725,31 +725,52 @@ namespace Capa_Vistas
             y += pnlNavegacion.Height + 8;
             pnlAreaContenido.SetBounds(margen, y, ancho, Math.Max(140, ClientSize.Height - y - 20));
 
-            int anchoContenido = Math.Max(300, pnlAreaContenido.ClientSize.Width);
-            int altoContenido = Math.Max(140, pnlAreaContenido.ClientSize.Height);
             foreach (Panel vista in new[] { pnlVistaGeneral, pnlVistaUsuario, pnlVistaVentas, pnlVistaStock })
-                vista.SetBounds(0, 0, anchoContenido, altoContenido);
+                vista.SetBounds(0, 0, pnlAreaContenido.ClientSize.Width, Math.Max(140, pnlAreaContenido.ClientSize.Height));
 
+            Panel vistaActiva = ObtenerVista(seccionActual);
+            pnlAreaContenido.PerformLayout();
+            vistaActiva.PerformLayout();
+
+            // Repite el cálculo si el layout vertical cambia el ancho del viewport visible.
+            int anchoViewportAnterior = -1;
+            for (int intento = 0; intento < 3; intento++)
+            {
+                int anchoViewport = Math.Max(0, vistaActiva.ClientSize.Width - vistaActiva.Padding.Horizontal);
+                int altoViewport = Math.Max(0, vistaActiva.ClientSize.Height - vistaActiva.Padding.Vertical);
+                if (anchoViewport == anchoViewportAnterior)
+                    break;
+
+                anchoViewportAnterior = anchoViewport;
+                AjustarContenidoVista(vistaActiva, anchoViewport, altoViewport);
+                vistaActiva.PerformLayout();
+            }
+        }
+
+        // Distribuye la sección activa dentro del área que queda después del scrollbar vertical y el padding.
+        private void AjustarContenidoVista(Panel vistaActiva, int anchoContenido, int altoContenido)
+        {
+            int origenX = vistaActiva.Padding.Left;
             int yContenido = 0;
-            AjustarFiltros(anchoContenido, 0, ref yContenido);
+            AjustarFiltros(anchoContenido, origenX, ref yContenido);
             List<Panel> tarjetas = new[] { pnlTarjetaVentas, pnlTarjetaIngresos, pnlTarjetaProductos, pnlTarjetaStock }.Where(t => t.Visible).ToList();
             if (tarjetas.Count > 0)
             {
                 int columnas = anchoContenido >= 1040 ? 4 : anchoContenido >= 650 ? 2 : 1, separacion = 16, anchoTarjeta = (anchoContenido - separacion * (columnas - 1)) / columnas;
-                for (int i = 0; i < tarjetas.Count; i++) tarjetas[i].SetBounds((i % columnas) * (anchoTarjeta + separacion), yContenido + (i / columnas) * 126, anchoTarjeta, 110);
+                for (int i = 0; i < tarjetas.Count; i++) tarjetas[i].SetBounds(origenX + (i % columnas) * (anchoTarjeta + separacion), yContenido + (i / columnas) * 126, anchoTarjeta, 110);
                 yContenido += ((tarjetas.Count + columnas - 1) / columnas) * 126 + 10;
             }
 
             if (seccionActual == SeccionReporte.General)
             {
-                if (pnlGrafico.Visible) { pnlGrafico.SetBounds(0, yContenido, anchoContenido, 230); yContenido += 246; }
+                if (pnlGrafico.Visible) { pnlGrafico.SetBounds(origenX, yContenido, anchoContenido, 230); AjustarContenidoGrafico(); yContenido += 246; }
                 if (pnlProductosVendidos.Visible)
                 {
-                    pnlProductosVendidos.SetBounds(0, yContenido, anchoContenido, 360);
+                    pnlProductosVendidos.SetBounds(origenX, yContenido, anchoContenido, 360);
                     AjustarEncabezadoProductosVendidos();
                     yContenido += 376;
                 }
-                EstablecerScrollVista(pnlVistaGeneral, yContenido);
+                EstablecerScrollVista(vistaActiva, yContenido);
             }
             else if (seccionActual == SeccionReporte.PorUsuario)
             {
@@ -757,14 +778,14 @@ namespace Capa_Vistas
                 const int altoResumen = 622;
                 if (anchoContenido >= 960)
                 {
-                    int anchoColumna = Math.Max(320, (anchoContenido - separacionColumnas) / 2);
+                    int anchoColumna = (anchoContenido - separacionColumnas) / 2;
                     int altoHistorial = Math.Max(altoResumen, altoContenido - yContenido - 16);
-                    tabContenido.SetBounds(anchoColumna + separacionColumnas, yContenido, anchoContenido - anchoColumna - separacionColumnas, altoHistorial);
-                    if (pnlGrafico.Visible) pnlGrafico.SetBounds(0, yContenido, anchoColumna, 230);
+                    tabContenido.SetBounds(origenX + anchoColumna + separacionColumnas, yContenido, anchoContenido - anchoColumna - separacionColumnas, altoHistorial);
+                    if (pnlGrafico.Visible) { pnlGrafico.SetBounds(origenX, yContenido, anchoColumna, 230); AjustarContenidoGrafico(); }
                     if (pnlProductosVendidos.Visible)
                     {
                         int yProductos = yContenido + (pnlGrafico.Visible ? 246 : 0);
-                        pnlProductosVendidos.SetBounds(0, yProductos, anchoColumna, 376);
+                        pnlProductosVendidos.SetBounds(origenX, yProductos, anchoColumna, 376);
                         AjustarEncabezadoProductosVendidos();
                     }
                     yContenido += Math.Max(altoHistorial, altoResumen) + 16;
@@ -772,23 +793,23 @@ namespace Capa_Vistas
                 else
                 {
                     int altoHistorial = Math.Max(360, Math.Min(520, altoContenido - yContenido - 16));
-                    tabContenido.SetBounds(0, yContenido, anchoContenido, altoHistorial);
+                    tabContenido.SetBounds(origenX, yContenido, anchoContenido, altoHistorial);
                     yContenido += altoHistorial + 16;
-                    if (pnlGrafico.Visible) { pnlGrafico.SetBounds(0, yContenido, anchoContenido, 230); yContenido += 246; }
+                    if (pnlGrafico.Visible) { pnlGrafico.SetBounds(origenX, yContenido, anchoContenido, 230); AjustarContenidoGrafico(); yContenido += 246; }
                     if (pnlProductosVendidos.Visible)
                     {
-                        pnlProductosVendidos.SetBounds(0, yContenido, anchoContenido, 360);
+                        pnlProductosVendidos.SetBounds(origenX, yContenido, anchoContenido, 360);
                         AjustarEncabezadoProductosVendidos();
                         yContenido += 376;
                     }
                 }
-                EstablecerScrollVista(pnlVistaUsuario, yContenido);
+                EstablecerScrollVista(vistaActiva, yContenido);
             }
             else
             {
-                tabContenido.SetBounds(0, yContenido, anchoContenido, Math.Max(340, altoContenido - yContenido - 12));
+                tabContenido.SetBounds(origenX, yContenido, anchoContenido, Math.Max(340, altoContenido - yContenido - 12));
                 yContenido += tabContenido.Height + 16;
-                EstablecerScrollVista(seccionActual == SeccionReporte.VentasDetalladas ? pnlVistaVentas : pnlVistaStock, yContenido);
+                EstablecerScrollVista(vistaActiva, yContenido);
             }
         }
 
@@ -798,15 +819,31 @@ namespace Capa_Vistas
             vista.AutoScrollMinSize = new Size(0, altoContenido + 24);
         }
 
+        // Reacomoda los elementos del gráfico dentro del ancho de su panel, incluso en la columna compacta de Por usuario.
+        private void AjustarContenidoGrafico()
+        {
+            int anchoInterior = Math.Max(0, pnlGrafico.ClientSize.Width - 36);
+            int anchoTitulo = Math.Min(lblGraficoTitulo.PreferredSize.Width, anchoInterior);
+            int anchoPeriodo = Math.Min(290, Math.Max(0, anchoInterior - anchoTitulo - 12));
+            lblGraficoTitulo.AutoSize = false;
+            lblGraficoTitulo.AutoEllipsis = true;
+            lblGraficoTitulo.SetBounds(18, 13, anchoTitulo, 25);
+            lblPeriodoGrafico.SetBounds(18 + anchoInterior - anchoPeriodo, 16, anchoPeriodo, 20);
+            pnlGraficoContenido.SetBounds(18, 47, anchoInterior, Math.Max(0, pnlGrafico.ClientSize.Height - 68));
+        }
+
         // Separa título, descripción y grilla para que el encabezado no se solape al cambiar de sección o tamaño.
         private void AjustarEncabezadoProductosVendidos()
         {
-            int ancho = Math.Max(120, pnlProductosVendidos.ClientSize.Width - 36);
+            int anchoPanel = pnlProductosVendidos.ClientSize.Width;
+            int margen = Math.Min(18, anchoPanel / 2);
+            int ancho = Math.Max(0, anchoPanel - margen * 2);
             lblProductosVendidosTitulo.AutoSize = false;
-            lblProductosVendidosTitulo.SetBounds(18, 8, ancho, 26);
+            lblProductosVendidosTitulo.AutoEllipsis = true;
+            lblProductosVendidosTitulo.SetBounds(margen, 8, ancho, 26);
             lblProductosVendidosDescripcion.AutoSize = false;
-            lblProductosVendidosDescripcion.AutoEllipsis = false;
-            lblProductosVendidosDescripcion.SetBounds(18, 34, ancho, 34);
+            lblProductosVendidosDescripcion.AutoEllipsis = true;
+            lblProductosVendidosDescripcion.SetBounds(margen, 34, ancho, 34);
             dgvProductosVendidos.SetBounds(0, 72, pnlProductosVendidos.ClientSize.Width, Math.Max(180, pnlProductosVendidos.ClientSize.Height - 73));
             dgvProductosVendidos.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
         }
@@ -846,26 +883,59 @@ namespace Capa_Vistas
             if (lblHasta.Visible) campos.Add((lblHasta, dtpHasta));
             if (lblSucursal.Visible) campos.Add((lblSucursal, cmbSucursal.Visible ? cmbSucursal : lblSucursalFija));
             if (lblVendedor.Visible) campos.Add((lblVendedor, cmbVendedor));
-            int columnas = ancho >= 980 ? 4 : ancho >= 680 ? 2 : 1, anchoCampo = Math.Min(230, (ancho - 36 - (columnas - 1) * 16) / columnas), filas = (campos.Count + columnas - 1) / columnas;
+            int columnas = ancho >= 980 ? 4 : ancho >= 680 ? 2 : 1;
+            int margenCampos = Math.Min(18, ancho / 2);
+            int anchoInternoCampos = Math.Max(0, ancho - margenCampos * 2 - (columnas - 1) * 16);
+            int anchoCampo = Math.Min(230, anchoInternoCampos / columnas);
+            int filas = (campos.Count + columnas - 1) / columnas;
             int finCampos = 40 + filas * 58;
-            bool accionesEnUnaFila = ancho >= 456;
-            int alto = finCampos + (accionesEnUnaFila ? 60 : 102);
+            int margenAcciones = Math.Min(18, ancho / 2);
+            int anchoAccionesDisponible = Math.Max(0, ancho - margenAcciones * 2);
+            bool puedeExportar = reporteLogica.PuedeExportar();
+            bool accionesEnUnaFila = anchoAccionesDisponible >= (puedeExportar ? 420 : 270);
+            bool aplicarYLimpiarEnFila = accionesEnUnaFila || anchoAccionesDisponible >= 270;
+            int cantidadFilasAcciones = aplicarYLimpiarEnFila ? (accionesEnUnaFila || !puedeExportar ? 1 : 2) : (puedeExportar ? 3 : 2);
+            int alto = finCampos + 18 + cantidadFilasAcciones * 42;
             pnlFiltros.SetBounds(margen, y, ancho, alto);
-            for (int i = 0; i < campos.Count; i++) { int col = i % columnas, fila = i / columnas, x = 18 + col * (anchoCampo + 16), top = 40 + fila * 58; campos[i].Etiqueta.SetBounds(x, top, anchoCampo, 20); campos[i].Campo.SetBounds(x, top + 22, anchoCampo, 28); }
+            for (int i = 0; i < campos.Count; i++)
+            {
+                int col = i % columnas, fila = i / columnas;
+                int x = margenCampos + col * (anchoCampo + 16), top = 40 + fila * 58;
+                if (campos[i].Etiqueta is Label etiqueta)
+                {
+                    etiqueta.AutoSize = false;
+                    etiqueta.AutoEllipsis = true;
+                }
+                campos[i].Etiqueta.SetBounds(x, top, anchoCampo, 20);
+                campos[i].Campo.SetBounds(x, top + 22, anchoCampo, 28);
+            }
+
             int accionesY = finCampos + 12;
             if (accionesEnUnaFila)
             {
-                int anchoAcciones = reporteLogica.PuedeExportar() ? 420 : 270;
-                int accionesX = Math.Max(18, ancho - anchoAcciones - 18);
+                int anchoGrupo = puedeExportar ? 420 : 270;
+                int accionesX = margenAcciones + anchoAccionesDisponible - anchoGrupo;
                 btnAplicarFiltros.SetBounds(accionesX, accionesY, 140, 36);
                 btnLimpiarFiltros.SetBounds(accionesX + 150, accionesY, 120, 36);
-                btnExportar.SetBounds(accionesX + 280, accionesY, 140, 36);
+                if (puedeExportar) btnExportar.SetBounds(accionesX + 280, accionesY, 140, 36);
+            }
+            else if (aplicarYLimpiarEnFila)
+            {
+                int anchoBotonAplicar = Math.Min(140, anchoAccionesDisponible);
+                int anchoBotonLimpiar = Math.Min(120, Math.Max(0, anchoAccionesDisponible - anchoBotonAplicar - 10));
+                int accionesX = margenAcciones;
+                btnAplicarFiltros.SetBounds(accionesX, accionesY, anchoBotonAplicar, 36);
+                btnLimpiarFiltros.SetBounds(accionesX + anchoBotonAplicar + 10, accionesY, anchoBotonLimpiar, 36);
+                if (puedeExportar)
+                    btnExportar.SetBounds(margenAcciones, accionesY + 42, Math.Min(140, anchoAccionesDisponible), 36);
             }
             else
             {
-                btnAplicarFiltros.SetBounds(18, accionesY, 140, 36);
-                btnLimpiarFiltros.SetBounds(168, accionesY, 120, 36);
-                btnExportar.SetBounds(Math.Max(18, ancho - 158), accionesY + 42, 140, 36);
+                int anchoBoton = Math.Min(140, anchoAccionesDisponible);
+                btnAplicarFiltros.SetBounds(margenAcciones, accionesY, anchoBoton, 36);
+                btnLimpiarFiltros.SetBounds(margenAcciones, accionesY + 42, Math.Min(120, anchoAccionesDisponible), 36);
+                if (puedeExportar)
+                    btnExportar.SetBounds(margenAcciones, accionesY + 84, anchoBoton, 36);
             }
             y += alto + 14;
         }
