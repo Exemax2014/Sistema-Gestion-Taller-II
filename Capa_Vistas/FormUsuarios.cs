@@ -23,6 +23,8 @@ namespace Capa_Vistas
         private int? idSucursalEdicion;
         private bool cargandoPerfil;
         private bool cargandoSucursal;
+        private bool hayCambiosPerfilSinGuardar;
+        private int? idPerfilSeleccionadoAnterior;
 
 
         public FormUsuarios(
@@ -320,8 +322,14 @@ namespace Capa_Vistas
             txtNombrePerfil.KeyPress +=
                 NombrePerfil_KeyPress;
 
+            txtNombrePerfil.TextChanged +=
+                PerfilEditor_TextChanged;
+
             txtDescripcionPerfil.KeyPress +=
                 DescripcionPerfil_KeyPress;
+
+            txtDescripcionPerfil.TextChanged +=
+                PerfilEditor_TextChanged;
 
             Resize += (_, _) => AjustarLayoutModulo();
         }
@@ -436,6 +444,7 @@ namespace Capa_Vistas
             object? sender,
             EventArgs e)
         {
+            if (!ConfirmarSalidaPerfilPendiente()) return;
             MostrarVistaUsuarios();
         }
 
@@ -454,6 +463,7 @@ namespace Capa_Vistas
                 return;
             }
 
+            if (!ConfirmarSalidaPerfilPendiente()) return;
             MostrarVistaPerfiles();
         }
 
@@ -473,7 +483,53 @@ namespace Capa_Vistas
                 return;
             }
 
+            if (!ConfirmarSalidaPerfilPendiente()) return;
             MostrarVistaSucursales();
+        }
+
+
+        // Confirma antes de abandonar el editor y descarta el estado solo tras aceptar.
+        private bool ConfirmarSalidaPerfilPendiente()
+        {
+            if (!hayCambiosPerfilSinGuardar)
+            {
+                return true;
+            }
+
+            using FormMensaje confirmacion = new FormMensaje(
+                "Cambios sin guardar",
+                "Hay cambios sin guardar. ¿Deseás salir y perder los cambios?",
+                "Sí",
+                true,
+                "No");
+
+            if (confirmacion.ShowDialog(formPrincipal) != DialogResult.OK)
+            {
+                return false;
+            }
+
+            hayCambiosPerfilSinGuardar = false;
+            return true;
+        }
+
+
+        // Marca modificaciones manuales en los campos editables del perfil.
+        private void PerfilEditor_TextChanged(object? sender, EventArgs e)
+        {
+            if (!cargandoPerfil)
+            {
+                hayCambiosPerfilSinGuardar = true;
+            }
+        }
+
+
+        // Marca una selección de funcionalidad realizada durante la edición.
+        private void PermisoPerfil_CheckedChanged(object? sender, EventArgs e)
+        {
+            if (!cargandoPerfil)
+            {
+                hayCambiosPerfilSinGuardar = true;
+            }
         }
 
 
@@ -1218,86 +1274,83 @@ namespace Capa_Vistas
                 return;
             }
 
+            if (!ConfirmarSalidaPerfilPendiente())
+            {
+                RestaurarSeleccionPerfilAnterior();
+                return;
+            }
 
             CargarPerfilSeleccionado();
         }
 
 
-        private void CargarPerfilSeleccionado()
+        // Restaura el perfil anterior o la selección vacía si se cancela la navegación del listado.
+        private void RestaurarSeleccionPerfilAnterior()
         {
-            if (
-                lstPerfiles.SelectedItem
-                is not PerfilGestionModelo perfilListado)
-            {
-                LimpiarEdicionPerfil();
-
-                return;
-            }
-
-
+            cargandoPerfil = true;
             try
             {
-                PerfilGestionModelo? perfil =
-                    perfilLogica.ObtenerPorId(
-                        perfilListado.IdPerfil
-                    );
+                if (idPerfilSeleccionadoAnterior.HasValue)
+                {
+                    lstPerfiles.SelectedValue = idPerfilSeleccionadoAnterior.Value;
+                }
+                else
+                {
+                    lstPerfiles.ClearSelected();
+                }
+            }
+            finally
+            {
+                cargandoPerfil = false;
+            }
+        }
 
 
-                if (perfil == null)
+        // Carga el perfil elegido sin confundir sus valores iniciales con cambios del usuario.
+        private void CargarPerfilSeleccionado()
+        {
+            cargandoPerfil = true;
+            try
+            {
+                if (lstPerfiles.SelectedItem is not PerfilGestionModelo perfilListado)
                 {
                     LimpiarEdicionPerfil();
-
                     return;
                 }
 
+                try
+                {
+                    PerfilGestionModelo? perfil = perfilLogica.ObtenerPorId(perfilListado.IdPerfil);
+                    if (perfil == null)
+                    {
+                        LimpiarEdicionPerfil();
+                        return;
+                    }
 
-                idPerfilEdicion =
-                    perfil.IdPerfil;
+                    idPerfilEdicion = perfil.IdPerfil;
+                    idPerfilSeleccionadoAnterior = perfil.IdPerfil;
+                    hayCambiosPerfilSinGuardar = false;
+                    txtNombrePerfil.Text = perfil.Nombre;
+                    txtDescripcionPerfil.Text = perfil.Descripcion;
 
-                txtNombrePerfil.Text =
-                    perfil.Nombre;
-
-                txtDescripcionPerfil.Text =
-                    perfil.Descripcion;
-
-
-                bool esPerfilGlobal =
-                    perfil.AlcanceGlobal;
-
-
-                txtNombrePerfil.ReadOnly =
-                    esPerfilGlobal;
-
-                txtDescripcionPerfil.ReadOnly =
-                    esPerfilGlobal;
-
-                btnGuardarPerfil.Visible =
-                    !esPerfilGlobal;
-
-                btnGuardarPerfil.Enabled =
-                    !esPerfilGlobal;
-
-                btnEliminarPerfil.Visible =
-                    !esPerfilGlobal;
-
-                btnEliminarPerfil.Enabled =
-                    !esPerfilGlobal;
-
-
-                CargarPermisosPerfil(
-                    perfil
-                );
-
+                    bool esPerfilGlobal = perfil.AlcanceGlobal;
+                    txtNombrePerfil.ReadOnly = esPerfilGlobal;
+                    txtDescripcionPerfil.ReadOnly = esPerfilGlobal;
+                    btnGuardarPerfil.Visible = !esPerfilGlobal;
+                    btnGuardarPerfil.Enabled = !esPerfilGlobal;
+                    btnEliminarPerfil.Visible = !esPerfilGlobal;
+                    btnEliminarPerfil.Enabled = !esPerfilGlobal;
+                    CargarPermisosPerfil(perfil);
+                }
+                catch (Exception ex)
+                {
+                    LimpiarEdicionPerfil();
+                    MostrarMensaje("No se pudo cargar el tipo de usuario", ex.Message);
+                }
             }
-            catch (Exception ex)
+            finally
             {
-                LimpiarEdicionPerfil();
-
-
-                MostrarMensaje(
-                    "No se pudo cargar el tipo de usuario",
-                    ex.Message
-                );
+                cargandoPerfil = false;
             }
         }
 
@@ -1371,6 +1424,7 @@ namespace Capa_Vistas
                         check.Enabled = false;
                     }
 
+                    check.CheckedChanged += PermisoPerfil_CheckedChanged;
                     opciones.Controls.Add(check);
                 }
 
@@ -1606,9 +1660,11 @@ namespace Capa_Vistas
                 return;
             }
 
+            if (!ConfirmarSalidaPerfilPendiente()) return;
 
             idPerfilEdicion =
                 null;
+            idPerfilSeleccionadoAnterior = null;
 
             cargandoPerfil =
                 true;
@@ -1643,6 +1699,7 @@ namespace Capa_Vistas
 
 
             CargarPermisosNuevoPerfil();
+            hayCambiosPerfilSinGuardar = false;
 
 
             txtNombrePerfil.Focus();
@@ -1717,6 +1774,7 @@ namespace Capa_Vistas
                 }
 
                 int idPerfil = resultado.IdGenerado;
+                hayCambiosPerfilSinGuardar = false;
 
 
                 idPerfilEdicion =
@@ -1905,34 +1963,31 @@ namespace Capa_Vistas
         }
 
 
+        // Descarta el editor en silencio al cargar otro perfil o reiniciar su estado.
         private void LimpiarEdicionPerfil()
         {
-            idPerfilEdicion =
-                null;
+            bool cargandoAnteriormente = cargandoPerfil;
+            cargandoPerfil = true;
+            hayCambiosPerfilSinGuardar = false;
+            idPerfilSeleccionadoAnterior = null;
 
-            txtNombrePerfil.ReadOnly =
-                false;
-
-            txtDescripcionPerfil.ReadOnly =
-                false;
-
-            btnGuardarPerfil.Visible =
-                true;
-
-            btnGuardarPerfil.Enabled =
-                true;
-
-            txtNombrePerfil.Clear();
-
-            txtDescripcionPerfil.Clear();
-
-            flpPermisos.Controls.Clear();
-
-            btnEliminarPerfil.Visible =
-                false;
-
-            btnEliminarPerfil.Enabled =
-                false;
+            try
+            {
+                idPerfilEdicion = null;
+                txtNombrePerfil.ReadOnly = false;
+                txtDescripcionPerfil.ReadOnly = false;
+                btnGuardarPerfil.Visible = true;
+                btnGuardarPerfil.Enabled = true;
+                txtNombrePerfil.Clear();
+                txtDescripcionPerfil.Clear();
+                flpPermisos.Controls.Clear();
+                btnEliminarPerfil.Visible = false;
+                btnEliminarPerfil.Enabled = false;
+            }
+            finally
+            {
+                cargandoPerfil = cargandoAnteriormente;
+            }
         }
 
 

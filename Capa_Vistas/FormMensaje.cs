@@ -9,7 +9,8 @@
             string titulo,
             string mensaje,
             string textoAceptar = "Aceptar",
-            bool mostrarCancelar = false)
+            bool mostrarCancelar = false,
+            string textoCancelar = "Cancelar")
         {
             InitializeComponent();
             StartPosition = FormStartPosition.CenterParent;
@@ -22,6 +23,9 @@
 
             btnAceptar.Text =
                 textoAceptar;
+
+            btnCancelar.Text =
+                textoCancelar;
 
             btnCancelar.Visible =
                 mostrarCancelar;
