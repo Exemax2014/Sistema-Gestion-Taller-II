@@ -1,165 +1,111 @@
-# AGENTS.md — Sistema Hierro y Forja / Taller de Programación II
+# AGENTS.md — Sistema Hierro y Forja
 
-Documento operativo del proyecto para integrantes del equipo y agentes de IA.
-Última actualización: 2026-09-20.
+Documentación técnica verificada del proyecto final de Taller de Programación II. Mantenerla sincronizada con código y scripts; no describe funcionalidades inexistentes.
 
-## 1. Contexto
+## 1. Estado, tecnología y solución
 
-Proyecto final de Taller de Programación II: aplicación de escritorio C# + Windows Forms + .NET 10 + SQL Server para un negocio con múltiples sucursales.
-
-Tecnologías: C#, Windows Forms, .NET 10, SQL Server, `Microsoft.Data.SqlClient`, `System.Text.Json`, Visual Studio / SSMS y Git / GitHub.
-
-Alcance: autenticación, perfiles y permisos, clientes, productos/categorías, inventario, ventas/pagos, reportes, backup y futura conexión de varias PCs a SQL Server central.
-
-## 2. Arquitectura obligatoria
+Aplicación de escritorio para gestión de múltiples sucursales desarrollada con C#, Windows Forms y .NET 10 sobre SQL Server. Dependencias verificadas: `Microsoft.Data.SqlClient` 7.0.2 en `Capa_Datos`, `System.Text.Json` para leer configuración y `ClosedXML` 0.105.1 en `Capa_Vistas` para Excel real (`.xlsx`). La solución `Sistema_Hierro_Y_Forja.slnx` contiene exactamente tres proyectos:
 
 ```text
 Capa_Vistas → Capa_Logica → Capa_Datos → SQL Server
 ```
 
-**Capa_Vistas:** formularios, controles, eventos, navegación y mensajes. No ejecuta SQL, no abre conexiones ni llama directamente a Capa_Datos.
+El punto de entrada es `Capa_Vistas/Program.cs` (`FormLogin`). `Capa_Datos/Conexion.cs` carga la configuración local desde `Configuracion/configuracion.json`; no versionar secretos. Los directorios `SistemaGestion.*` son restos fuera de la solución y no deben reutilizarse.
 
-**Capa_Logica:** validaciones, reglas de negocio, autenticación, sesión, permisos y cálculos. No contiene formularios, no muestra MessageBox ni ejecuta SQL directamente.
+## 2. Arquitectura obligatoria
 
-**Capa_Datos:** conexiones, procedimientos almacenados, parámetros y lectura de resultados. No muestra MessageBox, no contiene lógica visual ni depende de Vistas o Lógica.
+* **Capa_Vistas:** formularios, Designer, eventos, navegación, permisos visuales, responsive y `FormMensaje`. No referencia Datos, no abre conexiones y no ejecuta SQL.
+* **Capa_Logica:** validaciones autoritativas, reglas, cálculos, autenticación, sesión y autorización. Consulta Datos; no contiene formularios, interfaces ni `MessageBox`.
+* **Capa_Datos:** conexiones, parámetros, modelos de transporte y procedimientos almacenados. No depende de Vistas/Lógica ni muestra interfaces.
 
-Referencias permitidas: `Capa_Vistas -> Capa_Logica` y `Capa_Logica -> Capa_Datos`. Está prohibida la referencia `Capa_Vistas -> Capa_Datos`.
+La Vista previene formatos y brinda feedback; Lógica valida reglas, permisos, alcance y contexto; SQL mantiene `NOT NULL`, `UNIQUE`, `CHECK`, FK, transacciones y controles finales. Los errores suben de Datos → Lógica → Vista y se presentan mediante `FormMensaje`. No poner SQL en Vista, MessageBox en Datos, credenciales hardcodeadas, perfiles/IDs fijos ni bajas físicas indebidas.
 
-Los datos administrables (perfiles, permisos, sucursales, catálogos, estados e IDs) se obtienen dinámicamente por las tres capas; no se hardcodean en vistas ni lógica. Solo aspectos visuales o técnicos pueden definirse en código.
+## 3. Clases y responsabilidades
 
-## 3. Estructura actual
-
-```text
-Sistema_Hierro_Y_Forja/
-├── BaseDatos/
-│   ├── 01_Estructura.sql
-│   ├── 02_DatosIniciales.sql
-│   ├── 03_Procedimientos.sql
-│   ├── 04_DatosPrueba.sql
-│   ├── 05_ResetBasePruebas.sql
-│   └── Historico/
-│       └── 05_CatalogoInicial.sql
-├── Capa_Datos/      Conexion y servicios de usuarios, perfiles, clientes,
-│                    direcciones, productos, inventario, sucursales, ventas y backup
-├── Capa_Logica/     Sesión, autenticación, permisos y lógica de esos módulos
-├── Capa_Vistas/     Login, Principal/Inicio, Clientes, Productos, Usuarios,
-│                    Ventas, backup, listados/detalles, mensajes y reportes
-├── Sistema_Hierro_Y_Forja.slnx
-├── AGENTS.md
-├── README.md
-└── .gitignore
-```
-
-La solución contiene únicamente `Capa_Datos`, `Capa_Logica` y `Capa_Vistas`.
-
-`SistemaGestion.Datos`, `SistemaGestion.Logica` y `SistemaGestion.Vistas` son restos de la nomenclatura anterior: solo contienen `bin/` y `obj/`, y no forman parte de la solución actual. No volver a utilizar esos nombres.
+Datos incluye `Conexion`, `UsuarioDatos`, `PerfilGestionDatos`, `ClienteDatos`, `DireccionDatos`, `ProductoDatos`, `CatalogoDatos`, `InventarioDatos`, `VentaDatos`, `ReporteDatos`, `SucursalDatos`, `DashboardDatos`, `AuditoriaDatos` y `BackupDatos`. Lógica incluye sus coordinadores equivalentes (`UsuarioLogica`, `PerfilLogica`, `ClienteLogica`, `ProductoLogica`, `CatalogoLogica`, `InventarioLogica`, `VentaLogica`, `ReporteLogica`, `SucursalLogica`, `DashboardLogica`, `AuditoriaLogica`, `BackupLogica`), además de `SesionActual` y `PasswordHelper`. Vistas contiene Login, Principal/Inicio, Usuarios, Mi Perfil, Sucursales, Clientes, Productos, Categorías, Marcas, Ventas, Reportes, Back Up, detalles/listados, `FormMensaje`, `FormOverlay` y `ExcelExportHelper`.
 
 ## 4. Base de datos
 
-Base: `SistemaGestion`, con 20 tablas, incluidas `MARCA`, `MARCA_CATEGORIA`, `AVISO` y `AUDITORIA`.
+`01_Estructura.sql` define **20 tablas**: `PROVINCIA`, `LOCALIDAD`, `DIRECCION`, `PERFIL`, `FUNCIONALIDAD`, `SUCURSAL`, `CATEGORIA`, `MARCA`, `MARCA_CATEGORIA`, `METODO_PAGO`, `PERFIL_FUNCIONALIDAD`, `USUARIO`, `CLIENTE`, `PRODUCTO`, `INVENTARIO`, `VENTA`, `DETALLE_VENTA`, `PAGO`, `AVISO` y `AUDITORIA`. También define `dbo.VentaItemTipo` y `dbo.VentaPagoTipo`. Back Up no tiene tabla propia.
 
-Reglas: bajas mediante `eliminado_en`; no usar borrado físico cuando corresponda baja lógica; `PRODUCTO.precio_venta` se calcula desde costo + porcentaje; `DETALLE_VENTA.precio_unitario` conserva el precio histórico; inventario por producto+sucursal; permisos por PERFIL, FUNCIONALIDAD y PERFIL_FUNCIONALIDAD.
+Se verificaron **80 procedimientos** en `03_Procedimientos.sql`. Ejemplos: `sp_Usuario_BuscarPorNombreUsuario`, `sp_Usuario_Alta/Modificar/Baja/Reactivar`, `sp_Perfil_ObtenerFuncionalidades`, `sp_Perfil_ListarFuncionalidades`, `sp_Perfil_Guardar`, `sp_Cliente_Buscar/Alta/Modificar/Baja/Reactivar`, `sp_Direccion_Alta/Modificar`, `sp_Producto_Buscar/Alta/Modificar/Baja`, `sp_Inventario_EstablecerStock/StockBajo`, `sp_Venta_Registrar`, `sp_Venta_ObtenerDetalle`, `sp_Reporte_Resumen`, `sp_Reporte_ProductosMasVendidos`, `sp_Reporte_VentasPorVendedor`, `sp_Reporte_StockBajo`, `sp_Reporte_DetalleVentas`, `sp_Sucursal_ListarResumenUsuarios/Alta/Modificar/Baja/Reactivar`, `sp_Aviso_Publicar/ListarParaUsuario`, `sp_Auditoria_Registrar/Listar` y los procedimientos de Dashboard.
 
-Scripts:
+Scripts oficiales:
 
-- `01_Estructura.sql`: esquema e integridad.
-- `02_DatosIniciales.sql`: datos y permisos iniciales.
-- `03_Procedimientos.sql`: procedimientos versionados.
-- `04_DatosPrueba.sql`: datos exclusivos de desarrollo/prueba.
-- `05_ResetBasePruebas.sql`: reset destructivo exclusivo de testing; devuelve la base al estado de `01 + 02 + 03`.
-- `Historico/05_CatalogoInicial.sql`: catálogo heredado, conservado solo como referencia y fuera del flujo oficial.
+```text
+Producción: 01_Estructura.sql → 02_DatosIniciales.sql → 03_Procedimientos.sql
+Testing:    01 → 02 → 03 → 05_ResetBasePruebas.sql → 04_DatosPrueba.sql
+Reset:      05_ResetBasePruebas.sql
+```
 
-Flujo oficial: producción `01 -> 02 -> 03`; testing `01 -> 02 -> 03 -> 05_ResetBasePruebas -> 04_DatosPrueba`; para volver al estado inicial ejecutar `05_ResetBasePruebas`.
+`02_DatosIniciales.sql` es idempotente y contiene **44 funcionalidades activas**. `05_ResetBasePruebas.sql` conserva ese catálogo. `04_DatosPrueba.sql` es exclusivo de desarrollo. `BaseDatos/Historico/05_CatalogoInicial.sql` queda fuera del flujo oficial.
 
-Las familias actuales de procedimientos cubren autenticación y usuarios; perfiles y funcionalidades; provincias/localidades y direcciones; clientes; categorías, marcas y productos; inventario; ventas, pagos y sus consultas; reportes; sucursales, avisos y auditoría. Convención: `sp_<Entidad>_<Accion>`.
+## 5. Catálogo y autorización
 
-Todo procedimiento creado o modificado en SSMS debe actualizar también `03_Procedimientos.sql`.
+El catálogo contiene CRUD independiente `VER/ALTA/MODIFICAR/BAJA` para `USUARIOS`, `CLIENTES`, `PRODUCTOS`, `CATEGORIAS`, `MARCAS` y `SUCURSALES`; `PERMISOS_GESTIONAR`; `VENTAS_VER`, `VENTAS_REALIZAR`; `AVISOS_VER`, `AVISOS_PUBLICAR`; `BACKUP_REALIZAR`; y los permisos granulares de Reportes: `REPORTES_VER`, `REPORTES_VENTAS`, `REPORTES_RECAUDACION`, `REPORTES_PRODUCTOS`, `REPORTES_STOCK`, `REPORTES_RENDIMIENTO_VENDEDORES`, `REPORTES_DETALLE_VENTAS`, `REPORTES_EXPORTAR`, `REPORTES_ALCANCE_PROPIO`, `REPORTES_ALCANCE_SUCURSAL`, `REPORTES_ALCANCE_GLOBAL`. Se conservan por compatibilidad `REPORTES_ADMINISTRADOR`, `REPORTES_GERENTE` y `REPORTES_VENDEDOR`, pero no autorizan el flujo nuevo.
 
-## 5. Configuración y seguridad
+`SesionActual` carga funcionalidades desde `PERFIL_FUNCIONALIDAD`; `TienePermiso(codigo)` es la fuente de autorización. Nunca decidir por nombre de perfil o ID fijo. `FormPrincipal` deja módulos visibles: autorizados tienen icono/texto normal y cursor Hand; no autorizados, icono atenuado, texto gris y clic bloqueado internamente. Productos y Usuarios se abren si alguna subvista está autorizada. Reportes requiere `REPORTES_VER` y al menos una sección. Back Up requiere `BACKUP_REALIZAR`.
 
-La conexión se crea desde `Capa_Datos/Conexion.cs`. La configuración local está en `Capa_Datos/Configuracion/configuracion.json`: no se sube a Git; se versiona `configuracion.example.json`; no se hardcodean credenciales reales ni se usan contraseñas en texto plano o `sa` como cuenta normal. Autenticación con PBKDF2 + SHA-256.
+Editar perfil es acción personal fuera de `accesosMenu`: requiere sesión válida, no `USUARIOS_MODIFICAR`; `FormMiPerfil` limita el usuario a `SesionActual.IdUsuario`.
 
-## 6. Autenticación, sesión y permisos
+## 6. Sesión y alcance
 
-Flujo: `FormLogin -> UsuarioLogica.IniciarSesion() -> UsuarioDatos.BuscarPorNombreUsuario() -> sp_Usuario_BuscarPorNombreUsuario -> PasswordHelper.Verificar() -> UsuarioDatos.ObtenerFuncionalidadesPerfil() -> sp_Perfil_ObtenerFuncionalidades -> SesionActual -> FormPrincipal`.
+`SesionActual.AlcanceGlobal` indica capacidad global; `IdSucursal` es la sucursal fija asignada; `IdSucursalOperativa` es la sucursal elegida temporalmente por un global. Global inicia en “Todas las sucursales” (`IdSucursalOperativa = null`) y puede seleccionar una activa. El usuario fijo no cambia sucursal. Vender, descontar stock o registrar inventario requiere sucursal operativa concreta (`ObtenerIdSucursalOperativa()`); “Todas” no habilita esas operaciones.
 
-`SesionActual` mantiene usuario, perfil, sucursal asignada/operativa, estado y funcionalidades permitidas en memoria. No consulta Datos ni SQL Server. La lógica carga la sesión y expone las decisiones de permisos; las vistas no definen permisos manualmente.
+## 7. Navegación y mensajes WinForms
 
-## 7. Validaciones
+`FormPrincipal` mantiene menú, cabecera y `pnlContenido`. `AbrirFormularioEnPanel()` carga módulos con `TopLevel = false`, `FormBorderStyle = None`, `Dock = Fill`, agrega, muestra y trae al frente el formulario; no recrea `FormPrincipal`. Designer contiene estructura; `.cs`, eventos, permisos, navegación, controles dinámicos y Resize.
 
-Todo campo editable se valida en tres niveles cuando corresponda:
+`FormMensaje` centraliza éxito, advertencia, error y confirmación Sí/No. Con principal visible resuelve la instancia real, muestra `FormOverlay` sobre sus bounds, centra el diálogo usando coordenadas de pantalla y elimina el overlay en `finally`. Antes de Login conserva el owner disponible. Los formularios legacy `FormReportesGerente` y `FormReportesVendedor` aún contienen MessageBox, pero están fuera de la navegación activa; el flujo actual usa `FormReportesGeneral` y `FormMensaje`.
 
-- Vista: prevención inmediata de formato, longitud, caracteres, obligatorios, rangos y selección.
-- Lógica: regla autoritativa, reglas entre campos y contexto de sesión/permisos/estado/sucursal.
-- Base: integridad final con NOT NULL, UNIQUE, CHECK, FK y procedimientos.
+## 8. Módulos
 
-Nunca depender de una sola capa.
+* **Inicio/Dashboard:** resumen, actividad, gráficos y avisos según alcance.
+* **Usuarios:** listado, búsqueda, CRUD lógico/reactivación, historial, perfiles/permisos y sucursales.
+* **Perfiles:** funcionalidades dinámicas desde SQL y guardado transaccional independiente.
+* **Mi Perfil:** datos propios y contraseña opcional confirmada; no rol/permisos/sucursal/estado.
+* **Sucursales:** activas/inactivas, dirección, localidad/provincia, conteos, CRUD y autorización granular.
+* **Clientes:** búsqueda, estados, CRUD, historial y dirección separada en calle, altura y piso nullable, con provincia/localidad.
+* **Productos:** catálogo, códigos, nombre comercial, categoría, marca, CRUD e inventario; Categorías y Marcas son submódulos.
+* **Categorías/Marcas:** CRUD lógico y relación muchos-a-muchos `MARCA_CATEGORIA`; marcas filtradas dinámicamente por categoría.
+* **Inventario:** stock y mínimo por producto+sucursal, alcance y `PRODUCTOS_MODIFICAR`.
+* **Ventas:** cliente, productos, cantidades, pagos, descuento, transacción, detalle, historial y stock.
+* **Avisos:** `AVISOS_PUBLICAR` publica; `AVISOS_VER` visualiza; `id_sucursal NULL` es global.
+* **Reportes:** cuatro secciones, filtros, alcance y Excel.
+* **Back Up:** `.bak` real en servidor SQL, sin Restore ni tabla propia.
 
-## 8. Vistas WinForms y FormPrincipal
+## 9. Reportes y Excel
 
-`FormNombre.Designer.cs` contiene estructura visual; `FormNombre.cs`, eventos, navegación, carga e interacción con Capa_Logica. No recrear por código controles existentes en Designer; priorizar el Diseñador para cambios visuales.
+`FormReportesGeneral` ofrece General, Por usuario, Ventas detalladas y Stock bajo. La primera sección y visibilidad se determinan mediante capacidades de `ReporteLogica`, no `Button.Visible`. El alcance propio, fijo o global se respeta en filtros; al fijo se informa sucursal de solo lectura y al global se permite “Todas” o una sucursal activa.
 
-`FormPrincipal` contiene cabecera, menú lateral, zona de usuario y `pnlContenido`. Los módulos internos se cargan en ese panel con `TopLevel = false`, `FormBorderStyle = None` y `Dock = Fill`; no repiten cabecera, menú ni cierre de sesión.
+`ExcelExportHelper` + ClosedXML genera workbooks `.xlsx` reales, con hojas/tablas, encabezados, filtros, fechas y números. No es CSV renombrado ni requiere Excel instalado; no exporta botones visuales. `REPORTES_EXPORTAR` controla la acción. Cada vista tiene panel hermano y scroll vertical propio; el layout usa el viewport real y no fuerza anchos mayores que `ClientSize`.
 
-Todos los botones de menú permanecen visibles: con permiso se habilitan y sin permiso quedan grisados/deshabilitados. INICIO siempre está habilitado.
+## 10. Back Up
 
-## 9. Convenciones de código
+El flujo es `FormBackup → BackupLogica → BackupDatos`. Datos obtiene el catálogo desde el connection string y el directorio del servidor con `SERVERPROPERTY('InstanceDefaultBackupPath')`; si es NULL usa `sys.dm_server_registry`. No hay FolderBrowserDialog, ruta del cliente, `xp_cmdshell` ni Restore.
 
-Nombres: `Form<Nombre>`, `<Entidad>Datos`, `<Entidad>Logica`, `sp_<Entidad>_<Accion>`.
+Genera `<Base>_yyyyMMdd_HHmmss.bak`, sanitiza el nombre y ejecuta `BACKUP DATABASE` con parámetros. Después llama `sp_Auditoria_Registrar` con `BACKUP / BASE_DATOS` y únicamente el nombre del archivo. No registra credenciales, connection strings ni secretos. No existe tabla de Back Up.
 
-En Datos usar `Conexion.CrearConexion()`, `using`, parámetros SQL y `CommandType.StoredProcedure`; nunca concatenar entradas de usuario. Cada método nuevo o reescrito de forma significativa debe llevar un comentario breve sobre su propósito y decisiones no evidentes. Los comentarios explican responsabilidades o decisiones, no instrucciones obvias.
+## 11. Validación, errores y auditoría
 
-## 10. Git
+Vista valida obligatorios, longitud, Unicode, números, calle/altura/piso, barcode, cantidades, fechas y combos. Lógica valida reglas autoritativas, unicidad, permisos, alcance y relaciones. SQL valida integridad y transacciones. Datos usa conexiones parametrizadas y `using`; Lógica traduce resultados; Vista conserva formularios y muestra `FormMensaje`.
 
-`master` es estable; `desarrollo` es la rama de integración; `exe-dev` y `josi-dev` son ramas personales.
+`AUDITORIA` registra usuario, fecha, acción, entidad, entidad afectada, detalle y sucursal. `sp_Auditoria_Registrar/Listar` cubren usuarios, perfiles/permisos, clientes, productos, categorías, marcas, inventario, sucursales, ventas, avisos y Back Up. Nunca registrar contraseñas, hashes, credenciales o connection strings.
 
-Flujo: actualizar `desarrollo`, actualizar la rama personal, trabajar, compilar/probar, commit+push personal y merge a la rama elegida. No trabajar directamente sobre `master`.
+## 12. Ventas, stock y concurrencia
 
-## 11. División actual
+La Vista arma el modelo; `VentaLogica` valida cliente, ítems, pagos, duplicados, importes, permiso y sucursal; `VentaDatos` crea los TVP `dbo.VentaItemTipo` y `dbo.VentaPagoTipo` y llama `sp_Venta_Registrar`.
 
-Exequiel: Usuarios, integración, arquitectura, autenticación, sesión, permisos, lógica, datos, procedimientos y base de datos.
+El procedimiento vuelve a validar usuario, `VENTAS_REALIZAR`, sucursal, alcance, cliente, productos, pagos y total dentro de una transacción. Comprueba stock con `UPDLOCK, HOLDLOCK` sobre `INVENTARIO`, evitando que ventas concurrentes consuman las mismas unidades; inserta venta/detalle/pagos, descuenta stock y hace COMMIT. Stock insuficiente o cualquier error produce ROLLBACK completo. Esta garantía depende del SQL actual y debe reevaluarse si se cambia el procedimiento o el aislamiento.
 
-Josias: Clientes.
+## 13. Pruebas, diseño y seguridad
 
-Ambos módulos respetan Vista -> Lógica -> Datos -> SQL Server, datos dinámicos y validaciones en las tres capas. Las vistas se cargan en `pnlContenido`; FormPrincipal no se recrea.
+`04_DatosPrueba.sql` contiene usuarios, sucursales, productos, inventario, ventas y auditoría para testing. `CREDENCIALES_PRUEBA.txt` es local e ignorado; nunca documentar secretos. Tema visual: charcoal/dorado/blanco. Resize debe usar ClientSize y paneles estables; no acumular Top/Height ni recrear controles Designer.
 
-## 12. Restricciones para agentes
+Antes de modificar, inspeccionar flujo completo, confirmar capa y probar GUI: un build correcto no garantiza runtime correcto. Mantener scripts idempotentes, actualizar `03_Procedimientos.sql` al crear/modificar SP, no duplicar permisos, no hardcodear perfiles, respetar capas y no hacer commit/push/merge automáticamente.
 
-Antes de modificar: leer este archivo, revisar el código, confirmar la rama, identificar la capa correcta y revisar `BaseDatos/` si el cambio afecta datos.
+## 14. Discrepancias de la documentación anterior y pendientes
 
-No cambiar la arquitectura, crear una cuarta capa, crear referencia Vistas->Datos, ejecutar SQL desde formularios, mostrar MessageBox desde Datos, hardcodear credenciales o datos administrables, subir `configuracion.json`, concatenar SQL, cambiar esquema sin scripts, hacer bajas físicas indebidas, cambiar convenciones sin autorización, asumir decisiones pendientes, ni hacer commit/push/merge sin autorización.
+La documentación previa decía CSV, pero el estado real es Excel `.xlsx` con ClosedXML. No documentaba Back Up, que ahora existe como generación server-side con `BACKUP_REALIZAR`. También omitía los conteos verificados: 20 tablas, 80 procedimientos y 44 funcionalidades. Los formularios de Reportes por perfil son legacy y no forman parte de la navegación actual.
 
-Sí realizar cambios pequeños, reutilizar código, obtener datos dinámicos desde Lógica, validar en Vista y Lógica, respetar capas, comentar decisiones importantes, actualizar scripts cuando corresponda, compilar tras cambios relevantes, informar archivos modificados y actualizar este documento al cerrar hitos.
-
-## 13. Estado completado
-
-- Solución funcional de tres capas, configuración externa, conexión SQL, autenticación PBKDF2 + SHA-256, SesionActual, permisos y selector de sucursal operativa.
-- Base `SistemaGestion` con 20 tablas y scripts de estructura/datos/pruebas; incluye MARCA_CATEGORIA, AVISO, AUDITORIA e inventario por producto+sucursal.
-- FormPrincipal, navegación embebida en `pnlContenido`, cierre de sesión y menú visible condicionado por permisos.
-- Clientes: listado/búsqueda por estado, alta, modificación, baja lógica, reactivación, historial de compras, dirección y provincias/localidades dinámicas; validaciones reforzadas en Vista, Lógica y SQL.
-- Productos: alta/modificación con validación autoritativa unificada; límites y prevención para nombre, código, costo, ganancia y stock. Categorías y marcas tienen gestión dinámica con permisos propios y relación muchos-a-muchos; los productos existentes migran sus pares marca/categoría.
-- Usuarios: listado, filtros, alta, modificación, baja/reactivación y carga dinámica de perfiles/sucursales. `sp_Usuario_ObtenerPorId` devuelve `activo` y admite usuarios inactivos; detalle y mensajes corregidos.
-- Sucursales: consulta activa dentro de Usuarios, resumen dinámico de usuarios por perfil, alta con provincia/localidad/dirección y permisos `SUCURSALES_*`; perfiles nuevos aparecen sin cambios de código.
-- Perfiles y permisos: gestión dinámica desde SQL, validaciones reforzadas y guardado transaccional de perfil + funcionalidades; se conserva la protección global y `PERMISOS_GESTIONAR`.
-- Ventas: selección de cliente/productos, carrito, pagos, registro transaccional, actualización de stock, detalle/listado y aviso preventivo si falta sucursal operativa.
-- Inventario: validaciones de stock, permisos por sesión/alcance y autorización reforzada también en SQL.
-- Inicio / Dashboard: métricas reales por sucursal o negocio, actividad, gráficos breves y avisos persistentes globales o por sucursal; `AVISOS_PUBLICAR` autoriza publicar y `AVISOS_VER` visualizar según alcance.
-- Auditoría de validaciones cerrada en Clientes, Productos, Ventas, Usuarios, Inventario y Perfiles/permisos: Vista, Lógica y SQL cubren los flujos actuales según corresponda.
-- Grillas de Usuarios, Clientes y Productos con estados, acciones, alineación y presentación visual unificadas.
-- Reportes: `FormReportesGeneral` es la única vista activa; permisos granulares `REPORTES_*`, alcance propio/sucursal/global, gráfico de ventas y recaudación, productos más vendidos, rendimiento de vendedores, stock bajo, detalle de ventas y exportación CSV. `FormReportesGerente` y `FormReportesVendedor` quedan fuera de navegación.
-- Auditoría: historial persistente de altas, modificaciones, bajas/reactivaciones, stock, ventas y avisos; Reportes por usuario muestra actividad administrativa real según alcance autorizado.
-- Back Up: generación manual de archivos `.bak` en el directorio predeterminado informado por SQL Server, protegida por `BACKUP_REALIZAR` y registrada en `AUDITORIA`; no incluye restauración ni tablas propias.
-- Los permisos heredados `REPORTES_ADMINISTRADOR`, `REPORTES_GERENTE` y `REPORTES_VENDEDOR` se conservan por compatibilidad, pero no forman parte de la lógica nueva de Reportes.
-
-## 14. Pendiente y decisiones abiertas
-
-1. Prueba funcional integral final del sistema.
-2. Correcciones que surjan de esa prueba.
-3. Preparación de despliegue/instalador para Windows.
-4. Configuración final de SQL Server central, red/TCP/IP/firewall y cuenta SQL.
-5. Revisión final de scripts para instalación limpia en otra PC.
-6. Mejoras opcionales posteriores, como PDF si se decide implementarlo.
-
-## Regla de continuidad
-
-Este archivo debe indicar rápidamente qué existe, cómo se estructura, qué reglas no se rompen, qué está terminado y qué falta. Mantenerlo corto y operativo.
+Pendientes reales: prueba funcional integral en GUI y base limpia; revisión de despliegue/instalador; configuración de SQL Server central (red, TCP/IP, firewall y cuenta de servicio); validación manual de scripts en otra instancia. No están implementados Restore, historial propio de copias ni tabla adicional de backups.
