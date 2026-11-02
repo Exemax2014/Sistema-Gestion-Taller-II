@@ -161,8 +161,17 @@ namespace Capa_Vistas
             dgvDetalleVentas.CellContentClick += DgvVentas_CellContentClick;
             dgvStockBajo.CellContentClick += DgvStockBajo_CellContentClick;
             pnlGraficoContenido.Paint += PnlGraficoContenido_Paint;
+            foreach (Panel tarjeta in new[] { pnlTarjetaVentas, pnlTarjetaIngresos, pnlTarjetaProductos, pnlTarjetaStock })
+                tarjeta.Paint += PnlTarjeta_Paint;
             Load += (_, _) => AjustarLayout();
             Resize += (_, _) => AjustarLayout();
+        }
+
+        // Acento dorado lateral común a las tarjetas de indicadores para unificar su jerarquía visual.
+        private void PnlTarjeta_Paint(object? sender, PaintEventArgs e)
+        {
+            using SolidBrush acento = new(Color.FromArgb(190, 137, 45));
+            e.Graphics.FillRectangle(acento, 0, 0, 4, ((Control)sender!).ClientSize.Height);
         }
 
         // Inicializa los filtros según las capacidades ya resueltas por ReporteLogica.
