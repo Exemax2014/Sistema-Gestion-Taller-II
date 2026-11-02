@@ -6,7 +6,7 @@ namespace Capa_Vistas
     // Organiza las consultas autorizadas de Reportes en secciones internas sin crear módulos paralelos.
     public partial class FormReportesGeneral : Form
     {
-        private enum SeccionReporte { General, PorUsuario, VentasDetalladas, StockBajo }
+        public enum SeccionReporte { General, PorUsuario, VentasDetalladas, StockBajo }
         private readonly FormPrincipal formPrincipal;
         private readonly ReporteLogica reporteLogica = new();
         private readonly SucursalLogica sucursalLogica = new();
@@ -30,12 +30,14 @@ namespace Capa_Vistas
         private string usuarioReporteActual = string.Empty;
         private SeccionReporte seccionActual = SeccionReporte.General;
         private bool seccionInicializada;
+        private readonly SeccionReporte? seccionSolicitada;
 
         // Mantiene la navegación embebida y los mensajes centrados en el formulario principal.
-        public FormReportesGeneral(FormPrincipal formPrincipal)
+        public FormReportesGeneral(FormPrincipal formPrincipal, SeccionReporte? seccionInicial = null)
         {
             InitializeComponent();
             this.formPrincipal = formPrincipal;
+            seccionSolicitada = seccionInicial;
             AutoScroll = false;
             ConfigurarGrillas();
             ConfigurarContenidoInterno();
@@ -159,8 +161,17 @@ namespace Capa_Vistas
             dgvDetalleVentas.CellContentClick += DgvVentas_CellContentClick;
             dgvStockBajo.CellContentClick += DgvStockBajo_CellContentClick;
             pnlGraficoContenido.Paint += PnlGraficoContenido_Paint;
+            foreach (Panel tarjeta in new[] { pnlTarjetaVentas, pnlTarjetaIngresos, pnlTarjetaProductos, pnlTarjetaStock })
+                tarjeta.Paint += PnlTarjeta_Paint;
             Load += (_, _) => AjustarLayout();
             Resize += (_, _) => AjustarLayout();
+        }
+
+        // Acento dorado lateral común a las tarjetas de indicadores para unificar su jerarquía visual.
+        private void PnlTarjeta_Paint(object? sender, PaintEventArgs e)
+        {
+            using SolidBrush acento = new(Color.FromArgb(190, 137, 45));
+            e.Graphics.FillRectangle(acento, 0, 0, 4, ((Control)sender!).ClientSize.Height);
         }
 
         // Inicializa los filtros según las capacidades ya resueltas por ReporteLogica.
@@ -172,7 +183,9 @@ namespace Capa_Vistas
             if (reporteLogica.ObtenerAlcanceReportes() == AlcanceReportes.Ninguno) { MostrarMensaje("Sin alcance", reporteLogica.ObtenerMensajeSinAlcance()); return; }
             CargarSucursales();
             ConfigurarNavegacion();
-            SeccionReporte? seccionInicial = PrimeraSeccionDisponible();
+            SeccionReporte? seccionInicial = seccionSolicitada.HasValue && SeccionDisponible(seccionSolicitada.Value)
+                ? seccionSolicitada
+                : PrimeraSeccionDisponible();
             if (!seccionInicial.HasValue)
             {
                 MostrarMensaje("Sin acceso", "No tenés permisos para consultar ninguna sección de Reportes.");
@@ -190,6 +203,16 @@ namespace Capa_Vistas
             btnVentasDetalladas.Visible = reporteLogica.PuedeVerDetalleVentas();
             btnStockBajo.Visible = reporteLogica.PuedeVerStock();
         }
+
+        // Indica si la sección está autorizada por los permisos REPORTES_* de la sesión.
+        private bool SeccionDisponible(SeccionReporte seccion) => seccion switch
+        {
+            SeccionReporte.General => reporteLogica.PuedeVerVentas() || reporteLogica.PuedeVerRecaudacion() || reporteLogica.PuedeVerProductos(),
+            SeccionReporte.PorUsuario => reporteLogica.PuedeVerRendimientoVendedores(),
+            SeccionReporte.VentasDetalladas => reporteLogica.PuedeVerDetalleVentas(),
+            SeccionReporte.StockBajo => reporteLogica.PuedeVerStock(),
+            _ => false
+        };
 
         // Elige una sección autorizada si la predeterminada no está disponible para la sesión.
         private SeccionReporte? PrimeraSeccionDisponible()
@@ -505,7 +528,7 @@ namespace Capa_Vistas
         private void DgvVentas_CellContentClick(object? sender, DataGridViewCellEventArgs e)
         {
             if (sender is not DataGridView grilla || e.RowIndex < 0 || e.ColumnIndex < 0 || grilla.Columns[e.ColumnIndex].Name != "Ver detalle") return;
-            formPrincipal.AbrirFormularioEnPanel(new FormVentaDetalle(formPrincipal, Convert.ToInt32(grilla.Rows[e.RowIndex].Cells[0].Value)), formPrincipal.BotonReportes);
+            formPrincipal.AbrirFormularioEnPanel(new FormVentaDetalle(formPrincipal, Convert.ToInt32(grilla.Rows[e.RowIndex].Cells[0].Value), seccionActual), formPrincipal.BotonReportes);
         }
 
         // Envía el producto al detalle existente solo cuando Lógica autoriza gestionar esa sucursal.
