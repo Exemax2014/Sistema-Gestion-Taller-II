@@ -255,13 +255,32 @@ namespace Capa_Vistas
         // Ajusta los datos de sesión al ancho del menú y conserva el texto completo como ayuda contextual.
         private void ActualizarDatosSesionVisuales()
         {
-            lblUsuarioActual.AutoEllipsis = true;
-            lblUsuarioActual.Width = Math.Max(40, pnlCuenta.ClientSize.Width - lblUsuarioActual.Left - 14);
-            lblSucursalActual.AutoEllipsis = true;
+            lblUsuarioActual.AutoEllipsis = false;
+            lblUsuarioActual.Size = new Size(Math.Max(40, pnlCuenta.ClientSize.Width - lblUsuarioActual.Left - 14), 32);
+            AjustarTextoSesion(lblUsuarioActual, 9F, 7.5F);
+            lblSucursalActual.AutoEllipsis = false;
             lblSucursalActual.Width = Math.Max(40, pnlSucursal.ClientSize.Width - lblSucursalActual.Left - 14);
+            AjustarTextoSesion(lblSucursalActual, 10.5F, 8.5F);
             toolTipSesion?.SetToolTip(lblUsuarioActual, lblUsuarioActual.Text);
             toolTipSesion?.SetToolTip(lblPerfil, lblPerfil.Text);
             toolTipSesion?.SetToolTip(lblSucursalActual, lblSucursalActual.Text);
+        }
+
+
+        // Reduce la tipografía hasta que el texto entre en una línea; si aun así no entra, la etiqueta lo continúa en la línea siguiente.
+        private static void AjustarTextoSesion(Label etiqueta, float tamanoMaximo, float tamanoMinimo)
+        {
+            float tamano = tamanoMaximo;
+            while (tamano > tamanoMinimo)
+            {
+                using Font prueba = new(etiqueta.Font.FontFamily, tamano, etiqueta.Font.Style);
+                if (TextRenderer.MeasureText(etiqueta.Text, prueba, new Size(int.MaxValue, 0), TextFormatFlags.NoPadding).Width <= etiqueta.Width)
+                    break;
+                tamano -= 0.5F;
+            }
+
+            if (Math.Abs(etiqueta.Font.Size - tamano) > 0.01F)
+                etiqueta.Font = new Font(etiqueta.Font.FontFamily, tamano, etiqueta.Font.Style);
         }
 
 
