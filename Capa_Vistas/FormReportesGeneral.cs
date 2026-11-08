@@ -540,7 +540,7 @@ namespace Capa_Vistas
             {
                 string nombreProducto = Convert.ToString(dgvStockBajo.Rows[e.RowIndex].Cells[1].Value) ?? string.Empty;
                 formPrincipal.AbrirFormularioEnPanel(
-                    new FormProductoDetalle(formPrincipal, idProducto, true, nombreProducto, idSucursal),
+                    new FormProductoDetalle(formPrincipal, idProducto, true, nombreProducto, idSucursal, seccionActual),
                     formPrincipal.BotonProductos);
             }
         }

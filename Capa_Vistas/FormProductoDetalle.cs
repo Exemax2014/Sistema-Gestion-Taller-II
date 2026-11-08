@@ -28,6 +28,8 @@ namespace Capa_Vistas
 
         private readonly bool soloGestionStock;
 
+        private readonly FormReportesGeneral.SeccionReporte? seccionReportesOrigen;
+
 
         private int? idProducto;
 
@@ -72,7 +74,8 @@ namespace Capa_Vistas
             int? idProducto,
             bool soloGestionStock,
             string? nombreProducto,
-            int? idSucursalGestionStock = null)
+            int? idSucursalGestionStock = null,
+            FormReportesGeneral.SeccionReporte? seccionReportesOrigen = null)
         {
             InitializeComponent();
 
@@ -86,6 +89,7 @@ namespace Capa_Vistas
 
             this.soloGestionStock = soloGestionStock;
             this.idSucursalGestionStock = idSucursalGestionStock;
+            this.seccionReportesOrigen = seccionReportesOrigen;
 
 
             pnlEditarStock.Visible =
@@ -1285,7 +1289,7 @@ namespace Capa_Vistas
             if (soloGestionStock)
             {
                 formPrincipal.AbrirFormularioEnPanel(
-                    new FormReportesGeneral(formPrincipal),
+                    new FormReportesGeneral(formPrincipal, seccionReportesOrigen),
                     formPrincipal.BotonReportes
                 );
                 return;
