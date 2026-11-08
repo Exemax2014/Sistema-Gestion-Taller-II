@@ -263,12 +263,13 @@ namespace Capa_Vistas
             cmbSucursalOperativa.BackColor = Color.FromArgb(28, 32, 37);
             cmbSucursalOperativa.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbSucursalOperativa.FlatStyle = FlatStyle.Flat;
-            cmbSucursalOperativa.Font = new Font("Segoe UI", 10F);
+            cmbSucursalOperativa.DropDownWidth = 230;
+            cmbSucursalOperativa.Font = new Font("Segoe UI", 8.5F);
             cmbSucursalOperativa.ForeColor = Color.White;
             cmbSucursalOperativa.FormattingEnabled = true;
-            cmbSucursalOperativa.Location = new Point(12, 42);
+            cmbSucursalOperativa.Location = new Point(10, 42);
             cmbSucursalOperativa.Name = "cmbSucursalOperativa";
-            cmbSucursalOperativa.Size = new Size(141, 25);
+            cmbSucursalOperativa.Size = new Size(147, 25);
             cmbSucursalOperativa.TabIndex = 2;
             cmbSucursalOperativa.Visible = false;
             // 
