@@ -201,6 +201,9 @@ namespace Capa_Vistas
             Bitmap imagen = new(42, 42);
             using Graphics graphics = Graphics.FromImage(imagen);
             graphics.Clear(Color.Transparent);
+            graphics.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
+            using Pen aro = new(Color.FromArgb(255, 140, 0), 2.5F);
+            graphics.DrawEllipse(aro, 2, 2, imagen.Width - 5, imagen.Height - 5);
             graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAliasGridFit;
             using Font fuente = new("Segoe UI Symbol", 27F, FontStyle.Regular, GraphicsUnit.Pixel);
             using Brush pincel = new SolidBrush(Color.White);

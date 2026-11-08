@@ -26,6 +26,7 @@ namespace Capa_Vistas
         private readonly TipoHistorialVentas tipoOrigen;
         private readonly int idReferencia;
         private readonly bool consultaDesdeReportes;
+        private readonly FormReportesGeneral.SeccionReporte? seccionReportesOrigen;
 
         private VentaDetalleModelo? ventaActual;
 
@@ -63,7 +64,8 @@ namespace Capa_Vistas
             TipoHistorialVentas tipoOrigen,
             int idReferencia,
             string nombreReferencia,
-            bool consultaDesdeReportes = false)
+            bool consultaDesdeReportes = false,
+            FormReportesGeneral.SeccionReporte? seccionReportesOrigen = null)
         {
             InitializeComponent();
 
@@ -92,6 +94,9 @@ namespace Capa_Vistas
             this.consultaDesdeReportes =
                 consultaDesdeReportes;
 
+            this.seccionReportesOrigen =
+                seccionReportesOrigen;
+
 
             ConfigurarGrillas();
             ConfigurarEventos();
@@ -102,7 +107,8 @@ namespace Capa_Vistas
         // Abre un detalle desde Reportes y conserva la validación de alcance en VentaLogica.
         public FormVentaDetalle(
             FormPrincipal formPrincipal,
-            int idVenta)
+            int idVenta,
+            FormReportesGeneral.SeccionReporte? seccionReportesOrigen = null)
             : this(
                 formPrincipal,
                 OrigenHistorialVentas.Reportes,
@@ -110,7 +116,8 @@ namespace Capa_Vistas
                 TipoHistorialVentas.Vendedor,
                 SesionActual.IdUsuario,
                 string.Empty,
-                true)
+                true,
+                seccionReportesOrigen)
         {
         }
 
@@ -458,7 +465,7 @@ namespace Capa_Vistas
             if (origenHistorial == OrigenHistorialVentas.Reportes)
             {
                 formPrincipal.AbrirFormularioEnPanel(
-                    new FormReportesGeneral(formPrincipal),
+                    new FormReportesGeneral(formPrincipal, seccionReportesOrigen),
                     formPrincipal.BotonReportes
                 );
                 return;

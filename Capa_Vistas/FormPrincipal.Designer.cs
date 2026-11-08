@@ -240,19 +240,19 @@ namespace Capa_Vistas
             // 
             // lblSucursalTitulo
             // 
-            lblSucursalTitulo.Font = new Font("Segoe UI", 7.5F, FontStyle.Bold);
+            lblSucursalTitulo.Font = new Font("Segoe UI", 9.5F, FontStyle.Bold);
             lblSucursalTitulo.ForeColor = Color.FromArgb(190, 137, 45);
-            lblSucursalTitulo.Location = new Point(14, 12);
+            lblSucursalTitulo.Location = new Point(14, 14);
             lblSucursalTitulo.Name = "lblSucursalTitulo";
-            lblSucursalTitulo.Size = new Size(137, 18);
+            lblSucursalTitulo.Size = new Size(137, 22);
             lblSucursalTitulo.TabIndex = 0;
             lblSucursalTitulo.Text = "SUCURSAL";
             // 
             // lblSucursalActual
             // 
-            lblSucursalActual.Font = new Font("Segoe UI", 8.5F);
-            lblSucursalActual.ForeColor = Color.FromArgb(215, 218, 222);
-            lblSucursalActual.Location = new Point(14, 34);
+            lblSucursalActual.Font = new Font("Segoe UI", 10.5F, FontStyle.Bold);
+            lblSucursalActual.ForeColor = Color.White;
+            lblSucursalActual.Location = new Point(14, 40);
             lblSucursalActual.Name = "lblSucursalActual";
             lblSucursalActual.Size = new Size(137, 48);
             lblSucursalActual.TabIndex = 1;
@@ -263,12 +263,12 @@ namespace Capa_Vistas
             cmbSucursalOperativa.BackColor = Color.FromArgb(28, 32, 37);
             cmbSucursalOperativa.DropDownStyle = ComboBoxStyle.DropDownList;
             cmbSucursalOperativa.FlatStyle = FlatStyle.Flat;
-            cmbSucursalOperativa.Font = new Font("Segoe UI", 8F);
+            cmbSucursalOperativa.Font = new Font("Segoe UI", 10F);
             cmbSucursalOperativa.ForeColor = Color.White;
             cmbSucursalOperativa.FormattingEnabled = true;
-            cmbSucursalOperativa.Location = new Point(14, 37);
+            cmbSucursalOperativa.Location = new Point(12, 42);
             cmbSucursalOperativa.Name = "cmbSucursalOperativa";
-            cmbSucursalOperativa.Size = new Size(137, 25);
+            cmbSucursalOperativa.Size = new Size(141, 25);
             cmbSucursalOperativa.TabIndex = 2;
             cmbSucursalOperativa.Visible = false;
             // 
