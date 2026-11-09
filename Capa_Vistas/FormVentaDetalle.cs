@@ -438,12 +438,37 @@ namespace Capa_Vistas
             }
 
 
-            // La generación real del PDF se conectará
-            // en el siguiente paso con un servicio reutilizable.
-            MostrarMensaje(
-                "Generar PDF",
-                $"La venta N° {ventaActual.IdVenta} está lista para generar el comprobante en PDF."
-            );
+            using SaveFileDialog dialogo = new SaveFileDialog
+            {
+                Title = "Guardar comprobante de venta",
+                Filter = "Documento PDF (*.pdf)|*.pdf",
+                DefaultExt = "pdf",
+                AddExtension = true,
+                FileName = ComprobanteVentaPdf.NombreSugerido(ventaActual)
+            };
+
+            if (dialogo.ShowDialog(this) != DialogResult.OK)
+                return;
+
+            try
+            {
+                ComprobanteVentaPdf.Generar(dialogo.FileName, ventaActual);
+
+                MostrarMensaje(
+                    "Comprobante generado",
+                    $"El comprobante de la venta N° {ventaActual.IdVenta} se guardó correctamente."
+                );
+            }
+            catch (Exception ex) when (
+                ex is IOException
+                || ex is UnauthorizedAccessException
+                || ex is InvalidOperationException)
+            {
+                MostrarMensaje(
+                    "No se pudo generar el PDF",
+                    "No se pudo guardar el archivo. Verificá que la ubicación sea válida y que el archivo no esté abierto en otro programa."
+                );
+            }
         }
 
 

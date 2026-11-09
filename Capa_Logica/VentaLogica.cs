@@ -101,6 +101,13 @@ namespace Capa_Logica
     {
         public int IdCliente { get; set; }
         public string Nombre { get; set; } = string.Empty;
+        public string Documento { get; set; } = string.Empty;
+
+        // Texto para listas de selección: "Apellido, Nombre - Documento".
+        public string Etiqueta =>
+            string.IsNullOrWhiteSpace(Documento)
+                ? Nombre
+                : $"{Nombre} - {Documento}";
     }
 
 
@@ -308,6 +315,7 @@ namespace Capa_Logica
         // propio de Capa_Logica hacia la Vista.
         // ========================================================
 
+        // Con texto vacío devuelve todos los clientes activos.
         public List<ClienteVentaModelo> BuscarClientesParaVenta(
             string texto)
         {
@@ -320,11 +328,12 @@ namespace Capa_Logica
             ClienteLogica clienteLogica =
                 new ClienteLogica();
 
+            texto = (texto ?? string.Empty).Trim();
 
-            var clientes =
-                clienteLogica.Buscar(
-                    texto ?? string.Empty
-                );
+            List<ClienteListaModelo> clientes =
+                texto.Length == 0
+                    ? clienteLogica.ObtenerTodos()
+                    : clienteLogica.Buscar(texto);
 
 
             return clientes
@@ -336,7 +345,10 @@ namespace Capa_Logica
                                 cliente.IdCliente,
 
                             Nombre =
-                                cliente.Nombre
+                                $"{cliente.Apellido}, {cliente.Nombre}".Trim(' ', ','),
+
+                            Documento =
+                                cliente.Documento
                         }
                 )
                 .ToList();

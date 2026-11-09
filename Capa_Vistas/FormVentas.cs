@@ -1083,6 +1083,11 @@ namespace Capa_Vistas
 
             ActualizarResumen();
 
+            if (cmbClienteResultados.Items.Count == 0)
+            {
+                BuscarClientes(false);
+            }
+
             txtBuscarCliente.Focus();
         }
 
@@ -1091,17 +1096,19 @@ namespace Capa_Vistas
         // CLIENTE
         // ========================================================
 
-        private void BuscarClientes()
+        // Texto vacío: lista todos los clientes activos para elegir.
+        // mostrarAvisos=false evita mensajes al cargar el listado inicial.
+        private void BuscarClientes(bool mostrarAvisos = true)
         {
             string texto =
                 txtBuscarCliente.Text.Trim();
 
 
-            if (texto.Length < 2)
+            if (texto.Length == 1)
             {
                 MostrarMensaje(
                     "Buscar cliente",
-                    "Ingrese al menos 2 caracteres para buscar un cliente."
+                    "Ingrese al menos 2 caracteres para filtrar, o deje el campo vacío para ver todos los clientes."
                 );
 
                 return;
@@ -1129,10 +1136,15 @@ namespace Capa_Vistas
 
                 if (clientes.Count == 0)
                 {
-                    MostrarMensaje(
-                        "Buscar cliente",
-                        "No se encontraron clientes con ese criterio."
-                    );
+                    if (mostrarAvisos)
+                    {
+                        MostrarMensaje(
+                            "Buscar cliente",
+                            "No se encontraron clientes con ese criterio."
+                        );
+                    }
+
+                    ActualizarResumen();
 
                     return;
                 }
@@ -1140,7 +1152,7 @@ namespace Capa_Vistas
 
                 cmbClienteResultados.DisplayMember =
                     nameof(
-                        ClienteVentaModelo.Nombre
+                        ClienteVentaModelo.Etiqueta
                     );
 
                 cmbClienteResultados.ValueMember =
@@ -1152,10 +1164,17 @@ namespace Capa_Vistas
                     clientes;
 
 
-                if (clientes.Count > 0)
+                // Con varios resultados el usuario elige; con uno solo se
+                // selecciona automáticamente.
+                cmbClienteResultados.SelectedIndex =
+                    clientes.Count == 1
+                        ? 0
+                        : -1;
+
+                if (clientes.Count > 1 && mostrarAvisos)
                 {
-                    cmbClienteResultados.SelectedIndex =
-                        0;
+                    cmbClienteResultados.Focus();
+                    cmbClienteResultados.DroppedDown = true;
                 }
             }
             catch (Exception ex)
