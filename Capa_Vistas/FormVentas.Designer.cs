@@ -391,7 +391,7 @@ namespace Capa_Vistas
             lblBuscarCliente.Text = "Buscar cliente";
 
             txtBuscarCliente.Location = new Point(18, 79);
-            txtBuscarCliente.PlaceholderText = "Nombre, apellido o documento...";
+            txtBuscarCliente.PlaceholderText = "Nombre, apellido o documento (vacío = todos)";
             txtBuscarCliente.Size = new Size(385, 27);
 
             btnBuscarCliente.BackColor = Color.FromArgb(37, 116, 222);
