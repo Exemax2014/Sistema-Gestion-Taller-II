@@ -103,11 +103,11 @@ namespace Capa_Logica
         public string Nombre { get; set; } = string.Empty;
         public string Documento { get; set; } = string.Empty;
 
-        // Texto para listas de selección: "Apellido, Nombre - Documento".
+        // Texto para el selector de venta: nombre visible y documento inequívoco.
         public string Etiqueta =>
             string.IsNullOrWhiteSpace(Documento)
                 ? Nombre
-                : $"{Nombre} - {Documento}";
+                : $"{Nombre} — DNI {Documento}";
     }
 
 

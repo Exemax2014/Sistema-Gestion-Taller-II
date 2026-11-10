@@ -637,7 +637,7 @@ namespace Capa_Vistas
             // 
             // pnlGraficoContenido
             // 
-            pnlGraficoContenido.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlGraficoContenido.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlGraficoContenido.BackColor = Color.FromArgb(248, 249, 250);
             pnlGraficoContenido.Controls.Add(lblGraficoPlaceholder);
             pnlGraficoContenido.Location = new Point(18, 47);
@@ -659,7 +659,7 @@ namespace Capa_Vistas
             // 
             // pnlProductosVendidos
             // 
-            pnlProductosVendidos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlProductosVendidos.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlProductosVendidos.BackColor = Color.White;
             pnlProductosVendidos.BorderStyle = BorderStyle.FixedSingle;
             pnlProductosVendidos.Controls.Add(lblProductosVendidosTitulo);
@@ -697,7 +697,7 @@ namespace Capa_Vistas
             dgvProductosVendidos.AllowUserToAddRows = false;
             dgvProductosVendidos.AllowUserToDeleteRows = false;
             dgvProductosVendidos.AllowUserToResizeRows = false;
-            dgvProductosVendidos.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dgvProductosVendidos.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             dgvProductosVendidos.BackgroundColor = Color.White;
             dgvProductosVendidos.CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal;
             dgvProductosVendidos.ColumnHeadersBorderStyle = DataGridViewHeaderBorderStyle.None;
@@ -733,7 +733,7 @@ namespace Capa_Vistas
             // 
             // pnlAreaContenido
             //
-            pnlAreaContenido.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlAreaContenido.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlAreaContenido.AutoScroll = false;
             pnlAreaContenido.BackColor = Color.FromArgb(245, 246, 248);
             pnlAreaContenido.Location = new Point(32, 163);
@@ -743,7 +743,7 @@ namespace Capa_Vistas
             // Las cuatro vistas son paneles hermanos; solo cambia cuál queda visible.
             foreach (Panel vista in new[] { pnlVistaGeneral, pnlVistaUsuario, pnlVistaVentas, pnlVistaStock })
             {
-                vista.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+                vista.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
                 vista.AutoScroll = true;
                 vista.BackColor = Color.FromArgb(245, 246, 248);
                 vista.Location = Point.Empty;

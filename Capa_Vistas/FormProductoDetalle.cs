@@ -16,6 +16,7 @@ namespace Capa_Vistas
     public partial class FormProductoDetalle
         : Form, IControlaCambios
     {
+        private static readonly Font FuenteEstadoStock = new("Segoe UI", 8.5F, FontStyle.Bold);
         private readonly ProductoLogica productoLogica =
             new ProductoLogica();
 
@@ -47,7 +48,6 @@ namespace Capa_Vistas
 
 
         private int? idSucursalEditandoStock;
-        private int? idSucursalGestionStock;
 
 
         private bool EsAlta =>
@@ -88,7 +88,6 @@ namespace Capa_Vistas
                 idProducto;
 
             this.soloGestionStock = soloGestionStock;
-            this.idSucursalGestionStock = idSucursalGestionStock;
             this.seccionReportesOrigen = seccionReportesOrigen;
 
 
@@ -99,6 +98,13 @@ namespace Capa_Vistas
             ConfigurarGrillaStock();
 
             ConfigurarEventos();
+
+            // El detalle fue diseñado con medidas amplias. Cuando está embebido
+            // en un área menor, el formulario conserva su composición y expone
+            // scroll en lugar de cortar grillas o botones.
+            AutoScroll = true;
+            Resize += (_, _) => AjustarAreaDetalle();
+            Load += (_, _) => AjustarAreaDetalle();
 
             ConfigurarValidacionesVisuales();
 
@@ -149,7 +155,7 @@ namespace Capa_Vistas
             pnlDatos.Visible = false;
             pnlAcciones.Visible = false;
             pnlStock.Visible = true;
-            pnlStock.SetBounds(32, 110, ClientSize.Width - 64, ClientSize.Height - 180);
+            AjustarAreaDetalle();
             lblTitulo.Text = "Gestionar stock";
             lblSubtitulo.Text = string.IsNullOrWhiteSpace(nombreProducto)
                 ? "Modificá el inventario dentro de tu alcance autorizado."
@@ -157,6 +163,33 @@ namespace Capa_Vistas
             lblStockTitulo.Text = "Stock por sucursal";
             lblStockDescripcion.Text = "Solo se habilitan las sucursales autorizadas para modificar stock.";
             btnVolver.Text = "← Reportes";
+        }
+
+        // Mantiene los paneles dentro de un lienzo mínimo; evita valores negativos
+        // al reducir la ventana o al aplicar escalado de Windows.
+        private void AjustarAreaDetalle()
+        {
+            const int margen = 32;
+            const int anchoMinimo = 760;
+            const int altoMinimo = 700;
+            int ancho = Math.Max(anchoMinimo, ClientSize.Width - margen * 2);
+            int alto = Math.Max(altoMinimo, ClientSize.Height);
+
+            pnlCabecera.SetBounds(margen, 18, ancho, 86);
+            if (soloGestionStock)
+            {
+                pnlStock.SetBounds(margen, 110, ancho, Math.Max(300, alto - 180));
+                AutoScrollMinSize = new Size(ancho + margen * 2, alto);
+                return;
+            }
+
+            pnlDatos.SetBounds(margen, 110, ancho, pnlDatos.Height);
+            int yStock = pnlDatos.Bottom + 10;
+            int altoAcciones = pnlAcciones.Height;
+            int altoStock = Math.Max(230, alto - yStock - altoAcciones - 30);
+            pnlStock.SetBounds(margen, yStock, ancho, altoStock);
+            pnlAcciones.SetBounds(margen, pnlStock.Bottom + 8, ancho, altoAcciones);
+            AutoScrollMinSize = new Size(ancho + margen * 2, pnlAcciones.Bottom + 24);
         }
 
 
@@ -314,6 +347,9 @@ namespace Capa_Vistas
 
             dgvStockSucursales.DataBindingComplete +=
                 DgvStockSucursales_DataBindingComplete;
+
+            dgvStockSucursales.CellFormatting +=
+                DgvStockSucursales_CellFormatting;
 
 
             btnGuardarStock.Click +=
@@ -691,14 +727,6 @@ namespace Capa_Vistas
                     idProducto.Value
                 );
 
-            if (soloGestionStock && idSucursalGestionStock.HasValue)
-            {
-                stocks = stocks
-                    .Where(stock => stock.IdSucursal == idSucursalGestionStock.Value)
-                    .ToList();
-            }
-
-
             dgvStockSucursales.DataSource =
                 null;
 
@@ -717,6 +745,26 @@ namespace Capa_Vistas
             DataGridViewBindingCompleteEventArgs e)
         {
             ConfigurarBotonesStock();
+        }
+
+        // Reutiliza el patrón de estado de Clientes: celda sólida y selección del mismo color.
+        private void DgvStockSucursales_CellFormatting(object? sender, DataGridViewCellFormattingEventArgs e)
+        {
+            if (e.RowIndex < 0 || dgvStockSucursales.Columns[e.ColumnIndex].Name != "colEstadoStock" ||
+                dgvStockSucursales.Rows[e.RowIndex].DataBoundItem is not StockSucursalModelo stock)
+                return;
+
+            bool bajo = stock.Stock <= stock.StockMinimo;
+            Color fondo = bajo ? Color.FromArgb(165, 55, 55) : Color.FromArgb(46, 125, 74);
+            e.Value = bajo ? "Stock bajo" : "Correcto";
+            e.CellStyle.Alignment = DataGridViewContentAlignment.MiddleCenter;
+            e.CellStyle.Padding = Padding.Empty;
+            e.CellStyle.Font = FuenteEstadoStock;
+            e.CellStyle.BackColor = fondo;
+            e.CellStyle.ForeColor = Color.White;
+            e.CellStyle.SelectionBackColor = fondo;
+            e.CellStyle.SelectionForeColor = Color.White;
+            e.FormattingApplied = true;
         }
 
 

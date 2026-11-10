@@ -43,6 +43,16 @@ namespace Capa_Logica
             List<SucursalInfo> sucursales =
                 sucursalDatos.ObtenerActivas();
 
+            // La consulta conserva todas las sucursales para alcance global y limita
+            // una sesión de sucursal a su único alcance autorizado.
+            if (!SesionActual.AlcanceGlobal)
+            {
+                sucursales = sucursales
+                    .Where(sucursal => SesionActual.IdSucursal.HasValue
+                        && sucursal.IdSucursal == SesionActual.IdSucursal.Value)
+                    .ToList();
+            }
+
 
             foreach (SucursalInfo sucursal in sucursales)
             {

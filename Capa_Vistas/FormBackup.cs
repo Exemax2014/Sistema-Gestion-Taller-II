@@ -7,6 +7,11 @@ namespace Capa_Vistas
     {
         private readonly FormPrincipal formPrincipal;
         private readonly BackupLogica backupLogica = new();
+        private readonly Panel pnlHistorial = new();
+        private readonly DataGridView dgvHistorial = new();
+        private readonly Label lblHistorialVacio = new();
+        private readonly TableLayoutPanel tlpPagina = new() { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 3, AutoScroll = true, GrowStyle = TableLayoutPanelGrowStyle.FixedSize, BackColor = Color.FromArgb(245, 246, 248) };
+        private readonly TableLayoutPanel tlpTarjetaBackup = new() { Dock = DockStyle.Fill, ColumnCount = 1, RowCount = 5, GrowStyle = TableLayoutPanelGrowStyle.FixedSize, BackColor = Color.White };
         private bool ejecutandoBackup;
 
         public FormBackup(FormPrincipal formPrincipal)
@@ -15,9 +20,60 @@ namespace Capa_Vistas
             this.formPrincipal = formPrincipal;
 
             btnGenerarBackup.Click += BtnGenerarBackup_Click;
-            Resize += (_, _) => AjustarLayout();
+            ConfigurarHistorial();
+            ConfigurarEstructuraVisual();
             Load += FormBackup_Load;
-            AjustarLayout();
+        }
+
+        private void ConfigurarEstructuraVisual()
+        {
+            foreach (Control control in new Control[] { pnlCabecera, pnlTarjeta })
+                Controls.Remove(control);
+
+            pnlCabecera.Dock = DockStyle.Fill;
+            pnlTarjeta.Dock = DockStyle.Fill;
+            pnlTarjeta.Padding = new Padding(24);
+            pnlHistorial.Dock = DockStyle.Fill;
+            pnlHistorial.Padding = new Padding(14);
+
+            foreach (Control control in new Control[] { lblBaseDatos, txtBaseDatos, lblUbicacionCopia, txtUbicacionCopia, lblAvisoServidor, btnGenerarBackup })
+                pnlTarjeta.Controls.Remove(control);
+
+            tlpTarjetaBackup.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpTarjetaBackup.RowStyles.Add(new RowStyle(SizeType.Absolute, 24F));
+            tlpTarjetaBackup.RowStyles.Add(new RowStyle(SizeType.Absolute, 34F));
+            tlpTarjetaBackup.RowStyles.Add(new RowStyle(SizeType.Absolute, 28F));
+            tlpTarjetaBackup.RowStyles.Add(new RowStyle(SizeType.Absolute, 34F));
+            tlpTarjetaBackup.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            foreach (Control control in new Control[] { lblBaseDatos, txtBaseDatos, lblUbicacionCopia, txtUbicacionCopia })
+                control.Dock = DockStyle.Fill;
+            lblAvisoServidor.Dock = DockStyle.Fill;
+            btnGenerarBackup.Dock = DockStyle.Right;
+            btnGenerarBackup.Width = 180;
+
+            Panel acciones = new() { Dock = DockStyle.Fill, Padding = new Padding(0, 8, 0, 0), BackColor = Color.White };
+            acciones.Controls.Add(lblAvisoServidor);
+            acciones.Controls.Add(btnGenerarBackup);
+            tlpTarjetaBackup.Controls.Add(lblBaseDatos, 0, 0);
+            tlpTarjetaBackup.Controls.Add(txtBaseDatos, 0, 1);
+            tlpTarjetaBackup.Controls.Add(lblUbicacionCopia, 0, 2);
+            tlpTarjetaBackup.Controls.Add(txtUbicacionCopia, 0, 3);
+            tlpTarjetaBackup.Controls.Add(acciones, 0, 4);
+            pnlTarjeta.Controls.Add(tlpTarjetaBackup);
+
+            tlpPagina.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpPagina.RowStyles.Add(new RowStyle(SizeType.Absolute, 100F));
+            tlpPagina.RowStyles.Add(new RowStyle(SizeType.Absolute, 270F));
+            tlpPagina.RowStyles.Add(new RowStyle(SizeType.Percent, 100F));
+            pnlCabecera.Margin = new Padding(0, 0, 0, 16);
+            pnlTarjeta.Margin = new Padding(0, 0, 0, 18);
+            pnlHistorial.Margin = Padding.Empty;
+            tlpPagina.Padding = new Padding(24);
+            tlpPagina.Controls.Add(pnlCabecera, 0, 0);
+            tlpPagina.Controls.Add(pnlTarjeta, 0, 1);
+            tlpPagina.Controls.Add(pnlHistorial, 0, 2);
+            Controls.Add(tlpPagina);
+            tlpPagina.BringToFront();
         }
 
         // Revalida autorización y carga los datos de destino publicados por la instancia conectada.
@@ -35,6 +91,7 @@ namespace Capa_Vistas
                 BackupDestino destino = backupLogica.ObtenerDestino();
                 txtBaseDatos.Text = destino.NombreBaseDatos;
                 txtUbicacionCopia.Text = destino.DirectorioServidor;
+                CargarHistorial();
             }
             catch (Exception ex)
             {
@@ -61,6 +118,7 @@ namespace Capa_Vistas
             {
                 BackupResultado resultado = await Task.Run(backupLogica.GenerarBackup);
                 txtUbicacionCopia.Text = resultado.DirectorioServidor;
+                CargarHistorial();
                 MostrarMensaje(
                     "Back Up generado",
                     $"Copia de seguridad generada correctamente.\n\nArchivo: {resultado.NombreArchivo}\n\nUbicación: {resultado.DirectorioServidor}");
@@ -76,34 +134,45 @@ namespace Capa_Vistas
             }
         }
 
-        // Conserva márgenes proporcionales y reubica la acción principal en anchos reducidos.
-        private void AjustarLayout()
+        private void ConfigurarHistorial()
         {
-            const int margenLateral = 32;
-            int ancho = Math.Max(300, ClientSize.Width - margenLateral * 2);
-            pnlCabecera.SetBounds(margenLateral, 20, ancho, 100);
+            pnlHistorial.BackColor = Color.White;
+            pnlHistorial.BorderStyle = BorderStyle.FixedSingle;
+            pnlHistorial.Controls.Add(dgvHistorial);
+            pnlHistorial.Controls.Add(lblHistorialVacio);
 
-            int anchoTarjeta = Math.Min(980, ancho);
-            int xTarjeta = (ClientSize.Width - anchoTarjeta) / 2;
-            bool anchoGrande = anchoTarjeta >= 620;
-            int altoTarjeta = anchoGrande ? 292 : 322;
-            pnlTarjeta.SetBounds(xTarjeta, 145, anchoTarjeta, altoTarjeta);
+            dgvHistorial.Dock = DockStyle.Fill;
+            dgvHistorial.ReadOnly = true;
+            dgvHistorial.AllowUserToAddRows = false;
+            dgvHistorial.AllowUserToDeleteRows = false;
+            dgvHistorial.AllowUserToResizeRows = false;
+            dgvHistorial.RowHeadersVisible = false;
+            dgvHistorial.AutoGenerateColumns = false;
+            dgvHistorial.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
+            dgvHistorial.ScrollBars = ScrollBars.Both;
+            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BackupHistorialItem.Fecha), HeaderText = "Fecha", Width = 145, DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy HH:mm" } });
+            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BackupHistorialItem.Usuario), HeaderText = "Usuario", FillWeight = 22 });
+            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BackupHistorialItem.Detalle), HeaderText = "Archivo / detalle", FillWeight = 52 });
+            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BackupHistorialItem.Sucursal), HeaderText = "Sucursal", FillWeight = 20 });
+            lblHistorialVacio.Dock = DockStyle.Fill;
+            lblHistorialVacio.Text = "Todavía no hay copias de seguridad registradas.";
+            lblHistorialVacio.TextAlign = ContentAlignment.MiddleCenter;
+            lblHistorialVacio.ForeColor = Color.FromArgb(105, 110, 116);
+        }
 
-            int interior = Math.Max(240, anchoTarjeta - 48);
-            lblBaseDatos.SetBounds(24, 24, interior, 20);
-            txtBaseDatos.SetBounds(24, 48, interior, 28);
-            lblUbicacionCopia.SetBounds(24, 99, interior, 20);
-            txtUbicacionCopia.SetBounds(24, 123, interior, 28);
-
-            if (anchoGrande)
+        private void CargarHistorial()
+        {
+            try
             {
-                lblAvisoServidor.SetBounds(24, 166, interior - 190, 42);
-                btnGenerarBackup.SetBounds(anchoTarjeta - 194, 164, 170, 40);
+                List<BackupHistorialItem> historial = backupLogica.ObtenerHistorial();
+                dgvHistorial.DataSource = historial;
+                lblHistorialVacio.Visible = historial.Count == 0;
             }
-            else
+            catch (Exception ex)
             {
-                lblAvisoServidor.SetBounds(24, 163, interior, 40);
-                btnGenerarBackup.SetBounds(anchoTarjeta - 194, altoTarjeta - 58, 170, 40);
+                dgvHistorial.DataSource = null;
+                lblHistorialVacio.Text = $"No se pudo cargar el historial: {ex.Message}";
+                lblHistorialVacio.Visible = true;
             }
         }
 

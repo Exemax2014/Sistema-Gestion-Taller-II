@@ -18,6 +18,8 @@ namespace Capa_Vistas
         private bool hayCambios;
         private bool cargandoDatos = true;
         private List<OpcionClienteModelo> localidadesActuales = new();
+        private bool altaDesdeVenta;
+        private Action<int>? clienteCreado;
 
         private bool EsAlta => !idCliente.HasValue;
 
@@ -44,6 +46,14 @@ namespace Capa_Vistas
             cargandoDatos = false;
 
             hayCambios = false;
+        }
+
+        // Reutiliza el alta existente como diálogo sin cambiar la navegación normal del módulo Clientes.
+        public FormClienteDetalle(FormPrincipal formPrincipal, Action<int> alCrearCliente)
+            : this(formPrincipal)
+        {
+            altaDesdeVenta = true;
+            clienteCreado = alCrearCliente;
         }
 
 
@@ -468,6 +478,12 @@ namespace Capa_Vistas
                 return;
             }
 
+            if (altaDesdeVenta)
+            {
+                formPrincipal.RestaurarFormularioTemporal(this);
+                return;
+            }
+
             VolverAClientes();
         }
 
@@ -591,6 +607,13 @@ namespace Capa_Vistas
                 new FormMensaje("Cliente guardado", resultado.Mensaje);
 
             mensaje.ShowDialog(formPrincipal);
+
+            if (altaDesdeVenta)
+            {
+                clienteCreado?.Invoke(resultado.IdGenerado);
+                formPrincipal.RestaurarFormularioTemporal(this);
+                return;
+            }
 
             VolverAClientes();
         }
@@ -761,6 +784,11 @@ namespace Capa_Vistas
         // =========================================================
         private void VolverAClientes()
         {
+            if (altaDesdeVenta)
+            {
+                formPrincipal.RestaurarFormularioTemporal(this);
+                return;
+            }
             formPrincipal.AbrirFormularioEnPanel(
                 new FormClientes(formPrincipal),
                 formPrincipal.BotonClientes

@@ -4358,16 +4358,57 @@ BEGIN
 
     SELECT
         a.fecha,
+        u.nombre_usuario AS usuario,
         a.accion,
         a.entidad,
         a.detalle,
         s.nombre AS sucursal
     FROM dbo.AUDITORIA AS a
+    INNER JOIN dbo.USUARIO AS u ON u.id_usuario = a.id_usuario
     LEFT JOIN dbo.SUCURSAL AS s ON s.id_sucursal = a.id_sucursal
     WHERE a.fecha >= @desde
       AND a.fecha < DATEADD(DAY, 1, @hasta)
       AND (@idUsuario IS NULL OR a.id_usuario = @idUsuario)
       AND (@idSucursal IS NULL OR a.id_sucursal = @idSucursal)
+    ORDER BY a.fecha DESC, a.id_auditoria DESC;
+END;
+GO
+
+
+-- Expone exclusivamente las copias registradas, sin conceder acceso a la auditoría general.
+CREATE OR ALTER PROCEDURE dbo.sp_Auditoria_ListarBackups
+    @idUsuarioSolicitante INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    IF NOT EXISTS
+    (
+        SELECT 1
+        FROM dbo.USUARIO AS u
+        INNER JOIN dbo.PERFIL AS p ON p.id_perfil = u.id_perfil
+        INNER JOIN dbo.PERFIL_FUNCIONALIDAD AS pf ON pf.id_perfil = p.id_perfil
+        INNER JOIN dbo.FUNCIONALIDAD AS f ON f.id_funcionalidad = pf.id_funcionalidad
+        WHERE u.id_usuario = @idUsuarioSolicitante
+          AND u.eliminado_en IS NULL
+          AND p.eliminado_en IS NULL
+          AND f.eliminado_en IS NULL
+          AND f.codigo = N'BACKUP_REALIZAR'
+    )
+        THROW 51000, 'No tiene permiso para consultar el historial de copias de seguridad.', 1;
+
+    SELECT
+        a.fecha,
+        u.nombre_usuario AS usuario,
+        a.accion,
+        a.entidad,
+        a.detalle,
+        s.nombre AS sucursal
+    FROM dbo.AUDITORIA AS a
+    INNER JOIN dbo.USUARIO AS u ON u.id_usuario = a.id_usuario
+    LEFT JOIN dbo.SUCURSAL AS s ON s.id_sucursal = a.id_sucursal
+    WHERE a.accion = N'BACKUP'
+      AND a.entidad = N'BASE_DATOS'
     ORDER BY a.fecha DESC, a.id_auditoria DESC;
 END;
 GO

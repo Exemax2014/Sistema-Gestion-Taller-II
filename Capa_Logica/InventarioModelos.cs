@@ -22,7 +22,7 @@
                     return "Stock bajo";
                 }
 
-                return "Normal";
+                return "Correcto";
             }
         }
     }

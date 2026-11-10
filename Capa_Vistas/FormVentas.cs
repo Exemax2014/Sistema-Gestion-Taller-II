@@ -15,30 +15,44 @@ namespace Capa_Vistas
     // La Vista NO registra directamente en la base de datos.
     // ============================================================
 
-    public partial class FormVentas : Form
+    public partial class FormVentas : Form, IControlaCambios
     {
         private readonly VentaLogica ventaLogica;
-        private readonly FormPrincipal? formPrincipal;
+        // La venta se hospeda dentro de esta instancia; conservarla evita depender
+        // de la jerarquía de controles para abrir diálogos modales.
+        private readonly FormPrincipal formPrincipal;
 
         private readonly BindingList<ItemVentaVista> itemsVenta;
         private readonly BindingList<PagoVentaVista> pagosVenta;
 
         private ClienteVentaModelo? clienteSeleccionado;
+        private List<ClienteVentaModelo> clientesDisponibles = new();
+        private bool actualizandoSelectorCliente;
+        private readonly Button btnNuevoCliente = new();
 
-
-        public FormVentas()
-            : this(null)
+        // Informa a FormPrincipal si abandonar el módulo descartaría una venta
+        // todavía no confirmada. El estado existe únicamente en memoria.
+        public bool PuedeCerrar()
         {
+            if (itemsVenta.Count == 0 && pagosVenta.Count == 0 && clienteSeleccionado == null)
+                return true;
+
+            using FormMensaje confirmacion = new(
+                "Venta en curso",
+                "Hay una venta en curso. Si salís, los datos cargados se perderán. ¿Deseás continuar?",
+                "Sí, salir",
+                true);
+
+            return confirmacion.ShowDialog(formPrincipal) == DialogResult.OK;
         }
 
-
         public FormVentas(
-            FormPrincipal? formPrincipal)
+            FormPrincipal formPrincipal)
         {
+            ArgumentNullException.ThrowIfNull(formPrincipal);
             InitializeComponent();
 
-            this.formPrincipal =
-                formPrincipal;
+            this.formPrincipal = formPrincipal;
 
             ventaLogica =
                 new VentaLogica();
@@ -50,6 +64,7 @@ namespace Capa_Vistas
                 new BindingList<PagoVentaVista>();
 
             ConfigurarGrillas();
+            ConfigurarAccionNuevoCliente();
             ConfigurarEventos();
             ConfigurarValidacionesVisuales();
             ConfigurarContexto();
@@ -120,7 +135,113 @@ namespace Capa_Vistas
             else
                 AjustarProductosApilados(ancho);
 
-            pnlPrincipal.AutoScrollMinSize = new Size(0, yContenido + pnlPasoProductos.Height + 24);
+            if (pnlPasoFinalizar.Visible)
+                AjustarPasoFinalizar(ancho, altoVisible);
+
+            Panel pasoActivo = pnlPasoFinalizar.Visible ? pnlPasoFinalizar : pnlPasoProductos;
+            pnlPrincipal.AutoScrollMinSize = new Size(0, yContenido + pasoActivo.Height + 24);
+        }
+
+        // Da al segundo paso el mismo comportamiento adaptable que al carrito:
+        // cliente arriba, pagos y resumen en columnas o apilados según el ancho.
+        private void AjustarPasoFinalizar(int ancho, int alto)
+        {
+            int interior = Math.Max(260, ancho - 36);
+            bool apilado = ancho < 700;
+            bool botonesEnFila = ancho >= 480;
+            int altoCliente = !apilado ? 126 : botonesEnFila ? 172 : 214;
+            pnlCliente.SetBounds(0, 0, ancho, altoCliente);
+            lblPasoFinalizar.SetBounds(18, 12, interior, 28);
+            if (!apilado)
+            {
+                int anchoSelector = Math.Max(180, interior - 140);
+                cmbClienteResultados.SetBounds(18, 62, anchoSelector, 32);
+                btnNuevoCliente.SetBounds(cmbClienteResultados.Right + 10, 61, 130, 34);
+            }
+            else
+            {
+                if (botonesEnFila)
+                {
+                    int anchoSelector = Math.Max(160, interior - 140);
+                    cmbClienteResultados.SetBounds(18, 62, anchoSelector, 32);
+                    btnNuevoCliente.SetBounds(cmbClienteResultados.Right + 10, 61, 130, 34);
+                }
+                else
+                {
+                    cmbClienteResultados.SetBounds(18, 62, interior, 32);
+                    btnNuevoCliente.SetBounds(18, 108, interior, 34);
+                }
+            }
+
+            int y = pnlCliente.Bottom + 14;
+            bool columnas = ancho >= 900;
+            int altoPanel = columnas ? Math.Max(330, alto - y) : 390;
+            if (columnas)
+            {
+                int pagos = (ancho - 14) * 3 / 5;
+                pnlPagos.SetBounds(0, y, pagos, altoPanel);
+                pnlResumen.SetBounds(pagos + 14, y, ancho - pagos - 14, altoPanel);
+            }
+            else
+            {
+                pnlPagos.SetBounds(0, y, ancho, 360);
+                pnlResumen.SetBounds(0, y + 374, ancho, 390);
+                pnlPasoFinalizar.Height = 778;
+            }
+
+            AjustarControlesPagos();
+            AjustarControlesResumen();
+        }
+
+        private void AjustarControlesPagos()
+        {
+            int ancho = Math.Max(220, pnlPagos.ClientSize.Width - 36);
+            int combo = Math.Min(190, Math.Max(130, ancho / 4));
+            int monto = Math.Min(130, Math.Max(90, ancho / 6));
+            cmbMetodoPago.SetBounds(18, 82, combo, 28);
+            lblMontoPago.SetBounds(cmbMetodoPago.Right + 14, 57, monto, 20);
+            txtMontoPago.SetBounds(cmbMetodoPago.Right + 14, 82, monto, 27);
+            btnCompletarSaldo.SetBounds(txtMontoPago.Right + 12, 79, Math.Min(128, Math.Max(92, ancho - txtMontoPago.Right - 18 - 115)), 34);
+            btnAgregarPago.SetBounds(Math.Max(btnCompletarSaldo.Right + 8, pnlPagos.ClientSize.Width - 155 - 18), 79, 155, 34);
+            dgvPagos.SetBounds(18, 130, ancho, Math.Max(120, pnlPagos.ClientSize.Height - 151));
+        }
+
+        private void AjustarControlesResumen()
+        {
+            int ancho = Math.Max(220, pnlResumen.ClientSize.Width - 36);
+            int xValor = Math.Max(140, pnlResumen.ClientSize.Width - Math.Min(190, ancho / 2) - 18);
+            int anchoValor = Math.Max(100, pnlResumen.ClientSize.Width - xValor - 18);
+            lblTotalVenta.SetBounds(xValor, 186, anchoValor, 27);
+            lblTotalPagado.SetBounds(xValor, 219, anchoValor, 27);
+            lblSaldo.SetBounds(xValor, 254, anchoValor, 32);
+            btnVolverProductos.SetBounds(18, pnlResumen.ClientSize.Height - 64, 120, 42);
+            btnCancelarVentaPaso2.SetBounds(146, pnlResumen.ClientSize.Height - 64, 120, 42);
+            btnConfirmarVenta.SetBounds(Math.Max(274, pnlResumen.ClientSize.Width - 168 - 18), pnlResumen.ClientSize.Height - 64, 168, 42);
+        }
+
+        private void ConfigurarAccionNuevoCliente()
+        {
+            btnNuevoCliente.Text = "Nuevo cliente";
+            btnNuevoCliente.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
+            btnNuevoCliente.Cursor = Cursors.Hand;
+            btnNuevoCliente.BackColor = Color.White;
+            btnNuevoCliente.ForeColor = Color.FromArgb(37, 116, 222);
+            btnNuevoCliente.FlatStyle = FlatStyle.Flat;
+            btnNuevoCliente.FlatAppearance.BorderColor = Color.FromArgb(37, 116, 222);
+            btnNuevoCliente.Visible = SesionActual.TienePermiso("CLIENTES_ALTA");
+            btnNuevoCliente.Click += BtnNuevoCliente_Click;
+            pnlCliente.Controls.Remove(txtBuscarCliente);
+            pnlCliente.Controls.Remove(btnBuscarCliente);
+            pnlCliente.Controls.Remove(lblBuscarCliente);
+            pnlCliente.Controls.Remove(lblClienteSeleccionadoTitulo);
+            pnlCliente.Controls.Remove(lblClienteSeleccionado);
+            cmbClienteResultados.DropDownStyle = ComboBoxStyle.DropDown;
+            cmbClienteResultados.AutoCompleteMode = AutoCompleteMode.None;
+            cmbClienteResultados.IntegralHeight = false;
+            cmbClienteResultados.ItemHeight = 24;
+            cmbClienteResultados.MaxDropDownItems = 6;
+            cmbClienteResultados.Text = "Escribí nombre, apellido o documento...";
+            pnlCliente.Controls.Add(btnNuevoCliente);
         }
 
         // Reubica vendedor, sucursal y fecha en tres columnas o en filas compactas.
@@ -576,14 +697,9 @@ namespace Capa_Vistas
                 BtnCancelarVenta_Click;
 
 
-            btnBuscarCliente.Click +=
-                BtnBuscarCliente_Click;
-
-            txtBuscarCliente.KeyDown +=
-                TxtBuscarCliente_KeyDown;
-
             cmbClienteResultados.SelectedIndexChanged +=
                 CmbClienteResultados_SelectedIndexChanged;
+            cmbClienteResultados.TextUpdate += CmbClienteResultados_TextUpdate;
 
 
             txtMontoPago.KeyPress +=
@@ -1078,17 +1194,16 @@ namespace Capa_Vistas
             pnlPasoFinalizar.Visible =
                 true;
 
+            AjustarLayoutResponsive();
+
             lblSubtitulo.Text =
                 "Seleccioná el cliente, completá los pagos y confirmá la operación.";
 
             ActualizarResumen();
 
-            if (cmbClienteResultados.Items.Count == 0)
-            {
-                BuscarClientes(false);
-            }
-
-            txtBuscarCliente.Focus();
+            if (clientesDisponibles.Count == 0)
+                CargarClientesDisponibles();
+            cmbClienteResultados.Focus();
         }
 
 
@@ -1098,21 +1213,9 @@ namespace Capa_Vistas
 
         // Texto vacío: lista todos los clientes activos para elegir.
         // mostrarAvisos=false evita mensajes al cargar el listado inicial.
-        private void BuscarClientes(bool mostrarAvisos = true)
+        private void CargarClientesDisponibles()
         {
-            string texto =
-                txtBuscarCliente.Text.Trim();
-
-
-            if (texto.Length == 1)
-            {
-                MostrarMensaje(
-                    "Buscar cliente",
-                    "Ingrese al menos 2 caracteres para filtrar, o deje el campo vacío para ver todos los clientes."
-                );
-
-                return;
-            }
+            const string texto = "";
 
 
             try
@@ -1123,6 +1226,8 @@ namespace Capa_Vistas
                             texto
                         );
 
+                clientesDisponibles = clientes;
+
 
                 cmbClienteResultados.DataSource =
                     null;
@@ -1130,20 +1235,8 @@ namespace Capa_Vistas
                 clienteSeleccionado =
                     null;
 
-                lblClienteSeleccionado.Text =
-                    "Sin seleccionar";
-
-
                 if (clientes.Count == 0)
                 {
-                    if (mostrarAvisos)
-                    {
-                        MostrarMensaje(
-                            "Buscar cliente",
-                            "No se encontraron clientes con ese criterio."
-                        );
-                    }
-
                     ActualizarResumen();
 
                     return;
@@ -1163,6 +1256,8 @@ namespace Capa_Vistas
                 cmbClienteResultados.DataSource =
                     clientes;
 
+                AjustarAlturaDesplegableClientes(clientes.Count);
+
 
                 // Con varios resultados el usuario elige; con uno solo se
                 // selecciona automáticamente.
@@ -1171,11 +1266,6 @@ namespace Capa_Vistas
                         ? 0
                         : -1;
 
-                if (clientes.Count > 1 && mostrarAvisos)
-                {
-                    cmbClienteResultados.Focus();
-                    cmbClienteResultados.DroppedDown = true;
-                }
             }
             catch (Exception ex)
             {
@@ -1187,28 +1277,90 @@ namespace Capa_Vistas
         }
 
 
-        private void BtnBuscarCliente_Click(
-            object? sender,
-            EventArgs e)
+        private void CmbClienteResultados_TextUpdate(object? sender, EventArgs e)
         {
-            BuscarClientes();
+            if (actualizandoSelectorCliente) return;
+            string texto = cmbClienteResultados.Text.Trim();
+            List<ClienteVentaModelo> coincidencias = clientesDisponibles
+                .Where(cliente => cliente.Nombre.Contains(texto, StringComparison.CurrentCultureIgnoreCase)
+                    || cliente.Documento.Contains(texto, StringComparison.CurrentCultureIgnoreCase))
+                .ToList();
+            ActualizarOpcionesCliente(coincidencias, texto);
         }
 
-
-        private void TxtBuscarCliente_KeyDown(
-            object? sender,
-            KeyEventArgs e)
+        private void ActualizarOpcionesCliente(List<ClienteVentaModelo> opciones, string texto)
         {
-            if (e.KeyCode != Keys.Enter)
-            {
+            actualizandoSelectorCliente = true;
+            cmbClienteResultados.DataSource = null;
+            cmbClienteResultados.DisplayMember = nameof(ClienteVentaModelo.Etiqueta);
+            cmbClienteResultados.ValueMember = nameof(ClienteVentaModelo.IdCliente);
+            cmbClienteResultados.DataSource = opciones;
+            cmbClienteResultados.Text = texto;
+            cmbClienteResultados.SelectionStart = texto.Length;
+            actualizandoSelectorCliente = false;
+            AjustarAlturaDesplegableClientes(opciones.Count);
+            if (opciones.Count > 0 && texto.Length > 0)
+                cmbClienteResultados.DroppedDown = true;
+            else
+                cmbClienteResultados.DroppedDown = false;
+        }
+
+        // Limita el desplegable a las coincidencias reales y deja scroll interno
+        // cuando supera el máximo visual, evitando espacios vacíos enormes.
+        private void AjustarAlturaDesplegableClientes(int cantidadResultados)
+        {
+            const int maximoFilas = 6;
+            int filasVisibles = Math.Min(maximoFilas, Math.Max(1, cantidadResultados));
+            cmbClienteResultados.DropDownHeight = filasVisibles * cmbClienteResultados.ItemHeight + 4;
+        }
+
+        // Abre el alta como diálogo: no reemplaza el formulario embebido de venta
+        // y por eso conserva carrito, pagos y el paso actual en memoria.
+        private void BtnNuevoCliente_Click(object? sender, EventArgs e)
+        {
+            if (!SesionActual.TienePermiso("CLIENTES_ALTA"))
                 return;
+
+            try
+            {
+                FormClienteDetalle alta = new(formPrincipal, SeleccionarClienteCreado);
+                formPrincipal.AbrirFormularioTemporalEnPanel(
+                    alta,
+                    this,
+                    formPrincipal.BotonVentas);
             }
+            catch (Exception ex)
+            {
+                // El diálogo es auxiliar: un error al abrirlo o al refrescar el
+                // cliente no debe descartar ni cerrar la venta que sigue en memoria.
+                MostrarMensaje("No se pudo crear el cliente", ex.Message);
+            }
+        }
 
+        // Selecciona por ID generado, nunca por nombre, para evitar ambigüedad.
+        private void SeleccionarClienteCreado(int idCliente)
+        {
+            try
+            {
+                List<ClienteVentaModelo> clientes = ventaLogica.BuscarClientesParaVenta(string.Empty);
+                ClienteVentaModelo? creado = clientes.FirstOrDefault(cliente => cliente.IdCliente == idCliente);
+                if (creado == null)
+                {
+                    MostrarMensaje("Cliente", "El cliente se guardó, pero no pudo cargarse para esta venta.");
+                    return;
+                }
 
-            BuscarClientes();
-
-            e.SuppressKeyPress =
-                true;
+                clientesDisponibles = clientes;
+                ActualizarOpcionesCliente(clientes, creado.Etiqueta);
+                cmbClienteResultados.SelectedItem = creado;
+                clienteSeleccionado = creado;
+                ActualizarResumen();
+                AjustarLayoutResponsive();
+            }
+            catch (Exception ex)
+            {
+                MostrarMensaje("Cliente", $"El cliente se guardó, pero no pudo cargarse para esta venta. {ex.Message}");
+            }
         }
 
 
@@ -1219,12 +1371,6 @@ namespace Capa_Vistas
             clienteSeleccionado =
                 cmbClienteResultados.SelectedItem
                 as ClienteVentaModelo;
-
-
-            lblClienteSeleccionado.Text =
-                clienteSeleccionado?.Nombre
-                ??
-                "Sin seleccionar";
 
 
             ActualizarResumen();
@@ -1789,19 +1935,16 @@ namespace Capa_Vistas
 
             txtBuscarProducto.Clear();
 
-            txtBuscarCliente.Clear();
-
             txtMontoPago.Clear();
 
 
             dgvProductos.DataSource =
                 null;
 
-            cmbClienteResultados.DataSource =
-                null;
-
-            lblClienteSeleccionado.Text =
-                "Sin seleccionar";
+            actualizandoSelectorCliente = true;
+            cmbClienteResultados.DataSource = null;
+            cmbClienteResultados.Text = "Escribí nombre, apellido o documento...";
+            actualizandoSelectorCliente = false;
 
 
             ConfigurarContexto();

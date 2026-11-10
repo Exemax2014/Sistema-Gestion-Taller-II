@@ -14,10 +14,19 @@ namespace Capa_Logica
         public string DirectorioServidor { get; init; } = string.Empty;
     }
 
+    public sealed class BackupHistorialItem
+    {
+        public DateTime Fecha { get; init; }
+        public string Usuario { get; init; } = string.Empty;
+        public string Detalle { get; init; } = string.Empty;
+        public string Sucursal { get; init; } = string.Empty;
+    }
+
     // Coordina la consulta de destino y la generación del backup tras validar el permiso vigente.
     public class BackupLogica
     {
         private readonly BackupDatos backupDatos = new();
+        private readonly AuditoriaDatos auditoriaDatos = new();
 
         // Expone el permiso único para que la Vista aplique el estado y vuelva a validar la entrada.
         public bool PuedeRealizarBackup() => SesionActual.TienePermiso("BACKUP_REALIZAR");
@@ -52,6 +61,21 @@ namespace Capa_Logica
                 throw new InvalidOperationException(
                     $"{ex.Message} Contactá a soporte antes de repetir la operación. Detalle: {ex.InnerException?.Message ?? ex.Message}", ex);
             }
+        }
+
+        // No delega en Reportes: Datos invoca el procedimiento exclusivo de Back Up.
+        public List<BackupHistorialItem> ObtenerHistorial()
+        {
+            ValidarPermiso();
+            return auditoriaDatos.ListarBackups(SesionActual.IdUsuario)
+                .Select(item => new BackupHistorialItem
+                {
+                    Fecha = item.Fecha,
+                    Usuario = item.Usuario,
+                    Detalle = item.Detalle,
+                    Sucursal = item.Sucursal
+                })
+                .ToList();
         }
 
         private static void ValidarPermiso()

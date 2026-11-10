@@ -11,7 +11,7 @@ namespace Capa_Logica
     }
 
     public class ReporteDiaModelo { public DateTime Fecha { get; set; } public int Ventas { get; set; } public decimal Recaudacion { get; set; } }
-    public class AuditoriaReporteModelo { public DateTime Fecha { get; set; } public string Accion { get; set; } = string.Empty; public string Entidad { get; set; } = string.Empty; public string Detalle { get; set; } = string.Empty; public string Sucursal { get; set; } = string.Empty; }
+    public class AuditoriaReporteModelo { public DateTime Fecha { get; set; } public string Usuario { get; set; } = string.Empty; public string Accion { get; set; } = string.Empty; public string Entidad { get; set; } = string.Empty; public string Detalle { get; set; } = string.Empty; public string Sucursal { get; set; } = string.Empty; }
 
     // Centraliza las capacidades del módulo Reportes sin depender de nombres de perfiles.
     public class ReporteLogica
@@ -77,6 +77,9 @@ namespace Capa_Logica
                 "REPORTES_RENDIMIENTO_VENDEDORES"
             );
         }
+
+        // Actividad reutiliza el permiso existente de rendimiento, sin ampliar el catálogo.
+        public bool PuedeVerActividad() => PuedeVerRendimientoVendedores();
 
         // Indica si el usuario puede consultar el listado detallado de ventas.
         public bool PuedeVerDetalleVentas()
@@ -212,6 +215,7 @@ namespace Capa_Logica
                 .Select(a => new AuditoriaReporteModelo
                 {
                     Fecha = a.Fecha,
+                    Usuario = a.Usuario,
                     Accion = a.Accion,
                     Entidad = a.Entidad,
                     Detalle = a.Detalle,

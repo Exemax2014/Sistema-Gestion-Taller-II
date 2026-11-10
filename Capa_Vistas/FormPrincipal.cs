@@ -13,6 +13,9 @@ namespace Capa_Vistas
 
         private Form? formularioActivo;
         private Button? botonActivo;
+        // Origen preservado mientras una vista auxiliar ocupa pnlContenido.
+        private Form? formularioSuspendido;
+        private Button? botonSuspendido;
         private readonly UsuarioLogica usuarioLogicaSucursal = new UsuarioLogica();
         private readonly ReporteLogica reporteLogica = new();
         private readonly BackupLogica backupLogica = new();
@@ -915,11 +918,7 @@ namespace Capa_Vistas
     object? sender,
     EventArgs e)
         {
-            if (
-                formularioActivo
-                is IControlaCambios formularioConCambios
-                &&
-                !formularioConCambios.PuedeCerrar())
+            if (!PuedeAbandonarFormulariosActuales())
             {
                 return;
             }
@@ -1215,21 +1214,13 @@ namespace Capa_Vistas
 
         private bool CerrarFormularioActivo()
         {
+            if (!PuedeAbandonarFormulariosActuales())
+                return false;
+
             if (formularioActivo == null)
             {
                 return true;
             }
-
-
-            if (
-                formularioActivo
-                is IControlaCambios formularioConCambios
-                &&
-                !formularioConCambios.PuedeCerrar())
-            {
-                return false;
-            }
-
 
             formularioActivo.Close();
 
@@ -1237,8 +1228,27 @@ namespace Capa_Vistas
 
             formularioActivo = null;
 
+            if (formularioSuspendido != null)
+            {
+                formularioSuspendido.Close();
+                formularioSuspendido.Dispose();
+                formularioSuspendido = null;
+                botonSuspendido = null;
+            }
+
 
             return true;
+        }
+
+        // También protege la venta oculta detrás de una vista temporal.
+        private bool PuedeAbandonarFormulariosActuales()
+        {
+            if (formularioSuspendido is IControlaCambios suspendido
+                && !suspendido.PuedeCerrar())
+                return false;
+
+            return formularioActivo is not IControlaCambios activo
+                || activo.PuedeCerrar();
         }
 
 
@@ -1309,6 +1319,80 @@ namespace Capa_Vistas
             formulario.Show();
 
             formulario.BringToFront();
+        }
+
+        // Reemplaza transitoriamente la vista actual sin cerrarla ni disponerla.
+        public bool AbrirFormularioTemporalEnPanel(
+            Form formularioTemporal,
+            Form formularioOrigen,
+            Button botonOrigen)
+        {
+            if (formularioActivo != formularioOrigen || formularioSuspendido != null)
+            {
+                formularioTemporal.Dispose();
+                return false;
+            }
+
+            try
+            {
+                pnlContenido.Controls.Remove(formularioOrigen);
+                formularioOrigen.Hide();
+                formularioSuspendido = formularioOrigen;
+                botonSuspendido = botonOrigen;
+                formularioActivo = formularioTemporal;
+
+                formularioTemporal.TopLevel = false;
+                formularioTemporal.FormBorderStyle = FormBorderStyle.None;
+                formularioTemporal.Dock = DockStyle.Fill;
+                pnlContenido.Controls.Add(formularioTemporal);
+                formularioTemporal.Show();
+                formularioTemporal.BringToFront();
+                SeleccionarBoton(botonOrigen);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                formularioTemporal.Dispose();
+                formularioActivo = formularioOrigen;
+                formularioSuspendido = null;
+                botonSuspendido = null;
+                if (!pnlContenido.Controls.Contains(formularioOrigen))
+                    pnlContenido.Controls.Add(formularioOrigen);
+                formularioOrigen.Show();
+                MostrarMensajePrincipal("No se pudo abrir el alta de cliente", ex.Message);
+                return false;
+            }
+        }
+
+        // Cierra solo la vista temporal y restaura la misma instancia de origen.
+        public bool RestaurarFormularioTemporal(Form formularioTemporal)
+        {
+            if (formularioActivo != formularioTemporal || formularioSuspendido == null)
+                return false;
+
+            Form origen = formularioSuspendido;
+            Button? botonOrigen = botonSuspendido;
+
+            try
+            {
+                pnlContenido.Controls.Remove(formularioTemporal);
+                formularioTemporal.Close();
+                formularioTemporal.Dispose();
+                formularioActivo = origen;
+                formularioSuspendido = null;
+                botonSuspendido = null;
+                pnlContenido.Controls.Add(origen);
+                origen.Show();
+                origen.BringToFront();
+                if (botonOrigen != null)
+                    SeleccionarBoton(botonOrigen);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                MostrarMensajePrincipal("No se pudo volver a la venta", ex.Message);
+                return false;
+            }
         }
 
 
@@ -1419,7 +1503,7 @@ namespace Capa_Vistas
 
 
             AbrirFormularioEnPanel(
-                new FormVentas(),
+                new FormVentas(this),
                 btnVentas
             );
         }
@@ -1569,11 +1653,7 @@ namespace Capa_Vistas
     object? sender,
     EventArgs e)
         {
-            if (
-                formularioActivo
-                is IControlaCambios formularioConCambios
-                &&
-                !formularioConCambios.PuedeCerrar())
+            if (!PuedeAbandonarFormulariosActuales())
             {
                 return;
             }
