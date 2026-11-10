@@ -389,6 +389,10 @@ namespace Capa_Vistas
                 return;
             }
 
+            // El detalle mantiene anchos y altos mínimos para que sus campos no
+            // se compriman. En un host embebido más bajo, el panel debe ofrecer
+            // scroll para que las acciones finales nunca queden recortadas.
+            pnlPrincipal.AutoScroll = true;
 
             int anchoDisponible =
                 pnlPrincipal.ClientSize.Width;
@@ -525,6 +529,12 @@ namespace Capa_Vistas
                         12
                     ),
                     8
+                );
+
+            pnlPrincipal.AutoScrollMinSize =
+                new Size(
+                    pnlAcciones.Right + 18,
+                    pnlAcciones.Bottom + 18
                 );
         }
 

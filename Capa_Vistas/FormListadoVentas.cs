@@ -37,6 +37,7 @@ namespace Capa_Vistas
 
     public partial class FormListadoVentas : Form
     {
+        private readonly Panel pnlGrilla = new() { BackColor = Color.White };
         private readonly VentaLogica ventaLogica;
         private readonly FormPrincipal? formPrincipal;
         private readonly OrigenHistorialVentas origenHistorial;
@@ -109,11 +110,67 @@ namespace Capa_Vistas
 
 
             ConfigurarGrilla();
+            pnlListado.Controls.Remove(dgvVentas);
+            pnlGrilla.Controls.Add(dgvVentas);
+            pnlListado.Controls.Add(pnlGrilla);
+            dgvVentas.Dock = DockStyle.Fill;
             ConfigurarEventos();
             ConfigurarVista();
             PrepararFechas();
 
+            pnlPrincipal.AutoScroll = false;
+            dgvVentas.ScrollBars = ScrollBars.Both;
+            dgvVentas.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
+            pnlAcciones.Visible = false;
+            pnlCabecera.Controls.Add(btnCerrar);
+            btnCerrar.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            Resize += (_, _) => AjustarLayoutResponsive();
+            Load += (_, _) => AjustarLayoutResponsive();
+
             CargarVentas();
+        }
+
+        // Conserva la distribución actual en pantallas amplias y apila el filtro
+        // al bajar de ancho, manteniendo la grilla totalmente accesible.
+        private void AjustarLayoutResponsive()
+        {
+            const int margen = 24;
+            int ancho = Math.Max(0, pnlPrincipal.ClientSize.Width - margen * 2);
+            int altoCabecera = 86;
+            int yFiltros = 112;
+            bool compacto = ancho < 850;
+            int altoFiltros = compacto ? 112 : 68;
+            int yListado = yFiltros + altoFiltros + 14;
+            int altoDisponible = Math.Max(180, pnlPrincipal.ClientSize.Height - yListado - 24);
+
+            pnlCabecera.SetBounds(margen, 16, ancho, altoCabecera);
+            btnCerrar.SetBounds(Math.Max(0, ancho - 150), 8, 140, 38);
+            pnlFiltros.SetBounds(margen, yFiltros, ancho, altoFiltros);
+            if (!compacto)
+            {
+                int x = 18;
+                lblDesde.SetBounds(x, 22, 52, 24);
+                dtpDesde.SetBounds(x + 58, 18, 150, 28);
+                lblHasta.SetBounds(x + 230, 22, 48, 24);
+                dtpHasta.SetBounds(x + 282, 18, 150, 28);
+                btnBuscar.SetBounds(Math.Max(x + 450, ancho - 250), 14, 105, 38);
+                btnLimpiar.SetBounds(Math.Max(x + 565, ancho - 132), 14, 105, 38);
+            }
+            else
+            {
+                int anchoFecha = Math.Max(120, Math.Min(190, ancho - 140));
+                lblDesde.SetBounds(18, 12, 55, 24);
+                dtpDesde.SetBounds(78, 10, anchoFecha, 28);
+                lblHasta.SetBounds(18, 54, 55, 24);
+                dtpHasta.SetBounds(78, 52, anchoFecha, 28);
+                int xBotones = Math.Min(ancho - 220, 78 + anchoFecha + 14);
+                btnBuscar.SetBounds(Math.Max(18, xBotones), 10, 95, 36);
+                btnLimpiar.SetBounds(Math.Max(18, xBotones), 54, 95, 36);
+            }
+            pnlListado.SetBounds(margen, yListado, ancho, altoDisponible);
+            pnlGrilla.SetBounds(18, 50, Math.Max(0, ancho - 36), Math.Max(0, altoDisponible - 76));
+            lblCantidad.SetBounds(18, Math.Max(50, altoDisponible - 24), Math.Max(0, ancho - 36), 20);
+            pnlPrincipal.AutoScrollMinSize = Size.Empty;
         }
 
 
@@ -187,7 +244,8 @@ namespace Capa_Vistas
                     Name = "colSucursal",
                     DataPropertyName = "Sucursal",
                     HeaderText = "Sucursal",
-                    Width = 145
+                    Width = 170,
+                    MinimumWidth = 150
                 };
 
 
@@ -197,7 +255,8 @@ namespace Capa_Vistas
                     Name = "colTipoFactura",
                     DataPropertyName = "TipoFactura",
                     HeaderText = "Factura",
-                    Width = 90
+                    Width = 100,
+                    MinimumWidth = 90
                 };
 
 
@@ -207,7 +266,8 @@ namespace Capa_Vistas
                     Name = "colTotal",
                     DataPropertyName = "Total",
                     HeaderText = "Total",
-                    Width = 125,
+                    Width = 130,
+                    MinimumWidth = 115,
 
                     DefaultCellStyle =
                         new DataGridViewCellStyle
@@ -227,7 +287,8 @@ namespace Capa_Vistas
                     Text = "Ver detalle",
                     UseColumnTextForButtonValue = true,
                     FlatStyle = FlatStyle.Flat,
-                    Width = 115
+                    Width = 120,
+                    MinimumWidth = 110
                 };
 
 

@@ -270,7 +270,7 @@ namespace Capa_Vistas
             // 
             // pnlActividad
             // 
-            pnlActividad.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlActividad.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlActividad.BackColor = Color.White;
             pnlActividad.BorderStyle = BorderStyle.FixedSingle;
             pnlActividad.Controls.Add(lblActividadTitulo);
@@ -305,7 +305,7 @@ namespace Capa_Vistas
             // 
             // pnlActividadContenido
             // 
-            pnlActividadContenido.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            pnlActividadContenido.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             pnlActividadContenido.BackColor = Color.FromArgb(248, 249, 250);
             pnlActividadContenido.Controls.Add(lblActividadPlaceholder);
             pnlActividadContenido.Controls.Add(dgvActividad);

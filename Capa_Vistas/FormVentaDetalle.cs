@@ -101,7 +101,115 @@ namespace Capa_Vistas
             ConfigurarGrillas();
             ConfigurarEventos();
 
+            // La vista cambia de dos columnas a una sola antes de que el panel
+            // derecho pierda ancho. El scroll es solo vertical para el contenido.
+            pnlPrincipal.AutoScroll = true;
+            Resize += (_, _) => AjustarLayoutResponsive();
+            Load += (_, _) => AjustarLayoutResponsive();
+
             CargarDetalle();
+        }
+
+        private void AjustarLayoutResponsive()
+        {
+            if (pnlPrincipal.ClientSize.Width <= 0)
+                return;
+
+            const int margen = 24;
+            const int separacion = 18;
+            const int altoCabecera = 82;
+            const int altoDatosAmplio = 102;
+            const int altoDatosAngosto = 184;
+            const int altoAcciones = 64;
+            const int altoTotales = 108;
+            const int anchoMinimoLateral = 285;
+
+            int anchoDisponible = Math.Max(320, pnlPrincipal.ClientSize.Width - margen * 2);
+            bool dosColumnas = anchoDisponible >= 900;
+            int y = 18;
+
+            pnlPrincipal.SuspendLayout();
+            pnlCabecera.SetBounds(margen, y, anchoDisponible, altoCabecera);
+            y += altoCabecera + 8;
+
+            int altoDatos = dosColumnas ? altoDatosAmplio : altoDatosAngosto;
+            pnlDatosVenta.SetBounds(margen, y, anchoDisponible, altoDatos);
+            AjustarDatosVenta(anchoDisponible, dosColumnas);
+            y += altoDatos + separacion;
+
+            if (dosColumnas)
+            {
+                int anchoLateral = Math.Max(anchoMinimoLateral, (int)(anchoDisponible * .28));
+                int anchoProductos = anchoDisponible - anchoLateral - separacion;
+                int altoCuerpo = Math.Max(250, pnlPrincipal.ClientSize.Height - y - altoAcciones - separacion - 24);
+                int altoPagos = Math.Max(180, altoCuerpo - altoTotales - separacion);
+
+                pnlProductos.SetBounds(margen, y, anchoProductos, altoCuerpo);
+                pnlPagos.SetBounds(margen + anchoProductos + separacion, y, anchoLateral, altoPagos);
+                pnlTotales.SetBounds(margen + anchoProductos + separacion, y + altoPagos + separacion, anchoLateral, altoTotales);
+                y += altoCuerpo + separacion;
+            }
+            else
+            {
+                int altoProductos = Math.Max(250, Math.Min(380, pnlPrincipal.ClientSize.Height / 2));
+                int altoPagos = 190;
+                pnlProductos.SetBounds(margen, y, anchoDisponible, altoProductos);
+                y += altoProductos + separacion;
+                pnlPagos.SetBounds(margen, y, anchoDisponible, altoPagos);
+                y += altoPagos + separacion;
+                pnlTotales.SetBounds(margen, y, anchoDisponible, altoTotales);
+                y += altoTotales + separacion;
+            }
+
+            AjustarPanelGrilla(pnlProductos, dgvProductos);
+            AjustarPanelGrilla(pnlPagos, dgvPagos);
+            AjustarTotales();
+
+            bool accionesApiladas = anchoDisponible < 380;
+            int altoAccionesReal = accionesApiladas ? 108 : altoAcciones;
+            pnlAcciones.SetBounds(margen, y, anchoDisponible, altoAccionesReal);
+            btnCerrar.SetBounds(0, 12, Math.Min(190, anchoDisponible), 40);
+            btnGenerarPdf.SetBounds(
+                accionesApiladas ? 0 : Math.Max(200, anchoDisponible - 140),
+                accionesApiladas ? 60 : 12,
+                Math.Min(140, anchoDisponible),
+                40);
+            y += altoAccionesReal + 24;
+
+            pnlPrincipal.AutoScrollMinSize = new Size(0, y);
+            pnlPrincipal.ResumeLayout(true);
+        }
+
+        private void AjustarPanelGrilla(Panel panel, DataGridView grilla)
+        {
+            grilla.SetBounds(18, 47, Math.Max(120, panel.ClientSize.Width - 36), Math.Max(80, panel.ClientSize.Height - 66));
+        }
+
+        private void AjustarTotales()
+        {
+            int anchoImporte = Math.Max(115, pnlTotales.ClientSize.Width / 2 - 8);
+            int izquierdaImporte = pnlTotales.ClientSize.Width - anchoImporte - 18;
+            lblSubtotal.SetBounds(izquierdaImporte, 10, anchoImporte, 23);
+            lblDescuento.SetBounds(izquierdaImporte, 39, anchoImporte, 23);
+            lblTotal.SetBounds(izquierdaImporte, 68, anchoImporte, 28);
+        }
+
+        private void AjustarDatosVenta(int ancho, bool dosColumnas)
+        {
+            Label[] titulos = { lblFechaTitulo, lblSucursalTitulo, lblTipoFacturaTitulo, lblClienteTitulo, lblDocumentoTitulo, lblVendedorTitulo };
+            Label[] valores = { lblFecha, lblSucursal, lblTipoFactura, lblCliente, lblDocumento, lblVendedor };
+            int columnas = dosColumnas ? 6 : 2;
+            int anchoColumna = Math.Max(120, (ancho - 40) / columnas);
+            for (int indice = 0; indice < titulos.Length; indice++)
+            {
+                int fila = indice / columnas;
+                int columna = indice % columnas;
+                int x = 20 + columna * anchoColumna;
+                int y = 16 + fila * 76;
+                titulos[indice].Location = new Point(x, y);
+                valores[indice].SetBounds(x, y + 24, anchoColumna - 10, 26);
+                valores[indice].AutoEllipsis = true;
+            }
         }
 
         // Abre un detalle desde Reportes y conserva la validación de alcance en VentaLogica.
