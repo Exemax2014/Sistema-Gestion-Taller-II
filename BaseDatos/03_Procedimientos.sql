@@ -1684,6 +1684,23 @@ END;
 GO
 
 
+/* Devuelve calles activas únicas de una localidad para sugerirlas al cargar direcciones. */
+CREATE OR ALTER PROCEDURE dbo.sp_Direccion_ListarCallesPorLocalidad
+    @idLocalidad INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    SELECT DISTINCT
+        calle
+    FROM dbo.DIRECCION
+    WHERE id_localidad = @idLocalidad
+      AND eliminado_en IS NULL
+    ORDER BY calle;
+END;
+GO
+
+
 /* ============================================================
    Procedimiento: sp_Direccion_Alta
 
@@ -1816,6 +1833,21 @@ BEGIN
             RETURN;
         END;
 
+        IF @calle COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9 .,''’/#º°-]%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle debe contener al menos una letra.';
+            RETURN;
+        END;
+
+        IF @calle COLLATE Latin1_General_100_BIN2 LIKE N'%[0-9][^0-9 .,''’/#º°-]%'
+           OR @calle COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9 .,''’/#º°-][0-9]%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle no puede mezclar letras y números dentro del mismo término.';
+            RETURN;
+        END;
+
         IF LEN(@calle) > 150
            OR @altura = N''
            OR @altura COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
@@ -1921,6 +1953,21 @@ BEGIN
         BEGIN
             SET @CodigoResultado = 3;
             SET @MensajeResultado = N'La calle es obligatoria.';
+            RETURN;
+        END;
+
+        IF @calle COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9 .,''’/#º°-]%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle debe contener al menos una letra.';
+            RETURN;
+        END;
+
+        IF @calle COLLATE Latin1_General_100_BIN2 LIKE N'%[0-9][^0-9 .,''’/#º°-]%'
+           OR @calle COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9 .,''’/#º°-][0-9]%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle no puede mezclar letras y números dentro del mismo término.';
             RETURN;
         END;
 
@@ -4594,6 +4641,8 @@ BEGIN
         s.id_sucursal,
         s.nombre AS nombre_sucursal,
         d.calle,
+        d.altura,
+        d.piso,
         d.id_localidad AS id_localidad,
         l.nombre AS localidad,
         l.id_provincia AS id_provincia,
@@ -4622,6 +4671,8 @@ BEGIN
         s.id_sucursal,
         s.nombre,
         d.calle,
+        d.altura,
+        d.piso,
         d.id_localidad,
         l.nombre,
         l.id_provincia,
@@ -4639,6 +4690,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Sucursal_Alta
     @nombre NVARCHAR(100),
     @idLocalidad INT,
     @calle NVARCHAR(150),
+    @altura NVARCHAR(20),
+    @piso NVARCHAR(2) = NULL,
     @idUsuarioEjecutor INT,
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
@@ -4652,6 +4705,8 @@ BEGIN
     SET @MensajeResultado = N'Operación realizada correctamente.';
     SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
     SET @calle = LTRIM(RTRIM(ISNULL(@calle, N'')));
+    SET @altura = ISNULL(@altura, N'');
+    SET @piso = CASE WHEN LTRIM(RTRIM(@piso)) = N'' THEN NULL ELSE @piso END;
 
     WHILE CHARINDEX(N'  ', @nombre) > 0 SET @nombre = REPLACE(@nombre, N'  ', N' ');
     WHILE CHARINDEX(N'  ', @calle) > 0 SET @calle = REPLACE(@calle, N'  ', N' ');
@@ -4669,7 +4724,38 @@ BEGIN
         IF @calle = N'' OR LEN(@calle) > 150
         BEGIN
             SET @CodigoResultado = 3;
-            SET @MensajeResultado = N'La dirección es obligatoria y debe tener hasta 150 caracteres.';
+            SET @MensajeResultado = N'Ingresá una calle válida.';
+            RETURN;
+        END;
+
+        IF @calle COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9 .,''’/#º°-]%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle debe contener al menos una letra.';
+            RETURN;
+        END;
+
+        IF @calle COLLATE Latin1_General_100_BIN2 LIKE N'%[0-9][^0-9 .,''’/#º°-]%'
+           OR @calle COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9 .,''’/#º°-][0-9]%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle no puede mezclar letras y números dentro del mismo término.';
+            RETURN;
+        END;
+
+        IF @altura = N'' OR @altura COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
+           OR TRY_CONVERT(INT, @altura) IS NULL OR TRY_CONVERT(INT, @altura) <= 0
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La altura debe ser un número entero mayor que 0.';
+            RETURN;
+        END;
+
+        IF @piso IS NOT NULL AND (LEN(@piso) > 2 OR @piso COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
+           OR TRY_CONVERT(TINYINT, @piso) IS NULL OR TRY_CONVERT(TINYINT, @piso) > 99)
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El piso debe estar entre 0 y 99.';
             RETURN;
         END;
 
@@ -4689,8 +4775,8 @@ BEGIN
 
         BEGIN TRANSACTION;
 
-        INSERT INTO dbo.DIRECCION (id_localidad, calle)
-        VALUES (@idLocalidad, @calle);
+        INSERT INTO dbo.DIRECCION (id_localidad, calle, altura, piso)
+        VALUES (@idLocalidad, @calle, @altura, @piso);
 
         DECLARE @idDireccion INT = CAST(SCOPE_IDENTITY() AS INT);
 
@@ -4724,6 +4810,8 @@ CREATE OR ALTER PROCEDURE dbo.sp_Sucursal_Modificar
     @nombre NVARCHAR(100),
     @idLocalidad INT,
     @calle NVARCHAR(150),
+    @altura NVARCHAR(20),
+    @piso NVARCHAR(2) = NULL,
     @idUsuarioEjecutor INT,
     @IdGenerado INT OUTPUT,
     @CodigoResultado INT OUTPUT,
@@ -4737,6 +4825,8 @@ BEGIN
     SET @MensajeResultado = N'Operación realizada correctamente.';
     SET @nombre = LTRIM(RTRIM(ISNULL(@nombre, N'')));
     SET @calle = LTRIM(RTRIM(ISNULL(@calle, N'')));
+    SET @altura = ISNULL(@altura, N'');
+    SET @piso = CASE WHEN LTRIM(RTRIM(@piso)) = N'' THEN NULL ELSE @piso END;
 
     WHILE CHARINDEX(N'  ', @nombre) > 0 SET @nombre = REPLACE(@nombre, N'  ', N' ');
     WHILE CHARINDEX(N'  ', @calle) > 0 SET @calle = REPLACE(@calle, N'  ', N' ');
@@ -4754,7 +4844,38 @@ BEGIN
         IF @nombre = N'' OR LEN(@nombre) > 100 OR @calle = N'' OR LEN(@calle) > 150
         BEGIN
             SET @CodigoResultado = 3;
-            SET @MensajeResultado = N'El nombre y la dirección son obligatorios y exceden el máximo permitido.';
+            SET @MensajeResultado = N'El nombre y la calle son obligatorios y exceden el máximo permitido.';
+            RETURN;
+        END;
+
+        IF @calle COLLATE Latin1_General_100_BIN2 NOT LIKE N'%[^0-9 .,''’/#º°-]%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle debe contener al menos una letra.';
+            RETURN;
+        END;
+
+        IF @calle COLLATE Latin1_General_100_BIN2 LIKE N'%[0-9][^0-9 .,''’/#º°-]%'
+           OR @calle COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9 .,''’/#º°-][0-9]%'
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La calle no puede mezclar letras y números dentro del mismo término.';
+            RETURN;
+        END;
+
+        IF @altura = N'' OR @altura COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
+           OR TRY_CONVERT(INT, @altura) IS NULL OR TRY_CONVERT(INT, @altura) <= 0
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'La altura debe ser un número entero mayor que 0.';
+            RETURN;
+        END;
+
+        IF @piso IS NOT NULL AND (LEN(@piso) > 2 OR @piso COLLATE Latin1_General_100_BIN2 LIKE N'%[^0-9]%'
+           OR TRY_CONVERT(TINYINT, @piso) IS NULL OR TRY_CONVERT(TINYINT, @piso) > 99)
+        BEGIN
+            SET @CodigoResultado = 3;
+            SET @MensajeResultado = N'El piso debe estar entre 0 y 99.';
             RETURN;
         END;
 
@@ -4779,14 +4900,14 @@ BEGIN
 
         IF @idDireccionActual IS NULL
         BEGIN
-            INSERT INTO dbo.DIRECCION (id_localidad, calle) VALUES (@idLocalidad, @calle);
+            INSERT INTO dbo.DIRECCION (id_localidad, calle, altura, piso) VALUES (@idLocalidad, @calle, @altura, @piso);
             SET @idDireccionActual = CAST(SCOPE_IDENTITY() AS INT);
             UPDATE dbo.SUCURSAL SET id_direccion = @idDireccionActual WHERE id_sucursal = @idSucursal;
         END
         ELSE
         BEGIN
             UPDATE dbo.DIRECCION
-            SET id_localidad = @idLocalidad, calle = @calle, eliminado_en = NULL
+            SET id_localidad = @idLocalidad, calle = @calle, altura = @altura, piso = @piso, eliminado_en = NULL
             WHERE id_direccion = @idDireccionActual;
         END;
 

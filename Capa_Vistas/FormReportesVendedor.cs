@@ -33,6 +33,7 @@ namespace Capa_Vistas
         public FormReportesVendedor()
         {
             InitializeComponent();
+            DataGridViewLayoutHelper.Normalizar(dgvMisVentas);
 
             // Rango de fechas por defecto: el día de hoy.
             dtpDesde.Value = DateTime.Today;

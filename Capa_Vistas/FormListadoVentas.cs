@@ -302,6 +302,7 @@ namespace Capa_Vistas
                 colTotal,
                 colDetalle
             );
+            DataGridViewLayoutHelper.Normalizar(dgvVentas, "colCliente", "colVendedor");
         }
 
 

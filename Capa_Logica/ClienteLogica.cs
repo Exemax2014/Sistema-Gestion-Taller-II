@@ -216,6 +216,14 @@ namespace Capa_Logica
                 .ToList();
         }
 
+        // Las calles son sugerencias derivadas de direcciones existentes; el usuario puede informar una nueva.
+        public List<string> ObtenerCallesPorLocalidad(int idLocalidad)
+        {
+            return idLocalidad > 0
+                ? direccionDatos.ObtenerCallesPorLocalidad(idLocalidad)
+                : new List<string>();
+        }
+
         // Busca una localidad de la provincia seleccionada normalizando el texto
         // para reutilizar la existente aunque cambien mayúsculas o espacios.
         public OpcionClienteModelo? BuscarLocalidad(int idProvincia, string? nombre)
@@ -313,7 +321,7 @@ namespace Capa_Logica
 
             ResultadoDireccionDatos direccion = direccionDatos.Alta(
                 idLocalidad!.Value,
-                NormalizarNombre(calle),
+                DireccionValidacion.NormalizarCalle(calle),
                 altura!,
                 string.IsNullOrEmpty(piso) ? null : piso);
 
@@ -358,7 +366,7 @@ namespace Capa_Logica
             {
                 ResultadoDireccionDatos direccion =
                     direccionDatos.Modificar(idDireccionActual.Value, idLocalidad!.Value,
-                        NormalizarNombre(calle), altura!, string.IsNullOrEmpty(piso) ? null : piso);
+                        DireccionValidacion.NormalizarCalle(calle), altura!, string.IsNullOrEmpty(piso) ? null : piso);
 
                 if (!direccion.Exitoso)
                 {
@@ -369,7 +377,7 @@ namespace Capa_Logica
             {
                 ResultadoDireccionDatos direccion = direccionDatos.Alta(
                     idLocalidad!.Value,
-                    NormalizarNombre(calle),
+                    DireccionValidacion.NormalizarCalle(calle),
                     altura!,
                     string.IsNullOrEmpty(piso) ? null : piso);
 
@@ -498,39 +506,14 @@ namespace Capa_Logica
                 return "Seleccioná o ingresá una localidad válida para la provincia.";
             }
 
-            string calleNormalizada = NormalizarNombre(calle);
-            if (string.IsNullOrWhiteSpace(calleNormalizada))
-            {
-                return "Ingresá la calle de la dirección.";
-            }
+            string? errorCalle = DireccionValidacion.ValidarCalle(calle);
+            if (errorCalle != null) return errorCalle;
 
-            if (calleNormalizada.Length > 150)
-            {
-                return "La calle supera el máximo de 150 caracteres.";
-            }
+            string? errorAltura = DireccionValidacion.ValidarAltura(altura);
+            if (errorAltura != null) return errorAltura;
 
-            if (!Regex.IsMatch(calleNormalizada, @"^[\p{L}\p{M}\p{N}\s.,'’/#º°-]+$"))
-            {
-                return "La calle contiene caracteres no válidos.";
-            }
-
-            if (string.IsNullOrEmpty(altura) || altura.Length > 20
-                || !altura.All(char.IsAsciiDigit)
-                || !int.TryParse(altura, out int alturaNumerica)
-                || alturaNumerica <= 0)
-            {
-                return "La altura es obligatoria y debe ser un número entero positivo.";
-            }
-
-            if (!string.IsNullOrEmpty(piso)
-                && (piso.Length > 2
-                    || !piso.All(char.IsAsciiDigit)
-                    || !int.TryParse(piso, out int pisoNumerico)
-                    || pisoNumerico < 0
-                    || pisoNumerico > 99))
-            {
-                return "El piso debe contener solo dígitos y estar entre 0 y 99.";
-            }
+            string? errorPiso = DireccionValidacion.ValidarPiso(piso);
+            if (errorPiso != null) return errorPiso;
 
             return null;
         }

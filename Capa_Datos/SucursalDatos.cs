@@ -31,6 +31,8 @@ namespace Capa_Datos
         public int IdSucursal { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string Calle { get; set; } = string.Empty;
+        public string Altura { get; set; } = string.Empty;
+        public string Piso { get; set; } = string.Empty;
         public string Localidad { get; set; } = string.Empty;
         public string Provincia { get; set; } = string.Empty;
         public int IdLocalidad { get; set; }
@@ -97,6 +99,8 @@ namespace Capa_Datos
                         IdSucursal = idSucursal,
                         Nombre = LeerTexto(lector, "nombre_sucursal"),
                         Calle = LeerTexto(lector, "calle"),
+                        Altura = LeerTexto(lector, "altura"),
+                        Piso = LeerTexto(lector, "piso"),
                         Localidad = LeerTexto(lector, "localidad"),
                         Provincia = LeerTexto(lector, "provincia"),
                         IdLocalidad = lector["id_localidad"] == DBNull.Value ? 0 : Convert.ToInt32(lector["id_localidad"]),
@@ -119,19 +123,21 @@ namespace Capa_Datos
         }
 
         // Registra una sucursal y su dirección dentro de la misma operación SQL.
-        public ResultadoSucursalDatos Alta(string nombre, int idLocalidad, string calle, int idUsuarioEjecutor)
+        public ResultadoSucursalDatos Alta(string nombre, int idLocalidad, string calle, string altura, string? piso, int idUsuarioEjecutor)
         {
             return EjecutarOperacion("dbo.sp_Sucursal_Alta", comando =>
             {
                 comando.Parameters.Add("@nombre", SqlDbType.NVarChar, 100).Value = nombre;
                 comando.Parameters.Add("@idLocalidad", SqlDbType.Int).Value = idLocalidad;
                 comando.Parameters.Add("@calle", SqlDbType.NVarChar, 150).Value = calle;
+                comando.Parameters.Add("@altura", SqlDbType.NVarChar, 20).Value = altura;
+                comando.Parameters.Add("@piso", SqlDbType.NVarChar, 2).Value = string.IsNullOrWhiteSpace(piso) ? DBNull.Value : piso;
                 comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
             });
         }
 
         // Actualiza los datos y ubicación de una sucursal existente.
-        public ResultadoSucursalDatos Modificar(int idSucursal, string nombre, int idLocalidad, string calle, int idUsuarioEjecutor)
+        public ResultadoSucursalDatos Modificar(int idSucursal, string nombre, int idLocalidad, string calle, string altura, string? piso, int idUsuarioEjecutor)
         {
             return EjecutarOperacion("dbo.sp_Sucursal_Modificar", comando =>
             {
@@ -139,6 +145,8 @@ namespace Capa_Datos
                 comando.Parameters.Add("@nombre", SqlDbType.NVarChar, 100).Value = nombre;
                 comando.Parameters.Add("@idLocalidad", SqlDbType.Int).Value = idLocalidad;
                 comando.Parameters.Add("@calle", SqlDbType.NVarChar, 150).Value = calle;
+                comando.Parameters.Add("@altura", SqlDbType.NVarChar, 20).Value = altura;
+                comando.Parameters.Add("@piso", SqlDbType.NVarChar, 2).Value = string.IsNullOrWhiteSpace(piso) ? DBNull.Value : piso;
                 comando.Parameters.Add("@idUsuarioEjecutor", SqlDbType.Int).Value = idUsuarioEjecutor;
             });
         }

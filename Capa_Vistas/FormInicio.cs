@@ -71,9 +71,9 @@ namespace Capa_Vistas
             tlpEncabezado.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 70F));
             tlpEncabezado.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 30F));
             tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
-            tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, 22F));
+            tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, 47F));
             tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, 3F));
-            tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, 25F));
+            tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, 0F));
             foreach (Control control in new Control[] { lblBienvenida, lblPerfilSucursal, lblSubtitulo, pnlLineaDorada })
                 control.Dock = DockStyle.Fill;
             lblBienvenida.AutoSize = false;
@@ -177,6 +177,8 @@ namespace Capa_Vistas
                 pnlAvisos.Controls.Remove(control);
 
             pnlAvisos.Padding = new Padding(14, 10, 14, 14);
+            pnlAvisosCabecera.Padding = new Padding(0, 2, 8, 4);
+            pnlAvisosListado.Padding = new Padding(0, 5, 0, 0);
             pnlAvisosCabecera.Controls.Add(lblAvisosTitulo);
             pnlAvisosCabecera.Controls.Add(btnNuevoAviso);
             lblAvisosTitulo.Location = new Point(0, 6);
@@ -308,6 +310,7 @@ namespace Capa_Vistas
             grilla.DefaultCellStyle.SelectionBackColor = Color.FromArgb(225, 228, 232);
             grilla.DefaultCellStyle.SelectionForeColor = Color.FromArgb(45, 49, 54);
             grilla.RowTemplate.Height = 30;
+            DataGridViewLayoutHelper.Normalizar(grilla, columnas.Contains("Mensaje") ? "Mensaje" : "Cliente");
         }
 
         // Carga encabezado, permisos de accesos rápidos y los datos autorizados para la sesión.
@@ -445,7 +448,7 @@ namespace Capa_Vistas
             tlpEncabezado.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, encabezadoCompacto ? 100F : 70F));
             tlpEncabezado.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, encabezadoCompacto ? 0F : 30F));
             tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, 50F));
-            tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, 22F));
+            tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, encabezadoCompacto ? 22F : 47F));
             tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, encabezadoCompacto ? 22F : 3F));
             tlpEncabezado.RowStyles.Add(new RowStyle(SizeType.Absolute, encabezadoCompacto ? 3F : 0F));
             if (encabezadoCompacto)
@@ -455,7 +458,7 @@ namespace Capa_Vistas
                 tlpEncabezado.SetColumnSpan(lblSubtitulo, 1);
                 tlpEncabezado.SetCellPosition(pnlLineaDorada, new TableLayoutPanelCellPosition(0, 3));
                 tlpEncabezado.SetColumnSpan(pnlLineaDorada, 1);
-                tlpDashboard.RowStyles[0].Height = 97F;
+                tlpDashboard.RowStyles[0].Height = 111F;
             }
             else
             {
@@ -464,7 +467,7 @@ namespace Capa_Vistas
                 tlpEncabezado.SetColumnSpan(lblSubtitulo, 2);
                 tlpEncabezado.SetCellPosition(pnlLineaDorada, new TableLayoutPanelCellPosition(0, 2));
                 tlpEncabezado.SetColumnSpan(pnlLineaDorada, 2);
-                tlpDashboard.RowStyles[0].Height = 75F;
+                tlpDashboard.RowStyles[0].Height = 114F;
             }
             tlpEncabezado.ResumeLayout(true);
             bool cuatroColumnasTarjetas = ancho >= 1000;
@@ -538,7 +541,7 @@ namespace Capa_Vistas
 
             int altoGraficos = !mostrarGraficos ? 0 : filasGraficos == 1 ? 299 : 598;
             tlpDashboard.RowStyles[1].SizeType = SizeType.Absolute;
-            tlpDashboard.RowStyles[1].Height = filasTarjetas * 110 + 12;
+            tlpDashboard.RowStyles[1].Height = filasTarjetas * 110 + 14;
             tlpDashboard.RowStyles[2].SizeType = SizeType.Absolute;
             tlpDashboard.RowStyles[2].Height = mostrarAccesos ? tlpAccesos.Height + 66 : 0;
             tlpDashboard.RowStyles[3].Height = altoGraficos;

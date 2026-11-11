@@ -86,6 +86,24 @@ namespace Capa_Datos
             return localidades;
         }
 
+        // Devuelve las calles activas ya registradas para sugerirlas sin convertirlas en un catálogo cerrado.
+        public List<string> ObtenerCallesPorLocalidad(int idLocalidad)
+        {
+            List<string> calles = new List<string>();
+
+            using SqlConnection conexion = Conexion.CrearConexion();
+            using SqlCommand comando = new SqlCommand("dbo.sp_Direccion_ListarCallesPorLocalidad", conexion);
+            comando.CommandType = CommandType.StoredProcedure;
+            comando.Parameters.Add("@idLocalidad", SqlDbType.Int).Value = idLocalidad;
+
+            conexion.Open();
+            using SqlDataReader lector = comando.ExecuteReader();
+            while (lector.Read())
+                calles.Add(LeerTexto(lector, "calle"));
+
+            return calles;
+        }
+
         // Resuelve la localidad por provincia y nombre mediante el procedimiento
         // idempotente, que evita duplicados y puede reactivar registros existentes.
         public ResultadoDireccionDatos ObtenerOCrearLocalidad(int idProvincia, string nombre)
