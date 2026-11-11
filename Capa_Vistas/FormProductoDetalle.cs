@@ -316,6 +316,7 @@ namespace Capa_Vistas
                 colEstado,
                 colAccion
             );
+            DataGridViewLayoutHelper.Normalizar(dgvStockSucursales, "colSucursal");
         }
 
 

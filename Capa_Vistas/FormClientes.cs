@@ -74,6 +74,7 @@ namespace Capa_Vistas
             colDetalle.UseColumnTextForButtonValue = false;
             dgvClientes.Columns["colDni"]!.DefaultCellStyle.Alignment =
                 DataGridViewContentAlignment.MiddleCenter;
+            DataGridViewLayoutHelper.Normalizar(dgvClientes, "colNombre");
         }
 
         private static DataGridViewTextBoxColumn CrearColumnaTexto(string nombre, string titulo, float? peso = null)

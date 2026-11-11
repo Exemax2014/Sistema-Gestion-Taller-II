@@ -70,8 +70,12 @@ namespace Capa_Vistas
         private ComboBox cmbSucursalProvincia;
         private Label lblLocalidadSucursal;
         private ComboBox cmbSucursalLocalidad;
-        private Label lblDireccionSucursal;
-        private TextBox txtDireccionSucursal;
+        private Label lblCalleSucursal;
+        private TextBox txtCalleSucursal;
+        private Label lblAlturaSucursal;
+        private TextBox txtAlturaSucursal;
+        private Label lblPisoSucursal;
+        private TextBox txtPisoSucursal;
         private CheckBox chkSucursalActiva;
         private Button btnCancelarSucursal;
         private Button btnGuardarSucursal;
@@ -150,8 +154,12 @@ namespace Capa_Vistas
             cmbSucursalProvincia = new ComboBox();
             lblLocalidadSucursal = new Label();
             cmbSucursalLocalidad = new ComboBox();
-            lblDireccionSucursal = new Label();
-            txtDireccionSucursal = new TextBox();
+            lblCalleSucursal = new Label();
+            txtCalleSucursal = new TextBox();
+            lblAlturaSucursal = new Label();
+            txtAlturaSucursal = new TextBox();
+            lblPisoSucursal = new Label();
+            txtPisoSucursal = new TextBox();
             chkSucursalActiva = new CheckBox();
             btnCancelarSucursal = new Button();
             btnGuardarSucursal = new Button();
@@ -820,8 +828,12 @@ namespace Capa_Vistas
             pnlFormularioSucursal.Controls.Add(cmbSucursalProvincia);
             pnlFormularioSucursal.Controls.Add(lblLocalidadSucursal);
             pnlFormularioSucursal.Controls.Add(cmbSucursalLocalidad);
-            pnlFormularioSucursal.Controls.Add(lblDireccionSucursal);
-            pnlFormularioSucursal.Controls.Add(txtDireccionSucursal);
+            pnlFormularioSucursal.Controls.Add(lblCalleSucursal);
+            pnlFormularioSucursal.Controls.Add(txtCalleSucursal);
+            pnlFormularioSucursal.Controls.Add(lblAlturaSucursal);
+            pnlFormularioSucursal.Controls.Add(txtAlturaSucursal);
+            pnlFormularioSucursal.Controls.Add(lblPisoSucursal);
+            pnlFormularioSucursal.Controls.Add(txtPisoSucursal);
             pnlFormularioSucursal.Controls.Add(chkSucursalActiva);
             pnlFormularioSucursal.Controls.Add(btnCancelarSucursal);
             pnlFormularioSucursal.Controls.Add(btnGuardarSucursal);
@@ -895,23 +907,56 @@ namespace Capa_Vistas
             cmbSucursalLocalidad.Size = new Size(578, 28);
             cmbSucursalLocalidad.TabIndex = 6;
             // 
-            // lblDireccionSucursal
+            // lblCalleSucursal
             // 
-            lblDireccionSucursal.AutoSize = true;
-            lblDireccionSucursal.Location = new Point(28, 252);
-            lblDireccionSucursal.Name = "lblDireccionSucursal";
-            lblDireccionSucursal.Size = new Size(72, 20);
-            lblDireccionSucursal.TabIndex = 7;
-            lblDireccionSucursal.Text = "Dirección";
+            lblCalleSucursal.AutoSize = true;
+            lblCalleSucursal.Location = new Point(28, 252);
+            lblCalleSucursal.Name = "lblCalleSucursal";
+            lblCalleSucursal.Size = new Size(43, 20);
+            lblCalleSucursal.TabIndex = 7;
+            lblCalleSucursal.Text = "Calle";
             // 
-            // txtDireccionSucursal
+            // txtCalleSucursal
             // 
-            txtDireccionSucursal.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            txtDireccionSucursal.Location = new Point(28, 277);
-            txtDireccionSucursal.MaxLength = 150;
-            txtDireccionSucursal.Name = "txtDireccionSucursal";
-            txtDireccionSucursal.Size = new Size(1184, 27);
-            txtDireccionSucursal.TabIndex = 8;
+            txtCalleSucursal.Location = new Point(28, 277);
+            txtCalleSucursal.MaxLength = 150;
+            txtCalleSucursal.Name = "txtCalleSucursal";
+            txtCalleSucursal.Size = new Size(720, 27);
+            txtCalleSucursal.TabIndex = 8;
+            //
+            // lblAlturaSucursal
+            //
+            lblAlturaSucursal.AutoSize = true;
+            lblAlturaSucursal.Location = new Point(780, 252);
+            lblAlturaSucursal.Name = "lblAlturaSucursal";
+            lblAlturaSucursal.Size = new Size(51, 20);
+            lblAlturaSucursal.TabIndex = 9;
+            lblAlturaSucursal.Text = "Altura";
+            //
+            // txtAlturaSucursal
+            //
+            txtAlturaSucursal.Location = new Point(780, 277);
+            txtAlturaSucursal.MaxLength = 20;
+            txtAlturaSucursal.Name = "txtAlturaSucursal";
+            txtAlturaSucursal.Size = new Size(180, 27);
+            txtAlturaSucursal.TabIndex = 10;
+            //
+            // lblPisoSucursal
+            //
+            lblPisoSucursal.AutoSize = true;
+            lblPisoSucursal.Location = new Point(990, 252);
+            lblPisoSucursal.Name = "lblPisoSucursal";
+            lblPisoSucursal.Size = new Size(35, 20);
+            lblPisoSucursal.TabIndex = 11;
+            lblPisoSucursal.Text = "Piso";
+            //
+            // txtPisoSucursal
+            //
+            txtPisoSucursal.Location = new Point(990, 277);
+            txtPisoSucursal.MaxLength = 2;
+            txtPisoSucursal.Name = "txtPisoSucursal";
+            txtPisoSucursal.Size = new Size(120, 27);
+            txtPisoSucursal.TabIndex = 12;
             // 
             // chkSucursalActiva
             // 
@@ -923,7 +968,7 @@ namespace Capa_Vistas
             chkSucursalActiva.Location = new Point(28, 335);
             chkSucursalActiva.Name = "chkSucursalActiva";
             chkSucursalActiva.Size = new Size(128, 24);
-            chkSucursalActiva.TabIndex = 9;
+            chkSucursalActiva.TabIndex = 13;
             chkSucursalActiva.Text = "Sucursal activa";
             chkSucursalActiva.UseVisualStyleBackColor = true;
             // 
@@ -938,7 +983,7 @@ namespace Capa_Vistas
             btnCancelarSucursal.Location = new Point(28, 516);
             btnCancelarSucursal.Name = "btnCancelarSucursal";
             btnCancelarSucursal.Size = new Size(120, 40);
-            btnCancelarSucursal.TabIndex = 10;
+            btnCancelarSucursal.TabIndex = 14;
             btnCancelarSucursal.Text = "Cancelar";
             btnCancelarSucursal.UseVisualStyleBackColor = false;
             // 
@@ -953,7 +998,7 @@ namespace Capa_Vistas
             btnGuardarSucursal.Location = new Point(1052, 516);
             btnGuardarSucursal.Name = "btnGuardarSucursal";
             btnGuardarSucursal.Size = new Size(160, 40);
-            btnGuardarSucursal.TabIndex = 11;
+            btnGuardarSucursal.TabIndex = 15;
             btnGuardarSucursal.Text = "Guardar sucursal";
             btnGuardarSucursal.UseVisualStyleBackColor = false;
             // 

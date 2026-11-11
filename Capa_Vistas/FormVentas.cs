@@ -24,6 +24,24 @@ namespace Capa_Vistas
 
         private readonly BindingList<ItemVentaVista> itemsVenta;
         private readonly BindingList<PagoVentaVista> pagosVenta;
+        private const int MaximoProductosResumen = 4;
+        private readonly TableLayoutPanel tlpResumenProductos = new()
+        {
+            ColumnCount = 2,
+            RowCount = 0,
+            BackColor = Color.White,
+            Margin = Padding.Empty,
+            Padding = Padding.Empty
+        };
+        private readonly Label lblResumenProductosRestantes = new()
+        {
+            AutoSize = false,
+            Font = new Font("Segoe UI", 8F),
+            ForeColor = Color.FromArgb(100, 108, 116),
+            TextAlign = ContentAlignment.MiddleLeft,
+            Visible = false
+        };
+        private readonly ToolTip tooltipResumenProductos = new();
 
         private ClienteVentaModelo? clienteSeleccionado;
         private List<ClienteVentaModelo> clientesDisponibles = new();
@@ -63,6 +81,7 @@ namespace Capa_Vistas
             pagosVenta =
                 new BindingList<PagoVentaVista>();
 
+            ConfigurarListaResumenProductos();
             ConfigurarGrillas();
             ConfigurarAccionNuevoCliente();
             ConfigurarEventos();
@@ -211,12 +230,101 @@ namespace Capa_Vistas
             int ancho = Math.Max(220, pnlResumen.ClientSize.Width - 36);
             int xValor = Math.Max(140, pnlResumen.ClientSize.Width - Math.Min(190, ancho / 2) - 18);
             int anchoValor = Math.Max(100, pnlResumen.ClientSize.Width - xValor - 18);
-            lblTotalVenta.SetBounds(xValor, 186, anchoValor, 27);
-            lblTotalPagado.SetBounds(xValor, 219, anchoValor, 27);
-            lblSaldo.SetBounds(xValor, 254, anchoValor, 32);
-            btnVolverProductos.SetBounds(18, pnlResumen.ClientSize.Height - 64, 120, 42);
-            btnCancelarVentaPaso2.SetBounds(146, pnlResumen.ClientSize.Height - 64, 120, 42);
-            btnConfirmarVenta.SetBounds(Math.Max(274, pnlResumen.ClientSize.Width - 168 - 18), pnlResumen.ClientSize.Height - 64, 168, 42);
+            int yBotones = pnlResumen.ClientSize.Height - 64;
+            int yTotales = Math.Max(158, yBotones - 92);
+            int filasProductos = ObtenerCantidadProductosResumenVisibles(yTotales);
+            int altoLista = filasProductos * 20;
+            int yLista = 82;
+            bool hayRestantes = itemsVenta.Count > filasProductos;
+            int yCliente = yLista + altoLista + (hayRestantes ? 28 : 10);
+
+            lblResumenProductosTitulo.SetBounds(18, 59, 88, 20);
+            lblResumenProductos.SetBounds(110, 59, Math.Max(100, ancho - 92), 20);
+            tlpResumenProductos.SetBounds(18, yLista, ancho, altoLista);
+            lblResumenProductosRestantes.SetBounds(18, yLista + altoLista, ancho, 20);
+            lblResumenClienteTitulo.SetBounds(18, yCliente, ancho, 20);
+            lblResumenCliente.SetBounds(18, yCliente + 20, ancho, 20);
+
+            lblTotalVentaTitulo.SetBounds(18, yTotales, xValor - 24, 27);
+            lblTotalVenta.SetBounds(xValor, yTotales, anchoValor, 27);
+            lblTotalPagadoTitulo.SetBounds(18, yTotales + 30, xValor - 24, 27);
+            lblTotalPagado.SetBounds(xValor, yTotales + 30, anchoValor, 27);
+            lblSaldoTitulo.SetBounds(18, yTotales + 60, xValor - 24, 32);
+            lblSaldo.SetBounds(xValor, yTotales + 60, anchoValor, 32);
+            btnVolverProductos.SetBounds(18, yBotones, 120, 42);
+            btnCancelarVentaPaso2.SetBounds(146, yBotones, 120, 42);
+            btnConfirmarVenta.SetBounds(Math.Max(274, pnlResumen.ClientSize.Width - 168 - 18), yBotones, 168, 42);
+            ActualizarProductosResumen(filasProductos);
+        }
+
+        private void ConfigurarListaResumenProductos()
+        {
+            tlpResumenProductos.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100F));
+            tlpResumenProductos.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 48F));
+            pnlResumen.Controls.Add(tlpResumenProductos);
+            pnlResumen.Controls.Add(lblResumenProductosRestantes);
+
+            lblResumenProductos.AutoSize = false;
+            lblResumenProductos.Font = new Font("Segoe UI", 8F);
+            lblResumenProductos.ForeColor = Color.FromArgb(100, 108, 116);
+            lblResumenProductos.TextAlign = ContentAlignment.MiddleRight;
+            lblResumenCliente.AutoSize = false;
+            lblResumenCliente.AutoEllipsis = true;
+            lblResumenCliente.TextAlign = ContentAlignment.MiddleLeft;
+        }
+
+        private int ObtenerCantidadProductosResumenVisibles(int yTotales)
+        {
+            const int yLista = 82;
+            const int altoFila = 20;
+            const int reservaCliente = 56;
+            int altoDisponible = Math.Max(altoFila, yTotales - reservaCliente - yLista);
+            int filasDisponibles = Math.Max(1, altoDisponible / altoFila);
+            return Math.Min(MaximoProductosResumen, Math.Min(itemsVenta.Count, filasDisponibles));
+        }
+
+        private void ActualizarProductosResumen(int cantidadVisible)
+        {
+            tlpResumenProductos.SuspendLayout();
+            tlpResumenProductos.Controls.Clear();
+            tlpResumenProductos.RowStyles.Clear();
+            tlpResumenProductos.RowCount = cantidadVisible;
+
+            foreach (ItemVentaVista item in itemsVenta.Take(cantidadVisible))
+            {
+                int fila = tlpResumenProductos.RowStyles.Count;
+                tlpResumenProductos.RowStyles.Add(new RowStyle(SizeType.Absolute, 20F));
+
+                Label nombre = new()
+                {
+                    AutoSize = false,
+                    AutoEllipsis = true,
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Segoe UI", 8.5F),
+                    Text = item.Producto,
+                    TextAlign = ContentAlignment.MiddleLeft
+                };
+                Label cantidad = new()
+                {
+                    AutoSize = false,
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Segoe UI", 8.5F, FontStyle.Bold),
+                    ForeColor = Color.FromArgb(80, 85, 90),
+                    Text = $"x{item.Cantidad}",
+                    TextAlign = ContentAlignment.MiddleRight
+                };
+
+                tooltipResumenProductos.SetToolTip(nombre, item.Producto);
+                tlpResumenProductos.Controls.Add(nombre, 0, fila);
+                tlpResumenProductos.Controls.Add(cantidad, 1, fila);
+            }
+
+            int restantes = itemsVenta.Count - cantidadVisible;
+            lblResumenProductosRestantes.Visible = restantes > 0;
+            lblResumenProductosRestantes.Text = restantes > 0
+                ? $"+ {restantes} producto{(restantes == 1 ? string.Empty : "s")} más"
+                : string.Empty;
+            tlpResumenProductos.ResumeLayout(true);
         }
 
         private void ConfigurarAccionNuevoCliente()
@@ -499,6 +607,7 @@ namespace Capa_Vistas
                 colCantidad,
                 colAgregar
             );
+            DataGridViewLayoutHelper.Normalizar(dgvProductos, "colProductoNombre");
         }
 
 
@@ -587,6 +696,7 @@ namespace Capa_Vistas
                 colSubtotal,
                 colQuitar
             );
+            DataGridViewLayoutHelper.Normalizar(dgvCarrito, "colCarritoProducto");
 
 
             dgvCarrito.DataSource =
@@ -649,6 +759,7 @@ namespace Capa_Vistas
                 colMonto,
                 colQuitar
             );
+            DataGridViewLayoutHelper.Normalizar(dgvPagos, "colPagoMetodo");
 
 
             dgvPagos.DataSource =
@@ -1679,12 +1790,15 @@ namespace Capa_Vistas
 
 
             lblResumenProductos.Text =
-                $"{itemsVenta.Count} producto(s) - {unidades} unidad(es)";
+                $"{itemsVenta.Count} producto{(itemsVenta.Count == 1 ? string.Empty : "s")} · " +
+                $"{unidades} unidade{(unidades == 1 ? string.Empty : "s")}";
 
             lblResumenCliente.Text =
                 clienteSeleccionado?.Nombre
                 ??
                 "Sin seleccionar";
+
+            AjustarControlesResumen();
 
 
             btnContinuar.Enabled =

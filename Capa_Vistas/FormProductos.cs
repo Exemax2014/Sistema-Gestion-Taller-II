@@ -249,6 +249,7 @@ namespace Capa_Vistas
                 colEstado,
                 colDetalle
             );
+            DataGridViewLayoutHelper.Normalizar(dgvProductos, "colNombre");
         }
 
 

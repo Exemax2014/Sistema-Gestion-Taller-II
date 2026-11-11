@@ -1,5 +1,7 @@
 ﻿using Capa_Logica;
 
+using System.Globalization;
+
 namespace Capa_Vistas
 {
     // ============================================================
@@ -247,6 +249,7 @@ namespace Capa_Vistas
                 colDetalle,
                 colVentas
             );
+            DataGridViewLayoutHelper.Normalizar(dgvUsuarios, "colSucursal");
         }
 
 
@@ -300,6 +303,14 @@ namespace Capa_Vistas
 
             cmbSucursalProvincia.SelectedIndexChanged +=
                 CmbSucursalProvincia_SelectedIndexChanged;
+
+            cmbSucursalLocalidad.SelectedIndexChanged +=
+                CmbSucursalLocalidad_SelectedIndexChanged;
+
+            txtCalleSucursal.KeyPress += CalleSucursal_KeyPress;
+            txtAlturaSucursal.KeyPress += SoloNumerosSucursal_KeyPress;
+            txtPisoSucursal.KeyPress += SoloNumerosSucursal_KeyPress;
+            pnlFormularioSucursal.Resize += (_, _) => AjustarFormularioSucursal();
 
             flpSucursales.Resize +=
                 FlpSucursales_Resize;
@@ -380,6 +391,8 @@ namespace Capa_Vistas
             int altoContenido = Math.Max(120, ClientSize.Height - inicioContenido - 20);
             foreach (Panel vista in new[] { pnlVistaUsuarios, pnlVistaPerfiles, pnlVistaSucursales })
                 vista.SetBounds(margen, inicioContenido, ancho, altoContenido);
+
+            AjustarFormularioSucursal();
         }
 
 
@@ -741,9 +754,15 @@ namespace Capa_Vistas
                 Text = sucursal.Activa ? "Activa" : "Inactiva"
             };
 
-            string ubicacion = string.Join(", ", new[]
+            string calleCompleta = string.Join(" ", new[]
             {
                 sucursal.Calle,
+                sucursal.Altura,
+                string.IsNullOrWhiteSpace(sucursal.Piso) ? string.Empty : $"Piso {sucursal.Piso}"
+            }.Where(texto => !string.IsNullOrWhiteSpace(texto)));
+            string ubicacion = string.Join(", ", new[]
+            {
+                calleCompleta,
                 sucursal.Localidad,
                 sucursal.Provincia
             }.Where(texto => !string.IsNullOrWhiteSpace(texto)));
@@ -853,7 +872,9 @@ namespace Capa_Vistas
             btnGuardarSucursal.Visible = editable;
             btnGuardarSucursal.Enabled = editable;
             txtNombreSucursal.Text = sucursal.Nombre;
-            txtDireccionSucursal.Text = sucursal.Calle;
+            txtCalleSucursal.Text = sucursal.Calle;
+            txtAlturaSucursal.Text = sucursal.Altura;
+            txtPisoSucursal.Text = sucursal.Piso;
             chkSucursalActiva.Checked = sucursal.Activa;
             CargarProvinciasSucursal();
 
@@ -863,13 +884,17 @@ namespace Capa_Vistas
                 cmbSucursalProvincia.SelectedValue = sucursal.IdProvincia;
                 CargarLocalidadesSucursal(sucursal.IdProvincia, true);
                 if (sucursal.IdLocalidad > 0)
+                {
                     cmbSucursalLocalidad.SelectedValue = sucursal.IdLocalidad;
+                    CargarSugerenciasCallesSucursal(sucursal.IdLocalidad);
+                }
             }
             cargandoSucursal = false;
 
             ConfigurarCamposSucursal(!editable);
             pnlListadoSucursales.Visible = false;
             pnlFormularioSucursal.Visible = true;
+            AjustarFormularioSucursal();
         }
 
 
@@ -904,7 +929,9 @@ namespace Capa_Vistas
         private void ConfigurarCamposSucursal(bool soloLectura)
         {
             txtNombreSucursal.ReadOnly = soloLectura;
-            txtDireccionSucursal.ReadOnly = soloLectura;
+            txtCalleSucursal.ReadOnly = soloLectura;
+            txtAlturaSucursal.ReadOnly = soloLectura;
+            txtPisoSucursal.ReadOnly = soloLectura;
             cmbSucursalProvincia.Enabled = !soloLectura;
             cmbSucursalLocalidad.Enabled = !soloLectura;
             chkSucursalActiva.Enabled = false;
@@ -933,6 +960,73 @@ namespace Capa_Vistas
             }
         }
 
+        // Mantiene los componentes de DIRECCION alineados en dos filas amplias o apilados en anchos reducidos.
+        private void AjustarFormularioSucursal()
+        {
+            if (pnlFormularioSucursal.ClientSize.Width <= 0) return;
+
+            const int margen = 28;
+            const int separacion = 18;
+            int ancho = Math.Max(280, pnlFormularioSucursal.ClientSize.Width - margen * 2);
+            bool compacto = ancho < 700;
+
+            txtNombreSucursal.SetBounds(margen, 108, ancho, txtNombreSucursal.Height);
+            if (!compacto)
+            {
+                int anchoMitad = (ancho - separacion) / 2;
+                lblProvinciaSucursal.Location = new Point(margen, 166);
+                cmbSucursalProvincia.SetBounds(margen, 191, anchoMitad, cmbSucursalProvincia.Height);
+                int xLocalidad = margen + anchoMitad + separacion;
+                lblLocalidadSucursal.Location = new Point(xLocalidad, 166);
+                cmbSucursalLocalidad.SetBounds(xLocalidad, 191, ancho - anchoMitad - separacion, cmbSucursalLocalidad.Height);
+
+                int anchoPiso = 80;
+                int anchoAltura = 120;
+                int anchoCalle = Math.Max(140, ancho - anchoAltura - anchoPiso - separacion * 2);
+                int xAltura = margen + anchoCalle + separacion;
+                int xPiso = xAltura + anchoAltura + separacion;
+                lblCalleSucursal.Location = new Point(margen, 252);
+                txtCalleSucursal.SetBounds(margen, 277, anchoCalle, txtCalleSucursal.Height);
+                lblAlturaSucursal.Location = new Point(xAltura, 252);
+                txtAlturaSucursal.SetBounds(xAltura, 277, anchoAltura, txtAlturaSucursal.Height);
+                lblPisoSucursal.Location = new Point(xPiso, 252);
+                txtPisoSucursal.SetBounds(xPiso, 277, anchoPiso, txtPisoSucursal.Height);
+                chkSucursalActiva.Location = new Point(margen, 335);
+            }
+            else
+            {
+                lblProvinciaSucursal.Location = new Point(margen, 166);
+                cmbSucursalProvincia.SetBounds(margen, 191, ancho, cmbSucursalProvincia.Height);
+                lblLocalidadSucursal.Location = new Point(margen, 242);
+                cmbSucursalLocalidad.SetBounds(margen, 267, ancho, cmbSucursalLocalidad.Height);
+
+                lblCalleSucursal.Location = new Point(margen, 318);
+                txtCalleSucursal.SetBounds(margen, 343, ancho, txtCalleSucursal.Height);
+                int anchoAltura = Math.Max(100, (ancho - separacion) / 2);
+                lblAlturaSucursal.Location = new Point(margen, 394);
+                txtAlturaSucursal.SetBounds(margen, 419, anchoAltura, txtAlturaSucursal.Height);
+                int xPiso = margen + anchoAltura + separacion;
+                lblPisoSucursal.Location = new Point(xPiso, 394);
+                txtPisoSucursal.SetBounds(xPiso, 419, ancho - anchoAltura - separacion, txtPisoSucursal.Height);
+                chkSucursalActiva.Location = new Point(margen, 466);
+            }
+        }
+
+        private static void CalleSucursal_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            char caracter = e.KeyChar;
+            UnicodeCategory categoria = char.GetUnicodeCategory(caracter);
+            bool marcaUnicode = categoria is UnicodeCategory.NonSpacingMark or UnicodeCategory.SpacingCombiningMark;
+            if (!char.IsControl(caracter) && !char.IsLetter(caracter) && !char.IsDigit(caracter) &&
+                !char.IsWhiteSpace(caracter) && !marcaUnicode && !".,'’/#º°-".Contains(caracter))
+                e.Handled = true;
+        }
+
+        private static void SoloNumerosSucursal_KeyPress(object? sender, KeyPressEventArgs e)
+        {
+            if (!char.IsControl(e.KeyChar) && !char.IsDigit(e.KeyChar)) e.Handled = true;
+        }
+
 
         // Abre el formulario interno de alta y carga sus catálogos dinámicos de ubicación.
         private void BtnNuevaSucursal_Click(object? sender, EventArgs e)
@@ -953,6 +1047,7 @@ namespace Capa_Vistas
             pnlListadoSucursales.Visible = false;
             pnlFormularioSucursal.Visible = true;
             CargarProvinciasSucursal();
+            AjustarFormularioSucursal();
             txtNombreSucursal.Focus();
         }
 
@@ -995,12 +1090,12 @@ namespace Capa_Vistas
             try
             {
                 resultado = idSucursalEdicion.HasValue
-                    ? sucursalLogica.Modificar(idSucursalEdicion.Value, txtNombreSucursal.Text, idProvincia, idLocalidad, txtDireccionSucursal.Text)
-                    : sucursalLogica.Alta(txtNombreSucursal.Text, idProvincia, idLocalidad, txtDireccionSucursal.Text);
+                    ? sucursalLogica.Modificar(idSucursalEdicion.Value, txtNombreSucursal.Text, idProvincia, idLocalidad, txtCalleSucursal.Text, txtAlturaSucursal.Text, txtPisoSucursal.Text)
+                    : sucursalLogica.Alta(txtNombreSucursal.Text, idProvincia, idLocalidad, txtCalleSucursal.Text, txtAlturaSucursal.Text, txtPisoSucursal.Text);
             }
             catch (Exception ex)
             {
-                MostrarMensaje("No se pudo crear la sucursal", ex.Message);
+                MostrarMensaje("No se pudo guardar la sucursal", ex.Message);
                 return;
             }
 
@@ -1022,6 +1117,11 @@ namespace Capa_Vistas
         {
             if (cargandoSucursal) return;
             CargarLocalidadesSucursal(ObtenerIdSucursalSeleccionado(cmbSucursalProvincia) ?? 0, true);
+        }
+
+        private void CmbSucursalLocalidad_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            CargarSugerenciasCallesSucursal(ObtenerIdSucursalSeleccionado(cmbSucursalLocalidad));
         }
 
 
@@ -1061,6 +1161,17 @@ namespace Capa_Vistas
                 cmbSucursalLocalidad.SelectedIndex = -1;
                 cmbSucursalLocalidad.Text = string.Empty;
             }
+        }
+
+        private void CargarSugerenciasCallesSucursal(int? idLocalidad)
+        {
+            AutoCompleteStringCollection sugerencias = new();
+            if (idLocalidad.HasValue && idLocalidad.Value > 0)
+                sugerencias.AddRange(sucursalLogica.ObtenerCallesPorLocalidad(idLocalidad.Value).ToArray());
+
+            txtCalleSucursal.AutoCompleteCustomSource = sugerencias;
+            txtCalleSucursal.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            txtCalleSucursal.AutoCompleteSource = AutoCompleteSource.CustomSource;
         }
 
 
@@ -1109,7 +1220,6 @@ namespace Capa_Vistas
         private bool ValidarSucursalEnVista(int? idProvincia)
         {
             string nombre = NormalizarEspaciosSucursal(txtNombreSucursal.Text);
-            string direccion = NormalizarEspaciosSucursal(txtDireccionSucursal.Text);
             string localidad = NormalizarEspaciosSucursal(cmbSucursalLocalidad.Text);
             string? error = string.IsNullOrWhiteSpace(nombre)
                 ? "El nombre de la sucursal es obligatorio."
@@ -1119,14 +1229,14 @@ namespace Capa_Vistas
                         ? "Seleccioná una provincia válida."
                         : string.IsNullOrWhiteSpace(localidad) || localidad.Length > 100
                             ? "Seleccioná o ingresá una localidad válida."
-                            : string.IsNullOrWhiteSpace(direccion) || direccion.Length > 150
-                                ? "La dirección es obligatoria y no puede superar los 150 caracteres."
-                                : null;
+                            : DireccionValidacion.ValidarCalle(txtCalleSucursal.Text)
+                                ?? DireccionValidacion.ValidarAltura(txtAlturaSucursal.Text)
+                                ?? DireccionValidacion.ValidarPiso(txtPisoSucursal.Text);
 
             if (error == null)
             {
                 txtNombreSucursal.Text = NormalizarEspaciosSucursal(txtNombreSucursal.Text);
-                txtDireccionSucursal.Text = NormalizarEspaciosSucursal(txtDireccionSucursal.Text);
+                txtCalleSucursal.Text = DireccionValidacion.NormalizarCalle(txtCalleSucursal.Text);
                 return true;
             }
 
@@ -1140,7 +1250,9 @@ namespace Capa_Vistas
         {
             idSucursalEdicion = null;
             txtNombreSucursal.Clear();
-            txtDireccionSucursal.Clear();
+            txtCalleSucursal.Clear();
+            txtAlturaSucursal.Clear();
+            txtPisoSucursal.Clear();
             chkSucursalActiva.Checked = true;
             cmbSucursalProvincia.DataSource = null;
             cmbSucursalLocalidad.DataSource = null;

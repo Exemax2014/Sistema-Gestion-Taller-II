@@ -277,6 +277,16 @@ namespace Capa_Vistas
             }
         }
 
+        // Actualiza las sugerencias desde las direcciones ya registradas, sin restringir la carga de una calle nueva.
+        private void CargarSugerenciasCalles(int? idLocalidad)
+        {
+            AutoCompleteStringCollection sugerencias = new AutoCompleteStringCollection();
+            if (idLocalidad.HasValue && idLocalidad.Value > 0)
+                sugerencias.AddRange(clienteLogica.ObtenerCallesPorLocalidad(idLocalidad.Value).ToArray());
+
+            txtCalle.AutoCompleteCustomSource = sugerencias;
+        }
+
 
         // =========================================================
         // CARGAR CLIENTE (modo edición)
@@ -327,6 +337,7 @@ namespace Capa_Vistas
             if (cliente.IdLocalidad.HasValue)
             {
                 cmbLocalidad.SelectedValue = cliente.IdLocalidad.Value;
+                CargarSugerenciasCalles(cliente.IdLocalidad.Value);
             }
         }
 
@@ -342,7 +353,7 @@ namespace Capa_Vistas
             btnGuardar.Click += BtnGuardar_Click;
 
             cmbProvincia.SelectedIndexChanged += CmbProvincia_SelectedIndexChanged;
-            cmbLocalidad.SelectedIndexChanged += ControlModificado;
+            cmbLocalidad.SelectedIndexChanged += CmbLocalidad_SelectedIndexChanged;
 
             txtDni.TextChanged += ControlModificado;
             txtNombre.TextChanged += ControlModificado;
@@ -355,6 +366,12 @@ namespace Capa_Vistas
             cmbLocalidad.TextChanged += ControlModificado;
         }
 
+        private void CmbLocalidad_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            CargarSugerenciasCalles(ObtenerIdSeleccionado(cmbLocalidad));
+            ControlModificado(sender, e);
+        }
+
         // Configura límites preventivos de los controles sin reemplazar la validación de negocio.
         private void ConfigurarValidacionesVisuales()
         {
@@ -364,6 +381,8 @@ namespace Capa_Vistas
             txtTelefono.MaxLength = 30;
             txtEmail.MaxLength = 150;
             txtCalle.MaxLength = 150;
+            txtCalle.AutoCompleteMode = AutoCompleteMode.SuggestAppend;
+            txtCalle.AutoCompleteSource = AutoCompleteSource.CustomSource;
             txtAltura.MaxLength = 20;
             txtPiso.MaxLength = 2;
             cmbLocalidad.MaxLength = 100;
@@ -666,26 +685,14 @@ namespace Capa_Vistas
                 return ErrorCampo(cmbLocalidad, "Seleccioná o ingresá una localidad.");
             }
 
-            string calle = txtCalle.Text.Trim();
-            if (string.IsNullOrWhiteSpace(calle) || calle.Length > 150 ||
-                !Regex.IsMatch(calle, @"^[\p{L}\p{M}\p{N}\s.,'’/#º°-]+$"))
-            {
-                return ErrorCampo(txtCalle, "Ingresá una calle válida de hasta 150 caracteres.");
-            }
+            string? errorCalle = DireccionValidacion.ValidarCalle(txtCalle.Text);
+            if (errorCalle != null) return ErrorCampo(txtCalle, errorCalle);
 
-            if (string.IsNullOrEmpty(txtAltura.Text) ||
-                !txtAltura.Text.All(char.IsAsciiDigit) ||
-                !int.TryParse(txtAltura.Text, out int altura) || altura <= 0)
-            {
-                return ErrorCampo(txtAltura, "La altura es obligatoria y debe ser un número entero positivo.");
-            }
+            string? errorAltura = DireccionValidacion.ValidarAltura(txtAltura.Text);
+            if (errorAltura != null) return ErrorCampo(txtAltura, errorAltura);
 
-            if (!string.IsNullOrEmpty(txtPiso.Text) &&
-                (!txtPiso.Text.All(char.IsAsciiDigit) ||
-                 !int.TryParse(txtPiso.Text, out int piso) || piso > 99))
-            {
-                return ErrorCampo(txtPiso, "El piso debe contener solo dígitos y estar entre 0 y 99.");
-            }
+            string? errorPiso = DireccionValidacion.ValidarPiso(txtPiso.Text);
+            if (errorPiso != null) return ErrorCampo(txtPiso, errorPiso);
 
             return true;
         }

@@ -82,14 +82,14 @@ namespace Capa_Vistas
             dgvStockBajo.Columns.Add(new DataGridViewTextBoxColumn { Name = "IdProducto", Visible = false });
             dgvStockBajo.Columns.Add(new DataGridViewTextBoxColumn { Name = "IdSucursal", Visible = false });
             dgvStockBajo.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None;
-            dgvStockBajo.Columns[0].Width = 140;
-            dgvStockBajo.Columns[1].MinimumWidth = 220;
+            dgvStockBajo.Columns[0].Width = 145;
+            dgvStockBajo.Columns[1].MinimumWidth = 260;
             dgvStockBajo.Columns[1].AutoSizeMode = DataGridViewAutoSizeColumnMode.Fill;
             dgvStockBajo.Columns[2].Width = 140;
-            dgvStockBajo.Columns[3].Width = 180;
-            dgvStockBajo.Columns[4].Width = 80;
-            dgvStockBajo.Columns[5].Width = 115;
-            dgvStockBajo.Columns[6].Width = 90;
+            dgvStockBajo.Columns[3].Width = 170;
+            dgvStockBajo.Columns[4].Width = 95;
+            dgvStockBajo.Columns[5].Width = 135;
+            dgvStockBajo.Columns[6].Width = 115;
             dgvStockBajo.ColumnHeadersHeight = 42;
             dgvStockBajo.ColumnHeadersDefaultCellStyle.WrapMode = DataGridViewTriState.False;
             dgvStockBajo.ScrollBars = ScrollBars.Both;
@@ -628,7 +628,7 @@ namespace Capa_Vistas
             foreach (var stock in reporteLogica.ObtenerStock(sucursal)) dgvStockBajo.Rows.Add(stock.Codigo, stock.Producto, stock.Categoria, stock.Sucursal, stock.Stock, stock.StockMinimo, stock.Stock - stock.StockMinimo, stock.IdProducto, stock.IdSucursal);
             bool puedeGestionar = dgvStockBajo.Rows.Cast<DataGridViewRow>().Any(fila => reporteLogica.PuedeGestionarStockSucursal(Convert.ToInt32(fila.Cells[8].Value)));
             if (puedeGestionar && !dgvStockBajo.Columns.Contains("Gestionar"))
-                dgvStockBajo.Columns.Add(new DataGridViewButtonColumn { Name = "Gestionar", HeaderText = "Acción", Text = "Gestionar stock", UseColumnTextForButtonValue = true, Width = 140, AutoSizeMode = DataGridViewAutoSizeColumnMode.None });
+                dgvStockBajo.Columns.Add(new DataGridViewButtonColumn { Name = "Gestionar", HeaderText = "Acción", Text = "Gestionar stock", UseColumnTextForButtonValue = true, Width = 130, AutoSizeMode = DataGridViewAutoSizeColumnMode.None });
             if (!puedeGestionar && dgvStockBajo.Columns.Contains("Gestionar")) dgvStockBajo.Columns.Remove("Gestionar");
             MostrarPagina(SeccionReporte.StockBajo, dgvStockBajo.Rows.Count, "No hay productos con stock bajo para el alcance seleccionado.");
         }
@@ -1250,7 +1250,7 @@ namespace Capa_Vistas
         private static void DibujarTitulo(Graphics g, string titulo) { using Font f = new("Segoe UI", 9F, FontStyle.Bold); using Brush b = new SolidBrush(Color.FromArgb(55, 59, 64)); g.DrawString(titulo, f, b, 12, 10); }
         private static void DibujarVacio(Graphics g, Rectangle area) { using Font f = new("Segoe UI", 8F); using Brush b = new SolidBrush(Color.Gray); g.DrawString("Sin datos para el período.", f, b, 12, area.Height / 2); }
 
-        private static DataGridView CrearGrilla() => new() { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, AllowUserToDeleteRows = false, AllowUserToResizeRows = false, RowHeadersVisible = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill, BackgroundColor = Color.White, BorderStyle = BorderStyle.None, CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal };
+        private static DataGridView CrearGrilla() => new() { Dock = DockStyle.Fill, ReadOnly = true, AllowUserToAddRows = false, AllowUserToDeleteRows = false, AllowUserToResizeRows = false, AllowUserToResizeColumns = false, RowHeadersVisible = false, AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.None, ScrollBars = ScrollBars.Both, BackgroundColor = Color.White, BorderStyle = BorderStyle.None, CellBorderStyle = DataGridViewCellBorderStyle.SingleHorizontal };
 
         // Configura columnas dinámicas y separa los importes de los datos descriptivos.
         private static void ConfigurarColumnas(DataGridView grilla, IEnumerable<string> columnas)
@@ -1271,6 +1271,11 @@ namespace Capa_Vistas
                 else if (nombre == "Participación") grilla.Columns[indice].FillWeight = 14;
             }
             AplicarEstiloGrilla(grilla);
+            string[] columnasFill = grilla.Columns.Cast<DataGridViewColumn>()
+                .Where(columna => columna.Name is "Producto" or "Cliente" or "Detalle")
+                .Select(columna => columna.Name)
+                .ToArray();
+            DataGridViewLayoutHelper.Normalizar(grilla, columnasFill);
         }
 
         // Mantiene encabezados, padding y altura de fila coherentes con el resto del sistema.

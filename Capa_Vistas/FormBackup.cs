@@ -148,12 +148,12 @@ namespace Capa_Vistas
             dgvHistorial.AllowUserToResizeRows = false;
             dgvHistorial.RowHeadersVisible = false;
             dgvHistorial.AutoGenerateColumns = false;
-            dgvHistorial.AutoSizeColumnsMode = DataGridViewAutoSizeColumnsMode.Fill;
             dgvHistorial.ScrollBars = ScrollBars.Both;
-            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BackupHistorialItem.Fecha), HeaderText = "Fecha", Width = 145, DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy HH:mm" } });
-            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BackupHistorialItem.Usuario), HeaderText = "Usuario", FillWeight = 22 });
-            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BackupHistorialItem.Detalle), HeaderText = "Archivo / detalle", FillWeight = 52 });
-            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { DataPropertyName = nameof(BackupHistorialItem.Sucursal), HeaderText = "Sucursal", FillWeight = 20 });
+            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { Name = nameof(BackupHistorialItem.Fecha), DataPropertyName = nameof(BackupHistorialItem.Fecha), HeaderText = "Fecha", Width = 145, DefaultCellStyle = new DataGridViewCellStyle { Format = "dd/MM/yyyy HH:mm" } });
+            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { Name = nameof(BackupHistorialItem.Usuario), DataPropertyName = nameof(BackupHistorialItem.Usuario), HeaderText = "Usuario", Width = 170 });
+            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { Name = nameof(BackupHistorialItem.Detalle), DataPropertyName = nameof(BackupHistorialItem.Detalle), HeaderText = "Archivo / detalle" });
+            dgvHistorial.Columns.Add(new DataGridViewTextBoxColumn { Name = nameof(BackupHistorialItem.Sucursal), DataPropertyName = nameof(BackupHistorialItem.Sucursal), HeaderText = "Sucursal", Width = 170 });
+            DataGridViewLayoutHelper.Normalizar(dgvHistorial, nameof(BackupHistorialItem.Detalle));
             lblHistorialVacio.Dock = DockStyle.Fill;
             lblHistorialVacio.Text = "Todavía no hay copias de seguridad registradas.";
             lblHistorialVacio.TextAlign = ContentAlignment.MiddleCenter;

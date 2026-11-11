@@ -38,6 +38,7 @@ public partial class FormCategorias : Form
         dgvCategorias.Columns.Add(new DataGridViewTextBoxColumn { Name="nombre", HeaderText="Categoría", DataPropertyName="Nombre", AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill });
         dgvCategorias.Columns.Add(new DataGridViewTextBoxColumn { Name="productos", HeaderText="Productos asociados", DataPropertyName="ProductosAsociados", Width=180 });
         dgvCategorias.Columns.Add(new DataGridViewTextBoxColumn { Name="estado", HeaderText="Estado", DataPropertyName="Activo", Width=120 });
+        DataGridViewLayoutHelper.Normalizar(dgvCategorias, "nombre");
         dgvCategorias.CellFormatting += (_, e) =>
         {
             if (e.RowIndex >= 0 && dgvCategorias.Columns[e.ColumnIndex].Name == "estado" && dgvCategorias.Rows[e.RowIndex].DataBoundItem is CategoriaCatalogoModelo item)

@@ -23,6 +23,8 @@ namespace Capa_Logica
         public int IdSucursal { get; set; }
         public string Nombre { get; set; } = string.Empty;
         public string Calle { get; set; } = string.Empty;
+        public string Altura { get; set; } = string.Empty;
+        public string Piso { get; set; } = string.Empty;
         public string Localidad { get; set; } = string.Empty;
         public string Provincia { get; set; } = string.Empty;
         public int IdLocalidad { get; set; }
@@ -97,6 +99,8 @@ namespace Capa_Logica
                     IdSucursal = s.IdSucursal,
                     Nombre = s.Nombre,
                     Calle = s.Calle,
+                    Altura = s.Altura,
+                    Piso = s.Piso,
                     Localidad = s.Localidad,
                     Provincia = s.Provincia,
                     IdLocalidad = s.IdLocalidad,
@@ -133,6 +137,13 @@ namespace Capa_Logica
             return direccionDatos.ObtenerLocalidadesPorProvincia(idProvincia)
                 .Select(l => new OpcionSucursalModelo { Id = l.IdLocalidad, Nombre = l.Nombre })
                 .ToList();
+        }
+
+        public List<string> ObtenerCallesPorLocalidad(int idLocalidad)
+        {
+            return idLocalidad > 0
+                ? direccionDatos.ObtenerCallesPorLocalidad(idLocalidad)
+                : new List<string>();
         }
 
         // Busca una localidad normalizando espacios y mayúsculas para reutilizar registros existentes.
@@ -173,10 +184,9 @@ namespace Capa_Logica
         }
 
         // Valida los datos comunes para que alta y modificación compartan una sola regla autoritativa.
-        public string? ValidarSucursal(string? nombre, int? idProvincia, int? idLocalidad, string? calle)
+        public string? ValidarSucursal(string? nombre, int? idProvincia, int? idLocalidad, string? calle, string? altura, string? piso)
         {
             string nombreNormalizado = NormalizarEspacios(nombre);
-            string calleNormalizada = NormalizarEspacios(calle);
 
             if (string.IsNullOrWhiteSpace(nombreNormalizado))
             {
@@ -198,10 +208,12 @@ namespace Capa_Logica
                 return "Seleccioná una localidad válida.";
             }
 
-            if (string.IsNullOrWhiteSpace(calleNormalizada) || calleNormalizada.Length > 150)
-            {
-                return "La dirección es obligatoria y no puede superar los 150 caracteres.";
-            }
+            string? errorCalle = DireccionValidacion.ValidarCalle(calle);
+            if (errorCalle != null) return errorCalle;
+            string? errorAltura = DireccionValidacion.ValidarAltura(altura);
+            if (errorAltura != null) return errorAltura;
+            string? errorPiso = DireccionValidacion.ValidarPiso(piso);
+            if (errorPiso != null) return errorPiso;
 
             bool localidadPerteneceAProvincia = ObtenerLocalidades(idProvincia.Value)
                 .Any(l => l.Id == idLocalidad.Value);
@@ -212,25 +224,25 @@ namespace Capa_Logica
         }
 
         // Registra una sucursal activa con dirección válida después de controlar el permiso de alta.
-        public ResultadoSucursal Alta(string? nombre, int? idProvincia, int? idLocalidad, string? calle)
+        public ResultadoSucursal Alta(string? nombre, int? idProvincia, int? idLocalidad, string? calle, string? altura, string? piso)
         {
             if (!PuedeCrearSucursal())
             {
                 return ResultadoSinPermiso("registrar sucursales");
             }
 
-            string? error = ValidarSucursal(nombre, idProvincia, idLocalidad, calle);
+            string? error = ValidarSucursal(nombre, idProvincia, idLocalidad, calle, altura, piso);
             if (error != null)
             {
                 return ResultadoInvalido(error);
             }
 
             return ConvertirResultado(sucursalDatos.Alta(
-                NormalizarEspacios(nombre), idLocalidad!.Value, NormalizarEspacios(calle), SesionActual.IdUsuario));
+                NormalizarEspacios(nombre), idLocalidad!.Value, DireccionValidacion.NormalizarCalle(calle), altura!.Trim(), string.IsNullOrWhiteSpace(piso) ? null : piso.Trim(), SesionActual.IdUsuario));
         }
 
         // Actualiza una sucursal aplicando las mismas validaciones que el alta.
-        public ResultadoSucursal Modificar(int idSucursal, string? nombre, int? idProvincia, int? idLocalidad, string? calle)
+        public ResultadoSucursal Modificar(int idSucursal, string? nombre, int? idProvincia, int? idLocalidad, string? calle, string? altura, string? piso)
         {
             if (!PuedeModificarSucursal())
             {
@@ -242,14 +254,14 @@ namespace Capa_Logica
                 return ResultadoInvalido("La sucursal indicada no es válida.");
             }
 
-            string? error = ValidarSucursal(nombre, idProvincia, idLocalidad, calle);
+            string? error = ValidarSucursal(nombre, idProvincia, idLocalidad, calle, altura, piso);
             if (error != null)
             {
                 return ResultadoInvalido(error);
             }
 
             return ConvertirResultado(sucursalDatos.Modificar(
-                idSucursal, NormalizarEspacios(nombre), idLocalidad!.Value, NormalizarEspacios(calle), SesionActual.IdUsuario));
+                idSucursal, NormalizarEspacios(nombre), idLocalidad!.Value, DireccionValidacion.NormalizarCalle(calle), altura!.Trim(), string.IsNullOrWhiteSpace(piso) ? null : piso.Trim(), SesionActual.IdUsuario));
         }
 
         // Realiza una baja lógica sin permitir que una sucursal inválida llegue a Datos.

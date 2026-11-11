@@ -42,6 +42,7 @@ public partial class FormMarcas : Form
         dgvMarcas.Columns.Add(new DataGridViewTextBoxColumn { Name="nombre", HeaderText="Marca", DataPropertyName="Nombre", AutoSizeMode=DataGridViewAutoSizeColumnMode.Fill });
         dgvMarcas.Columns.Add(new DataGridViewTextBoxColumn { Name="categorias", HeaderText="Categorías", DataPropertyName="CategoriasAsociadas", Width=140 });
         dgvMarcas.Columns.Add(new DataGridViewTextBoxColumn { Name="estado", HeaderText="Estado", DataPropertyName="Activo", Width=120 });
+        DataGridViewLayoutHelper.Normalizar(dgvMarcas, "nombre");
         dgvMarcas.CellFormatting += (_, e) =>
         {
             if (e.RowIndex >= 0 && dgvMarcas.Columns[e.ColumnIndex].Name == "estado" && dgvMarcas.Rows[e.RowIndex].DataBoundItem is MarcaCatalogoModelo item)

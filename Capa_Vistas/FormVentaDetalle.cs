@@ -332,6 +332,7 @@ namespace Capa_Vistas
                 colPrecio,
                 colSubtotal
             );
+            DataGridViewLayoutHelper.Normalizar(dgvProductos, "colProducto");
         }
 
 
@@ -378,6 +379,7 @@ namespace Capa_Vistas
                 colMetodo,
                 colMonto
             );
+            DataGridViewLayoutHelper.Normalizar(dgvPagos, "colMetodo");
         }
 
 
