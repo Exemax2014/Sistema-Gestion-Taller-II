@@ -142,6 +142,9 @@ namespace Capa_Vistas
 
 
             // Cuenta
+            btnAyuda.Click +=
+                BtnAyuda_Click;
+
             btnEditarPerfil.Click +=
                 BtnEditarPerfil_Click;
 
@@ -1624,6 +1627,21 @@ namespace Capa_Vistas
 
             AbrirFormularioEnPanel(new FormBackup(this), btnBackup);
         }
+
+
+        // =========================================================
+        // AYUDA
+        // =========================================================
+
+        // El manual no pertenece al catálogo de permisos: toda sesión autenticada puede consultarlo.
+        private void BtnAyuda_Click(object? sender, EventArgs e)
+        {
+            if (!SesionActual.SesionIniciada) return;
+            AbrirFormularioEnPanel(new FormManualUsuario(this), btnAyuda);
+        }
+
+        // Regresa al tablero sin cerrar la sesión ni la ventana principal.
+        public void VolverAInicioDesdeManual() => MostrarInicio();
 
 
         // =========================================================
