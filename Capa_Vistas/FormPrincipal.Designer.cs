@@ -55,6 +55,7 @@ namespace Capa_Vistas
             pnlCuenta = new Panel();
             pnlSeparadorCuenta = new Panel();
             lblUsuarioActual = new Label();
+            btnAyuda = new Button();
             btnEditarPerfil = new Button();
             btnCerrarSesion = new Button();
             pnlCabecera.SuspendLayout();
@@ -423,11 +424,12 @@ namespace Capa_Vistas
             pnlCuenta.BackColor = Color.FromArgb(17, 21, 26);
             pnlCuenta.Controls.Add(pnlSeparadorCuenta);
             pnlCuenta.Controls.Add(lblUsuarioActual);
+            pnlCuenta.Controls.Add(btnAyuda);
             pnlCuenta.Controls.Add(btnEditarPerfil);
             pnlCuenta.Controls.Add(btnCerrarSesion);
             pnlCuenta.Location = new Point(0, 760);
             pnlCuenta.Name = "pnlCuenta";
-            pnlCuenta.Size = new Size(165, 150);
+            pnlCuenta.Size = new Size(165, 190);
             pnlCuenta.TabIndex = 7;
             // 
             // pnlSeparadorCuenta
@@ -447,6 +449,24 @@ namespace Capa_Vistas
             lblUsuarioActual.Size = new Size(137, 25);
             lblUsuarioActual.TabIndex = 1;
             lblUsuarioActual.Text = "ADMIN";
+            //
+            // btnAyuda
+            //
+            btnAyuda.BackColor = Color.FromArgb(17, 21, 26);
+            btnAyuda.Cursor = Cursors.Hand;
+            btnAyuda.FlatAppearance.BorderSize = 0;
+            btnAyuda.FlatAppearance.MouseOverBackColor = Color.FromArgb(31, 35, 40);
+            btnAyuda.FlatStyle = FlatStyle.Flat;
+            btnAyuda.Font = new Font("Segoe UI", 8.5F);
+            btnAyuda.ForeColor = Color.FromArgb(215, 218, 222);
+            btnAyuda.Location = new Point(0, 45);
+            btnAyuda.Name = "btnAyuda";
+            btnAyuda.Padding = new Padding(14, 0, 0, 0);
+            btnAyuda.Size = new Size(165, 40);
+            btnAyuda.TabIndex = 2;
+            btnAyuda.Text = "?  Ayuda";
+            btnAyuda.TextAlign = ContentAlignment.MiddleLeft;
+            btnAyuda.UseVisualStyleBackColor = false;
             // 
             // btnEditarPerfil
             // 
@@ -457,11 +477,11 @@ namespace Capa_Vistas
             btnEditarPerfil.FlatStyle = FlatStyle.Flat;
             btnEditarPerfil.Font = new Font("Segoe UI", 8.5F);
             btnEditarPerfil.ForeColor = Color.FromArgb(215, 218, 222);
-            btnEditarPerfil.Location = new Point(0, 45);
+            btnEditarPerfil.Location = new Point(0, 85);
             btnEditarPerfil.Name = "btnEditarPerfil";
             btnEditarPerfil.Padding = new Padding(14, 0, 0, 0);
             btnEditarPerfil.Size = new Size(165, 40);
-            btnEditarPerfil.TabIndex = 2;
+            btnEditarPerfil.TabIndex = 3;
             btnEditarPerfil.Text = "Editar perfil";
             btnEditarPerfil.TextAlign = ContentAlignment.MiddleLeft;
             btnEditarPerfil.UseVisualStyleBackColor = false;
@@ -475,11 +495,11 @@ namespace Capa_Vistas
             btnCerrarSesion.FlatStyle = FlatStyle.Flat;
             btnCerrarSesion.Font = new Font("Segoe UI", 8.5F, FontStyle.Bold);
             btnCerrarSesion.ForeColor = Color.FromArgb(210, 95, 95);
-            btnCerrarSesion.Location = new Point(0, 86);
+            btnCerrarSesion.Location = new Point(0, 126);
             btnCerrarSesion.Name = "btnCerrarSesion";
             btnCerrarSesion.Padding = new Padding(14, 0, 0, 0);
             btnCerrarSesion.Size = new Size(165, 40);
-            btnCerrarSesion.TabIndex = 3;
+            btnCerrarSesion.TabIndex = 4;
             btnCerrarSesion.Text = "Cerrar sesión";
             btnCerrarSesion.TextAlign = ContentAlignment.MiddleLeft;
             btnCerrarSesion.UseVisualStyleBackColor = false;
@@ -565,6 +585,8 @@ namespace Capa_Vistas
         private Panel pnlSeparadorCuenta;
 
         private Label lblUsuarioActual;
+
+        private Button btnAyuda;
 
         private Button btnEditarPerfil;
 
